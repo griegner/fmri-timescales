@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def acf_fft(X, n_timepoints):
+def acf_fft(X: np.ndarray, n_timepoints: int) -> np.ndarray:
     """Estimate the full-lag auto-correlation function (ACF) of a matrix of timeseries using the Fast Fourier Transform.
 
     Parameters
