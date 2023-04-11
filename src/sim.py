@@ -26,6 +26,11 @@ def sample_mv_normal(
     -------
     ndarray of shape (n_regions, n_timepoints)
         Simulated timeseries with the specified `xcov` and `acov`.
+
+    Raises
+    ------
+    ValueError
+        If `acov` is not in (n_timepoints, n_timepoints) or (n_regions, n_timepoints, n_timepoints) form.
     """
 
     if acov.ndim != 2 and acov.ndim != 3:
