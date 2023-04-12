@@ -27,8 +27,9 @@ def acf_fft(X: np.ndarray, n_timepoints: int) -> np.ndarray:
         raise ValueError("X should be in (n_regions, n_timepoints) form")
 
     X -= X.mean(axis=1, keepdims=True)  # mean center timeseries
-    X_fft = np.fft.rfft(X, axis=1)  # frequency domain
-    X_acov = np.fft.irfft(X_fft * np.conj(X_fft), axis=1)  # time domain
+    n_fft = 2 ** int(np.ceil(np.log2(2 * n_timepoints - 1)))  # zero-pad
+    X_fft = np.fft.rfft(X, n=n_fft, axis=1)  # frequency domain
+    X_acov = np.fft.irfft(X_fft * np.conj(X_fft), axis=1)[:, :n_timepoints]  # time domain
     X_avar = np.sum(X**2, axis=1)  # auto-variances
     X_acf = X_acov / X_avar.reshape(-1, 1)  # auto-covariances > auto-correlations
 
@@ -59,7 +60,7 @@ def acf_to_toeplitz(acf: np.ndarray, n_timepoints: int) -> np.ndarray:
         If `acf` is not in (n_timepoints,) or (n_regions, n_timepoints) form.
     """
 
-    if acf.ndim != 1 or acf.ndim != 2:
+    if acf.ndim != 1 and acf.ndim != 2:
         raise ValueError("acf should be in ([n_regions], n_timepoints) form")
 
     if acf.ndim == 1:
