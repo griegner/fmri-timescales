@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def sample_mv_normal(
+def sim_fmri(
     xcov: np.ndarray, acov: np.ndarray, n_regions: int, n_timepoints: int, random_seed: int = 0
 ) -> np.ndarray:
     """Sample cross-correlated (`xcov`) and auto-correlated (`acov`) timeseries from the multivariate normal distribution
@@ -39,11 +39,11 @@ def sample_mv_normal(
     random_state = np.random.default_rng(seed=random_seed)
     rv = random_state.standard_normal(size=(n_regions, n_timepoints))
 
-    xcov_rv = np.linalg.cholesky(xcov) @ rv
+    xcov_rv = np.linalg.cholesky(xcov) @ rv  # cross-correlation
 
     # all timeseries have the same ACF
     if acov.ndim == 2:
-        X = xcov_rv @ np.linalg.cholesky(acov)
+        X = xcov_rv @ np.linalg.cholesky(acov)  # auto-correlation
         return X
 
     # each timeseries has a different ACF
@@ -53,5 +53,5 @@ def sample_mv_normal(
 
         X = np.zeros((n_regions, n_timepoints))
         for idx, region in enumerate(acov):
-            X[idx] = xcov_rv[idx, :] @ np.linalg.cholesky(region)
+            X[idx] = xcov_rv[idx, :] @ np.linalg.cholesky(region)  # auto-correlation
         return X
