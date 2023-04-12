@@ -8,19 +8,17 @@ xcorrs = [
     np.eye(n_regions),
     np.array([[1.0, 0.9, 0.3], [0.9, 1.0, 0], [0.3, 0, 1.0]]),
 ]
-acfs = [
-    np.hstack([1, np.zeros(n_timepoints - 1)]),
-    np.power(0.9, np.arange(n_timepoints)),
+acorrs = [
+    np.eye(n_timepoints),
+    acf_utils.acf_to_toeplitz(np.load("tests/data/hcp-acf.npy"), n_timepoints),
 ]
-acfs = [np.tile(acf, (n_regions, 1)) for acf in acfs]
 
 
 @pytest.mark.parametrize("xcorr", xcorrs)
-@pytest.mark.parametrize("acf", acfs)
-def test_sim_fmri(xcorr, acf):
+@pytest.mark.parametrize("acorr", acorrs)
+def test_sim_fmri(xcorr, acorr):
     """Test if the generated data returns the expected {auto,cross}-correlation parameters"""
-
-    acorr = acf_utils.acf_to_toeplitz(acf, n_timepoints)
+    acf = acorr[:, 0] if acorr.ndim == 2 else acorr[:, :, 0]
     X = sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints, random_seed=0)
 
     assert np.allclose(xcorr, np.corrcoef(X), atol=0.1)  # cross-correlation
@@ -28,7 +26,9 @@ def test_sim_fmri(xcorr, acf):
 
 
 def test_sim_fmri_checkfail():
+    """Test if the function raises the expected ValueError"""
     xcorr = np.eye(n_regions)
     acorr = np.zeros((n_timepoints, n_timepoints, n_regions))
+
     with pytest.raises(ValueError):
         sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints)
