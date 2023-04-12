@@ -25,3 +25,10 @@ def test_sim_fmri(xcorr, acf):
 
     assert np.allclose(xcorr, np.corrcoef(X), atol=0.1)  # cross-correlation
     assert np.allclose(acf, acf_utils.acf_fft(X, n_timepoints), atol=0.3)  # auto-correlation
+
+
+def test_sim_fmri_checkfail():
+    xcorr = np.eye(n_regions)
+    acorr = np.zeros((n_timepoints, n_timepoints, n_regions))
+    with pytest.raises(ValueError):
+        sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints)
