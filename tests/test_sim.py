@@ -24,7 +24,7 @@ def test_sim_fmri(xcorr, acorr):
     X = sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints, random_seed=0)
 
     # cross-correlation
-    assert np.allclose(xcorr, acf_utils.calc_xcorr(X, n_timepoints, xcorr_corrected), atol=0.1)
+    assert np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, xcorr_corrected), atol=0.1)
     # auto-correlation
     assert np.allclose(acf, acf_utils.acf_fft(X, n_timepoints), atol=0.3)
 
@@ -36,3 +36,15 @@ def test_sim_fmri_checkfail():
 
     with pytest.raises(ValueError):
         sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints)
+
+
+def test_calc_xcorr():
+    "Test if simulation artifacts are removed by the correction"
+    xcorr = xcorrs[1]
+    acorr = acorrs[1]
+    X = sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints, random_seed=0)
+
+    # not corrected
+    assert not np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, corrected=False), atol=0.1)
+    # corrected
+    assert np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, corrected=True), atol=0.1)
