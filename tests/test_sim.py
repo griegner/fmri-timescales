@@ -3,6 +3,7 @@ import pytest
 
 from src import acf_utils, sim
 
+# set parameters
 n_regions, n_timepoints = 3, 1200
 xcorrs = [
     np.eye(n_regions),
@@ -10,7 +11,7 @@ xcorrs = [
 ]
 acorrs = [
     np.eye(n_timepoints),
-    acf_utils.acf_to_toeplitz(np.load("tests/data/hcp-acf.npy"), n_timepoints),
+    acf_utils.acf_to_toeplitz(np.load("tests/data/fmri-acf.npy"), n_timepoints),
 ]
 
 
@@ -18,11 +19,14 @@ acorrs = [
 @pytest.mark.parametrize("acorr", acorrs)
 def test_sim_fmri(xcorr, acorr):
     """Test if the generated data returns the expected {auto,cross}-correlation parameters"""
+    xcorr_corrected = True if acorr.ndim == 3 else False
     acf = acorr[:, 0] if acorr.ndim == 2 else acorr[:, :, 0]
     X = sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints, random_seed=0)
 
-    assert np.allclose(xcorr, np.corrcoef(X), atol=0.1)  # cross-correlation
-    assert np.allclose(acf, acf_utils.acf_fft(X, n_timepoints), atol=0.3)  # auto-correlation
+    # cross-correlation
+    assert np.allclose(xcorr, acf_utils.calc_xcorr(X, n_timepoints, xcorr_corrected), atol=0.1)
+    # auto-correlation
+    assert np.allclose(acf, acf_utils.acf_fft(X, n_timepoints), atol=0.3)
 
 
 def test_sim_fmri_checkfail():
