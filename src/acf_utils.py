@@ -37,7 +37,7 @@ def acf_fft(X: np.ndarray, n_timepoints: int) -> np.ndarray:
 
 
 def acf_to_toeplitz(acf: np.ndarray, n_timepoints: int) -> np.ndarray:
-    """Converts an auto-correlation function (ACF) to a Toeplitz matrix for one or multiple regions.
+    """Converts an auto-correlation function (ACF) to a Toeplitz matrix for one or multiple timeseries.
 
     Parameters
     ----------
@@ -51,7 +51,7 @@ def acf_to_toeplitz(acf: np.ndarray, n_timepoints: int) -> np.ndarray:
     Returns
     -------
     np.ndarray of shape (n_regions, n_timepoints, n_timepoints) or (n_timepoints, n_timepoints)
-        The Toeplitz matrix for each region or a single Toeplitz matrix if all regions have the same ACF.
+        The Toeplitz matrix for each timeseries or a single Toeplitz matrix if all timeseries have the same ACF.
         If `n_lags < n_timepoints`, the ACF will be padded with zeros.
 
     Raises
