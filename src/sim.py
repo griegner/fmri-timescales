@@ -71,9 +71,8 @@ def calc_xcorr(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.n
     n_timepoints : int
         Number of timepoints/samples.
     corrected : bool, optional
-        When timeseries are simulated with different auto-correlation functions, spurious cross-correlations can arise.
-        This can be corrected by `Eq. S9 (Afyouni et al, 2019)`.
-        Default=True.
+        When each timeseries is generated with a different auto-correlation function, spurious cross-correlations can arise.
+        This can be corrected by `Eq. S9 (Afyouni et al, 2019)`. By default True.
 
     Returns
     -------
