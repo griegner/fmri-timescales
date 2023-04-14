@@ -1,7 +1,7 @@
 tmp*
 *egg-info
 __pycache__
-.pytest_cache
+*_cache
 data/
 !tests/data/
 .vscode
