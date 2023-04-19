@@ -5,3 +5,4 @@ __pycache__
 data/
 !tests/data/
 .vscode
+.DS_Store
