@@ -3,6 +3,7 @@ tmp*
 __pycache__
 *_cache
 data/
+!examples/data/
 !tests/data/
 .vscode
 .DS_Store
