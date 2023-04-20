@@ -8,11 +8,10 @@
 [pytest](https://github.com/pytest-dev/pytest/) (if running unit tests)  
 
 ### installation
-First clone the repository to your local machine:  
+Clone the repository to your local machine, and install with pip in editable mode:  
+
 `$ git clone https://github.com/griegner/fmri-timescales.git`  
-Change your current working directory:  
 `$ cd fmri-timescales/`  
-Install the package in editable mode using pip:  
 `$ pip install -e .`  
 
 ### fMRI data
