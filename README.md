@@ -1,11 +1,19 @@
 ### fMRI-timescales
 > mapping the spatial gradients of timescales in the Human Connectome Project (HCP)
 
-### requirements
+### dependencies
 [nilearn](https://github.com/nilearn/nilearn)  
 [neurodsp](https://github.com/neurodsp-tools/neurodsp)  
 [notebook](https://github.com/jupyter/notebook) (if running examples)  
 [pytest](https://github.com/pytest-dev/pytest/) (if running unit tests)  
+
+### installation
+First clone the repository to your local machine:  
+`$ git clone https://github.com/griegner/fmri-timescales.git`  
+Change your current working directory:  
+`$ cd fmri-timescales/`  
+Install the package in editable mode using pip:  
+`$ pip install -e .`  
 
 ### fMRI data
 The complete HCP dataset can be accessed at [ConnectomeDB](https://db.humanconnectome.org/app/template/Login.vm;jsessionid=07FB635B78590A7214F2DB247B57D052), which includes resting-state fMRI and behavioral measures for 812 subjects. The `HCP1200 Parcellation+Timeseries+Netmats` download (10GB) includes denoised timeseries from parcelling group-level ICA maps at various spatial scales. More documentation can be found [here](https://www.humanconnectome.org/storage/app/media/documentation/s1200/HCP1200-DenseConnectome+PTN+Appendix-July2017.pdf).  
