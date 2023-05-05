@@ -37,6 +37,45 @@ def acf_fft(X: np.ndarray, n_timepoints: int) -> np.ndarray:
     return X_acf
 
 
+def ar_to_acf(ar_coeffs: list, n_lags: int) -> np.ndarray:
+    """Calculates the theoretical autocorrelations of a stationary AR(p) process, using the Yule-Walker equation.
+
+    Parameters
+    ----------
+    ar_coeffs : list or ndarray of shape (p,)
+        A list of AR(p) coefficients in the form [phi_1, phi_2, ..., phi_p], excluding phi_0.
+    n_lags : int
+        The number of autocorrelation lags to calculate.
+
+    Returns
+    -------
+    ndarray of shape (n_lags,)
+        The theoretical ACF of a timeseries up to lag `n_lags`.
+
+    Raises
+    ------
+    ValueError
+        If the AR coefficients are not stationary.
+    """
+
+    if len(ar_coeffs) > 1 and np.max(np.abs(np.roots(ar_coeffs))) >= 1:
+        raise ValueError("AR coefficients must be stationary")
+
+    p = len(ar_coeffs)
+    phi = np.array(ar_coeffs)
+    acf = np.zeros(n_lags + 1)
+    acf[0] = 1.0  # lag-0 ACF
+
+    # Yule-Walker equation
+    for k in range(1, n_lags + 1):
+        if k > p:  # lag > number of AR coefficients
+            acf[k] = np.sum(acf[k - p : k] * phi[::-1])
+        else:  # lag <= number of AR coefficients
+            acf[k] = np.sum(acf[:k] * phi[:k][::-1])
+
+    return acf[:-1]
+
+
 def acf_to_toeplitz(acf: np.ndarray, n_timepoints: int) -> np.ndarray:
     """Converts an auto-correlation function (ACF) to a Toeplitz matrix for one or multiple timeseries.
 
