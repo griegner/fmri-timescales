@@ -114,7 +114,9 @@ def calc_xcorr(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.n
         return xcorr_corrected
 
 
-def sim_ar(ar_coeffs: np.ndarray, n_timepoints: int, random_seed: int = 0) -> np.ndarray:
+def sim_ar(
+    ar_coeffs: np.ndarray, n_timepoints: int, scale: float = 1.0, random_seed: int = 0
+) -> np.ndarray:
     """Generate a univariate AR(p) timeseries.
 
     Parameters
@@ -123,6 +125,8 @@ def sim_ar(ar_coeffs: np.ndarray, n_timepoints: int, random_seed: int = 0) -> np
         A list of AR(p) coefficients in the form [phi_1, phi_2, ..., phi_p], excluding phi_0.
     n_timepoints : int
         Number of timepoints/samples.
+    scale : float, optional
+        Standard deviation of the noise, by default 1.0.
     random_seed : int, optional
         Random seed, by default 0.
 
@@ -144,6 +148,6 @@ def sim_ar(ar_coeffs: np.ndarray, n_timepoints: int, random_seed: int = 0) -> np
         raise ValueError("AR coefficients must be stationary")
 
     random_state = np.random.default_rng(seed=random_seed)
-    rv = random_state.standard_normal(size=n_timepoints)
+    rv = scale * random_state.standard_normal(size=n_timepoints)
 
     return lfilter([1], np.r_[1, -ar_coeffs], rv)
