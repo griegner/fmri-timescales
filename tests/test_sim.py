@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from statsmodels.tsa.arima.model import ARIMA
 
 from src import acf_utils, sim
 
@@ -48,3 +49,23 @@ def test_calc_xcorr():
     assert not np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, corrected=False), atol=0.1)
     # corrected
     assert np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, corrected=True), atol=0.1)
+
+
+def test_sim_ar():
+    """Test if generated AR process returns the expected coefficients"""
+    ar_coeffs = [[0.6], [0.6, -0.4], [0.6, -0.4, 0.2]]  # AR(1,2,3)
+
+    for ar_coeff in ar_coeffs:
+        p = len(ar_coeff)
+        X = sim.sim_ar(ar_coeff, n_timepoints)
+        ar_coeff_hat = ARIMA(X, order=(p, 0, 0)).fit().params[1:-1]
+
+        assert np.allclose(ar_coeff, ar_coeff_hat, atol=0.1)
+
+
+def test_sim_ar_checkfail():
+    """Test if the function raises the expected ValueError"""
+    ar_coeff = [2, 1, 3]
+
+    with pytest.raises(ValueError):
+        sim.sim_ar(ar_coeff, n_timepoints)

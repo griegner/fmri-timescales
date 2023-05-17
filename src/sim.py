@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import lfilter
 
 from src import acf_utils
 
@@ -111,3 +112,38 @@ def calc_xcorr(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.n
                     xcorr[i, j] / np.trace(cholesky_i @ cholesky_j.T) * n_timepoints
                 )
         return xcorr_corrected
+
+
+def sim_ar(ar_coeffs: np.ndarray, n_timepoints: int, random_seed: int = 0) -> np.ndarray:
+    """Generate a univariate AR(p) timeseries.
+
+    Parameters
+    ----------
+    ar_coeffs : list or ndarray of shape (p,)
+        A list of AR(p) coefficients in the form [phi_1, phi_2, ..., phi_p], excluding phi_0.
+    n_timepoints : int
+        Number of timepoints/samples.
+    random_seed : int, optional
+        Random seed, by default 0.
+
+    Returns
+    -------
+    np.ndarray of shape (n_timepoints,)
+        Simulated timeseries with the specified AR(p) coefficients.
+
+    Raises
+    ------
+    ValueError
+        If the AR coefficients are not stationary.
+    """
+
+    if isinstance(ar_coeffs, list):
+        ar_coeffs = np.array(ar_coeffs)
+
+    if len(ar_coeffs) > 1 and np.max(np.abs(np.roots(ar_coeffs))) >= 1:
+        raise ValueError("AR coefficients must be stationary")
+
+    random_state = np.random.default_rng(seed=random_seed)
+    rv = random_state.standard_normal(size=n_timepoints)
+
+    return lfilter([1], np.r_[1, -ar_coeffs], rv)
