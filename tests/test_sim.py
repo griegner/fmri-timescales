@@ -61,11 +61,3 @@ def test_sim_ar():
         ar_coeff_hat = ARIMA(X, order=(p, 0, 0)).fit().params[1:-1]
 
         assert np.allclose(ar_coeff, ar_coeff_hat, atol=0.1)
-
-
-def test_sim_ar_checkfail():
-    """Test if the function raises the expected ValueError"""
-    ar_coeff = [2, 1, 3]
-
-    with pytest.raises(ValueError):
-        sim.sim_ar(ar_coeff, n_timepoints)

@@ -134,18 +134,10 @@ def sim_ar(
     -------
     np.ndarray of shape (n_timepoints,)
         Simulated timeseries with the specified AR(p) coefficients.
-
-    Raises
-    ------
-    ValueError
-        If the AR coefficients are not stationary.
     """
 
     if isinstance(ar_coeffs, list):
         ar_coeffs = np.array(ar_coeffs)
-
-    if len(ar_coeffs) > 1 and np.max(np.abs(np.roots(ar_coeffs))) >= 1:
-        raise ValueError("AR coefficients must be stationary")
 
     random_state = np.random.default_rng(seed=random_seed)
     rv = scale * random_state.standard_normal(size=n_timepoints)
