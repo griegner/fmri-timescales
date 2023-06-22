@@ -49,3 +49,12 @@ def test_estimate_timescales():
         assert np.isclose(ar1_tau, timescales.mean(), atol=0.5)
         # stderrs: true (std of timescales) vs estimate (mean of stderr distribution)
         assert np.isclose(stderrs.mean(), timescales.std(), atol=0.05)
+
+
+def test_estimate_timescales_checkfail():
+    """Test if the function raises the expected ValueError"""
+    n_regions, n_timepoints = 5, 4800
+    X = np.random.random(size=(n_timepoints, n_regions))
+
+    with pytest.raises(ValueError):
+        timescale_utils.estimate_timescales(X, n_regions)
