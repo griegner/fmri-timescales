@@ -114,10 +114,36 @@ def calc_xcorr(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.n
         return xcorr_corrected
 
 
+def gen_ar2_coeffs(oscillatory=False, random_seed=4):
+    """Generate coefficients for an stationary AR(2) process.\n
+    An AR(2) process is stable when the coefficients are in the triangle -1 < phi2 < 1 - |phi1|;\n
+    and oscillatory if -1 < phi2 < -0.25 * phi1^2.
+
+    Parameters
+    ----------
+    oscillatory : bool, optional
+        Whether the coefficients should generate an oscillating AR(2) process, by default False
+    random_seed : int, optional
+        Seed for the random number generator, by default 4
+
+    Returns
+    -------
+    list
+        A list of two coefficients for the AR(2) process
+    """
+    rng = np.random.default_rng(seed=random_seed)
+    phi1 = rng.uniform(-2, 2)
+    if oscillatory:
+        phi2 = rng.uniform(-1, -0.25 * phi1**2)
+    else:
+        phi2 = rng.uniform(np.max([-1, -0.25 * phi1**2]), np.min([1 + phi1, 1 - phi1]))
+    return [phi1, phi2]
+
+
 def sim_ar(
     ar_coeffs: np.ndarray, n_timepoints: int, scale: float = 1.0, random_seed: int = 0
 ) -> np.ndarray:
-    """Generate a univariate AR(p) timeseries.
+    """Simulate a univariate AR(p) timeseries.
 
     Parameters
     ----------

@@ -51,6 +51,22 @@ def test_calc_xcorr():
     assert np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, corrected=True), atol=0.1)
 
 
+def test_gen_ar2_coeffs():
+    """Test if generated AR(2) coefficients are within the expected ranges"""
+
+    # non-oscillatory AR(2) coefficients
+    coeffs = sim.gen_ar2_coeffs(oscillatory=False, random_seed=0)
+    assert len(coeffs) == 2
+    assert -2 < coeffs[0] < 2  # phi1
+    assert max(-1, -0.25 * coeffs[0] ** 2) <= coeffs[1] <= min(1 + coeffs[0], 1 - coeffs[0])  # phi2
+
+    # oscillatory AR(2) coefficients
+    coeffs = sim.gen_ar2_coeffs(oscillatory=True, random_seed=0)
+    assert len(coeffs) == 2
+    assert -2 < coeffs[0] < 2  # phi1
+    assert -1 < coeffs[1] < -0.25 * coeffs[0] ** 2  # phi2
+
+
 def test_sim_ar():
     """Test if generated AR process returns the expected coefficients"""
     ar_coeffs = [[0.6], [0.6, -0.4], [0.6, -0.4, 0.2]]  # AR(1,2,3)
