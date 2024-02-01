@@ -1,0 +1,60 @@
+\documentclass[main.tex]{subfiles}
+
+\begin{document}
+\section{Methods}
+
+\subsection{Notation}
+
+This section introduces the notation and definitions used in the present paper, focusing on discrete stationary time series.
+
+\subsubsection*{Autocorrelation Function for Stationary Time Series}
+
+For a discrete, stationary time series, $\{X_t, t\in\mathbb{Z}\}$, the autocorrelation function (ACF) at lag $k$ is defined as:
+
+\begin{align*}
+    \rho(k) = \frac{\mathbb{E}[(X_{t+k} - \mu_X)(X_t - \mu_X)]}{\sigma_X^2},
+\end{align*}
+
+where $\mu_X$ is the mean and $\sigma^2_X$ is the variance of the times series. When the process is stationary, $X_t$ is dependent and identically distributed, both the mean and variance are constant over time $t$. (comment on stationary and ACF decay)\\
+
+\subsubsection*{Sample Autocorrelation Function}
+
+The ACF of a finite sample $\{X_1, X_2, ..., X_n\}$ from a stationary time series, at lag $k$ ($0 \le k < n$), is estimated by:
+\begin{align*}
+    \hat \rho(k) = \frac{\sum_{t=1}^{n-k}(X_{t+k} - \bar X)(X_t - \bar X)}{\sum_{t=1}^n(X_t - \bar X)^2},
+\end{align*}
+
+where $\bar X$ represents the sample mean of the time series.
+
+\subsection{Estimating Timescales}
+Different methods have been used to estimate timescale parameters from neural signals, both using time and frequency domain models.\\
+
+\subsubsection*{Time Domain}
+\paragraph{(a) Decay rate of the sample ACF, estimated by nonlinear least-squares (NLS)}
+\begin{align*}
+    \hat \tau = \underset{{\tau}}{\text{min}} \sum_{k=0}^{n-1}[\hat \rho(k) - e^{-\frac{k}{\tau}}]^2,
+\end{align*}
+
+where $e^{-\frac{k}{\tau}}$ is an exponential function with decay rate $\tau$. 
+
+\paragraph{(b) Best AR(1) model projection, estimated by ordinary least-squares (OLS)}
+\begin{align*}
+    \hat \phi &= \underset{\phi}{\text{min}} \ \mathbb{E}[(X_t - \phi X_{t-1})^2]\\
+    \hat \tau &= -\frac{1}{\text{log}(\hat \phi)}
+\end{align*}
+
+\subsubsection*{Frequency Domain}
+\paragraph{(c) PSD Knee Frequency, estimated by nonlinear least-squares (NLS)}
+\begin{align*}
+    ...
+\end{align*}
+Procedure that attempts to fit to the aperiodic aspects of the spectrum. scale-free ($\frac{1}{f}$) structure of spectral brain dynamics (more energy in low frequencies).
+
+\subsection{Simulations}  
+Realizations of stationary autoregressive time series were simulated to match...\\
+filter which is convolved with a one-dimensional white noise signal...
+
+\subsection{Evaluation}
+
+\subsection{Applications}
+\end{document}

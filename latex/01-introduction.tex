@@ -1,0 +1,21 @@
+\documentclass[latex/main.tex]{subfiles}
+
+\begin{document}
+\section{Introduction}
+
+\subsection{Scientific Motivation} 
+
+Brain activity continuously evolves over a range of temporal scales, from fast oscillations of around $100$ Hz to slow fluctuations of $<0.1$ Hz that synchronize large-scale brain functions \cite{buzsaki_neuronal_2004}. At the high frequency range, electrical signals from brain cells link oscillation to synaptic plasticity and long-term consolidation of information \cite{buzsaki_neuronal_2004}. Further, signal autcorrelation decay rates (i.e. timescales) are relatively rapid in early sensory areas and slower in distant cortical regions \cite{murray_hierarchy_2014, gao_neuronal_2020}. At much lower frequencies, this hierarchical structure repeats itself, appearing temporally scale-invariant. Multimodal evidence suggests that slow temporal structures are an essential part of brain organization, shaped by increasing timescales moving from sensory to associative cortical regions \cite{raut_hierarchical_2020, gao_neuronal_2020, hasson_hierarchy_2008}. These results suggest that hierarchical timescales may emerge from properties intrinsic to brain functional anatomy.\\
+
+Further, the spatial gradients of timescales align with functional aspects of brain organization. For example, primary sensory neurons are tightly coupled to changes in the environment, firing rapidly to the onsets of sensory stimuli, and showing relatively short timescales in the tens of milliseconds \cite{runyan_distinct_2017}. In contrast, neurons in decision making and working memory regions (more generally association regions such as prefrontal cortex), require information maintenance over seconds and correspondingly have much longer timescales \cite{zylberberg_mechanisms_2017}. This mechanism is governed by recurrent synaptic excitation balanced by fast feedback inhibition which generates neural signals that show time dependence over many seconds \cite{wang_decision_2008}. A range of such timescales have been identified by electrical recordings of single neurons from non-human animals sampled over different brain locations; yet because of sampling limitations in these experiments, only sparse sets of neurons (usual from cortical regions) can be recorded from. With sparse data it is difficult to infer on the spatial organization of timescales. Testing this possibility requires brain-wide coverage, which is not feasible with invasive electrophysiology.\\
+
+Resting state functional MRI (rsMRI), which measures spontaneous fluctuations of the blood oxygen level-dependent (BOLD) signal, provides non-invasive full-brain coverage of hemodynamic processes at infraslow frequencies $<0.1$ Hz. The BOLD signal does not directly measure neural activity but rather the hemodynamic changes that are linked to neural activity. Therefore, it reflects a mix of both electrophysiological and metabolic processes. Interest in rsMRI has increase substantially since Biswal and colleagues introduced functional connectivity \cite{biswal_functional_1995}. Although functional connectivity -- typically operationalized as the temporal correlations between pairs of brain regions -- is the standard approach for understanding human brain organization, basic timescale properties of rsMRI remain poorly characterised \cite{shinn_functional_2023}. In the present paper we look to rsMRI and ask how timescales of hemodynamic processes are spatially embedded.\\
+
+\subsection{Statistical Motivation}
+This application requires estimating timescale parameters at thousands of locations across the brain. Using simulations of autoregressive processes and rsMRI from the Human Connectome Project, we compare timescale estimation methods and their bias, variance, and computational efficiency. Different methods have been used to estimate timescale parameters from neural signals, both using time and frequency domain models \cite{gao_neuronal_2020, raut_hierarchical_2020}. 
+
+\begin{itemize}
+    \item why are existing methods insufficient?
+    \item what are the elements of a solution?
+\end{itemize}
+\end{document}

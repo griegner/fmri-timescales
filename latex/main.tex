@@ -1,0 +1,27 @@
+\documentclass[10pt]{article}
+
+\usepackage{subfiles} % include subfiles
+\usepackage{fullpage} % 1-in margins
+\usepackage{amsmath, amsfonts, amssymb} % equations
+\usepackage{graphicx} % figures
+\usepackage{hyperref} % hyperlinks
+\usepackage[style=nature]{biblatex} % citations + references
+\addbibresource{latex/zotero.bib} % zotero bibliography
+
+\title{Estimating fMRI Timescale Maps}
+\author{Gabriel Riegner}
+
+\begin{document}
+\maketitle
+
+\subfile{latex/01-introduction}
+\subfile{latex/02-methods}
+\subfile{latex/03-results}
+\subfile{latex/04-discussion}
+\subfile{latex/05-appendix}
+
+% references
+\printbibliography
+
+
+\end{document}
