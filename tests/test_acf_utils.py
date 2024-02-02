@@ -38,7 +38,7 @@ def test_acf_fft_checkfail():
 
 
 def test_acf_to_toeplitz():
-    "Test if the shape of the toeplitx matrix matches what is expected"
+    """Test if the shape of the toeplitx matrix matches what is expected"""
     n_timepoints = 1200
 
     # all timeseries have the same ACF
@@ -50,3 +50,19 @@ def test_acf_to_toeplitz():
     acf = np.array([[1.0, 0.9, 0.0], [1.0, 0.8, 0.0], [1.0, 0.7, 0.0]])
     toeplitz = acf_utils.acf_to_toeplitz(acf, n_timepoints)
     assert toeplitz.shape == (n_regions, n_timepoints, n_timepoints)
+
+
+def test_ar_to_acf():
+    """Test theoretical calculations vs returned values"""
+
+    # AR(1)
+    n_lags = 10
+    ar_coeffs = [0.8]
+    acf = np.power(ar_coeffs, np.arange(0, n_lags))
+    assert np.allclose(acf_utils.ar_to_acf(ar_coeffs, n_lags=n_lags), acf)
+
+    # AR(2)
+    n_lags = 3
+    ar_coeffs = [0.75, -0.25]
+    acf = [1, 0.6, 0.2]  # solved by Yule-Walker
+    assert np.allclose(acf_utils.ar_to_acf(ar_coeffs, n_lags=n_lags), acf)

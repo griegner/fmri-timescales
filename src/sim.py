@@ -114,7 +114,7 @@ def calc_xcorr(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.n
         return xcorr_corrected
 
 
-def gen_ar2_coeffs(oscillatory=False, random_seed=4):
+def gen_ar2_coeffs(oscillatory: bool = False, random_seed: int = 4) -> np.ndarray:
     """Generate coefficients for an stationary AR(2) process.\n
     An AR(2) process is stable when the coefficients are in the triangle -1 < phi2 < 1 - |phi1|;\n
     and oscillatory if -1 < phi2 < -0.25 * phi1^2.
@@ -137,7 +137,7 @@ def gen_ar2_coeffs(oscillatory=False, random_seed=4):
         phi2 = rng.uniform(-1, -0.25 * phi1**2)
     else:
         phi2 = rng.uniform(np.max([-1, -0.25 * phi1**2]), np.min([1 + phi1, 1 - phi1]))
-    return [phi1, phi2]
+    return np.array([phi1, phi2])
 
 
 def sim_ar(

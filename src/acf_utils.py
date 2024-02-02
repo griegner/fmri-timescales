@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from statsmodels.tsa.arima_process import arma_acf
 
 
 def acf_fft(X: np.ndarray, n_timepoints: int) -> np.ndarray:
@@ -74,3 +75,23 @@ def acf_to_toeplitz(acf: np.ndarray, n_timepoints: int) -> np.ndarray:
             acorr = np.pad(region, (0, n_timepoints - region.size))
             acorrs.append(sp.linalg.toeplitz(acorr))
         return np.array(acorrs)
+
+
+def ar_to_acf(ar_coeffs: np.ndarray, n_lags: int = 10) -> np.ndarray:
+    """Calculates the theoretical autocorrelation function of an AutoRegressive (AR) process.
+
+    Parameters
+    ----------
+    ar_coeffs : list or ndarray of shape (p,)
+        A list of AR(p) coefficients in the form [phi_1, phi_2, ..., phi_p], excluding phi_0.
+    n_lags : int, optional
+        Number of lags, by default 10
+
+    Returns
+    -------
+    np.ndarray
+        The autocorrelation function for the given AR(p) coefficients up to `n_lags`.
+    """
+    if isinstance(ar_coeffs, list):
+        ar_coeffs = np.array(ar_coeffs)
+    return arma_acf(ar=np.r_[1, -ar_coeffs], ma=[1], lags=n_lags)
