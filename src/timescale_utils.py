@@ -1,10 +1,54 @@
 import numpy as np
+from scipy.optimize import curve_fit
 from scipy.stats import linregress
 
+from src import acf_utils
 
-def estimate_timescales(X: np.ndarray, n_regions: int) -> tuple[np.ndarray, np.ndarray]:
+
+def estimate_timescales_nls(X: np.array, n_regions: int) -> tuple[np.ndarray, np.ndarray]:
+    """Estimate timescales and standard errors of a stationary AR(p) process using a non-linear least squares (NLS) model.
+
+    Parameters
+    ----------
+    X : np.array of shape (n_regions, n_timepoints)
+        An array containing the timeseries of each region.
+    n_regions : int
+        Number of regions/timeseries.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray] of shape (n_regions,), (n_regions,)
+        A tuple containing two arrays:
+        - An array of timescales, for each region in X.
+        - An array of standard errors, for each timescale.
+
+    Raises
+    ------
+    ValueError
+        If `X` is not in (n_regions, n_timepoints) form.
     """
-    Estimate timescales and standard errors of a stationary AR(p) process using an AR(1) model.
+
+    if X.shape[0] != n_regions:
+        raise ValueError("X should be in (n_regions, n_timepoints) form")
+
+    n_timepoints = X.shape[1]
+    timepoints = np.arange(n_timepoints)
+
+    exp_decay = lambda x, tau: np.exp(-x / (tau if tau > 0 else 1e-6))
+
+    timescales, stderrs = np.zeros(n_regions), np.zeros(n_regions)
+    for idx, region in enumerate(X):  # loop over regions
+        X_acf = acf_utils.acf_fft(region.reshape(1, -1), n_timepoints).squeeze()
+        timescale, var = curve_fit(f=exp_decay, xdata=timepoints, ydata=X_acf)
+        timescales[idx] = timescale
+        stderrs[idx] = np.sqrt(var)
+
+    return timescales, stderrs
+
+
+def estimate_timescales_ols(X: np.ndarray, n_regions: int) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Estimate timescales and standard errors of a stationary AR(p) process using an ordinary least squares model.
 
     Parameters
     ----------
@@ -15,7 +59,7 @@ def estimate_timescales(X: np.ndarray, n_regions: int) -> tuple[np.ndarray, np.n
 
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray] or shape (n_regions,), (n_regions,)
+    tuple[np.ndarray, np.ndarray] of shape (n_regions,), (n_regions,)
         A tuple containing two arrays:
         - An array of timescales, for each region in X.
         - An array of standard errors, for each timescale.
