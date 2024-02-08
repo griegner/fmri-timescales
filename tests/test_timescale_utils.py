@@ -13,19 +13,11 @@ def _calc_ar_bias(phi, n_repeats=1000, random_seed=0, model="ols"):
         ols=timescale_utils.estimate_timescales_ols, nls=timescale_utils.estimate_timescales_nls
     )
 
-    random_state = np.random.default_rng(random_seed)
-    random_seeds = random_state.integers(0, 100_000, size=n_repeats)
+    X = np.zeros((n_repeats, n_timepoints))
+    for idx in range(n_repeats):
+        X[idx, :] = sim.sim_ar(phi, n_timepoints, random_seed=idx)
 
-    timescales, stderrs = np.zeros(n_repeats), np.zeros(n_repeats)
-    for idx, rs in enumerate(random_seeds):  # n_repeats
-        # simulate AR(p) process
-        X = sim.sim_ar(phi, n_timepoints, random_seed=rs)
-        # fit model
-        timescale, stderr = models[model](X.reshape(1, -1), n_regions)
-        timescales[idx] = timescale
-        stderrs[idx] = stderr
-
-    return timescales, stderrs
+    return models[model](X, n_repeats)
 
 
 @pytest.mark.parametrize("model", ["ols", "nls"])
@@ -33,12 +25,12 @@ def test_estimate_timescales(model):
     """Test if the models estimate the expected coefficients and standard errors of an AR(1) process"""
     # AR(1) process
     phi = 0.75
-    timescales, stderrs = _calc_ar_bias(phi, model=model)
+    df = _calc_ar_bias(phi, model=model)
     tau = -1 / np.log(phi)  # true timescale
     # timescales: true vs estimate (mean of timescales distribution)
-    assert np.isclose(tau, timescales.mean(), atol=0.025)
+    assert np.isclose(tau, df["tau"].mean(), atol=0.022)
     # stderrs: true (std of timescales) vs estimate (mean of stderr distribution)
-    assert np.isclose(timescales.std(), stderrs.mean(), atol=0.19)
+    assert np.isclose(df["tau"].std(), df["se(tau)"].mean(), atol=0.18)
 
 
 @pytest.mark.parametrize("model", ["ols", "nls"])
