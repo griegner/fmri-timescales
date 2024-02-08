@@ -141,9 +141,13 @@ def gen_ar2_coeffs(oscillatory: bool = False, random_seed: int = 4) -> np.ndarra
 
 
 def sim_ar(
-    ar_coeffs: np.ndarray, n_timepoints: int, scale: float = 1.0, random_seed: int = 0
+    ar_coeffs: np.ndarray,
+    n_timepoints: int,
+    n_repeats: int = 1,
+    scale: float = 1.0,
+    random_seed: int = 0,
 ) -> np.ndarray:
-    """Simulate a univariate AR(p) timeseries.
+    """Simulate multiple univariate AR(p) timeseries.
 
     Parameters
     ----------
@@ -151,6 +155,8 @@ def sim_ar(
         A list of AR(p) coefficients in the form [phi_1, phi_2, ..., phi_p], excluding phi_0.
     n_timepoints : int
         Number of timepoints/samples.
+    n_repeats : int, optional
+        Number of timeseries to generate, be default 1.
     scale : float, optional
         Standard deviation of the noise, by default 1.0.
     random_seed : int, optional
@@ -158,7 +164,7 @@ def sim_ar(
 
     Returns
     -------
-    np.ndarray of shape (n_timepoints,)
+    np.ndarray of shape (n_repeats, n_timepoints)
         Simulated timeseries with the specified AR(p) coefficients.
     """
 
@@ -166,6 +172,6 @@ def sim_ar(
         ar_coeffs = np.array(ar_coeffs)
 
     random_state = np.random.default_rng(seed=random_seed)
-    rv = scale * random_state.standard_normal(size=n_timepoints)
+    X_iid = scale * random_state.standard_normal(size=(n_repeats, n_timepoints))
 
-    return lfilter([1], np.r_[1, -ar_coeffs], rv)
+    return lfilter([1], np.r_[1, -ar_coeffs], X_iid)

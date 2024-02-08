@@ -73,7 +73,12 @@ def test_sim_ar():
 
     for ar_coeff in ar_coeffs:
         p = len(ar_coeff)
-        X = sim.sim_ar(ar_coeff, n_timepoints)
+        X = sim.sim_ar(ar_coeff, n_timepoints).squeeze()
         ar_coeff_hat = ARIMA(X, order=(p, 0, 0)).fit().params[1:-1]
 
         assert np.allclose(ar_coeff, ar_coeff_hat, atol=0.1)
+
+
+def test_sim_ar_shape():
+    """Test function returns the correct shape"""
+    assert sim.sim_ar([1], n_timepoints, n_repeats=n_regions).shape == (n_regions, n_timepoints)
