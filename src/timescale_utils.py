@@ -1,6 +1,6 @@
 import numpy as np
+from joblib import Parallel, delayed
 from scipy.optimize import curve_fit
-from scipy.stats import linregress
 
 from src import acf_utils
 
@@ -46,9 +46,37 @@ def estimate_timescales_nls(X: np.array, n_regions: int) -> dict:
     return df
 
 
-def estimate_timescales_ols(X: np.ndarray, n_regions: int) -> dict:
+def _fit_ar1(X: np.ndarray, batch: np.ndarray) -> tuple:
+    """Fits an AR(1) model estimated using OLS.
+
+    Parameters
+    ----------
+    X : np.ndarray of shape (n_regions, n_timepoints)
+        An array containing the timeseries of each region.
+    batch : np.ndarray
+        The indices of the regions to fit.
+
+    Returns
+    -------
+    tuple of np.ndarrays with shape (n_voxels,)
+        The estimated AR(1) coefficients and their standard errors.
     """
-    Estimate timescales and standard errors of a stationary AR(p) process using an ordinary least squares model.
+    X = X.T
+    T = len(X) - 1
+    # X_{t-1} = X[:-1, :], X_t = X[1:, :]
+    sxx = np.sum(X[:-1, batch] ** 2, axis=0)
+    phi = np.sum((X[:-1, batch] * X[1:, batch]), axis=0) / sxx
+    se_phi = np.sqrt(
+        np.sum((X[1:, batch] - phi * X[:-1, batch]) ** 2, axis=0)  # rss
+        / (T - 1)  # df
+        / sxx  # sxx
+    )
+
+    return phi, se_phi
+
+
+def estimate_timescales_ols(X: np.ndarray, n_regions: int, n_jobs=-2, batch_size=100) -> dict:
+    """Estimate timescales and standard errors of a stationary AR(p) process using an AR(1) model.
 
     Parameters
     ----------
@@ -56,6 +84,11 @@ def estimate_timescales_ols(X: np.ndarray, n_regions: int) -> dict:
         An array containing the timeseries of each region.
     n_regions : int
         Number of regions/timeseries.
+    n_jobs : int, optional
+        The number of jobs to run in parallel. \n
+        (n_cpus + 1 + n_jobs) are used, by default -2
+    batch_size : int, optional
+        The number of voxels to fit in each batch, by default 100
 
     Returns
     -------
@@ -69,30 +102,18 @@ def estimate_timescales_ols(X: np.ndarray, n_regions: int) -> dict:
     Raises
     ------
     ValueError
-        If `X` is not in (n_regions, n_timepoints) form.
+        If `X` is not in (n_timepoints, n_regions) form.
     """
 
     if X.shape[0] != n_regions:
         raise ValueError("X should be in (n_regions, n_timepoints) form")
 
-    # timescale = -1 / ln(slope)
-    slope_to_timescale = lambda lm: -1 / np.log(lm.slope if lm.slope > 0 else 1e-9)
-    # stderr = (1 / (slope * ln(slope)^2)) * stderr
-    delta_method = (
-        lambda lm: (1 / (lm.slope * np.log(lm.slope if lm.slope > 0 else 1e-9) ** 2)) * lm.stderr
-    )
+    indices = np.arange(n_regions)
+    batches = [indices[idx : idx + batch_size] for idx in range(0, n_regions, batch_size)]
+    ar1_fit = Parallel(n_jobs=n_jobs)(delayed(_fit_ar1)(X, batch) for batch in batches)
+    phi, se_phi = map(np.concatenate, zip(*ar1_fit))
 
-    df = {
-        "phi": np.zeros(n_regions),
-        "se(phi)": np.zeros(n_regions),
-        "tau": np.zeros(n_regions),
-        "se(tau)": np.zeros(n_regions),
-    }
-    for idx, x in enumerate(X):  # loop over regions
-        lm = linregress(x[:-1], x[1:])  # fit OLS
-        df["phi"][idx] = lm.slope
-        df["se(phi)"][idx] = lm.stderr
-        df["tau"][idx] = slope_to_timescale(lm)
-        df["se(tau)"][idx] = delta_method(lm)
-
-    return df
+    # phi to tau (timescale), and apply delta method to std errs
+    tau = -1 / np.log(phi)
+    se_tau = (1 / (phi * np.log(phi) ** 2)) * se_phi
+    return {"phi": phi, "se(phi)": se_phi, "tau": tau, "se(tau)": se_tau}
