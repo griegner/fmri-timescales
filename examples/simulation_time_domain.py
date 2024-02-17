@@ -4,10 +4,10 @@ import numpy as np
 from src import acf_utils, sim, timescale_utils
 
 
-def mc_simulation(phis, n_timepoints, n_repeats=1000):
+def mc_simulation(phis, n_timepoints, n_repeats=1000, random_seed=10):
     df = {}
     for phi in phis:
-        X = sim.sim_ar(phi, n_timepoints, n_repeats)
+        X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=random_seed)
         ols = timescale_utils.estimate_timescales_ols(X, n_repeats)
         nls = timescale_utils.estimate_timescales_nls(X, n_repeats)
         df[str(phi)] = (ols, nls)
