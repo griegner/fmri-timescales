@@ -34,7 +34,7 @@ def estimate_timescales_nls(X: np.array, n_regions: int) -> dict:
     n_timepoints = X.shape[1]
     timepoints = np.arange(n_timepoints)
 
-    exp_decay = lambda x, tau: np.exp(-x / (tau if tau > 0 else 1e-6))
+    exp_decay = lambda x, tau: np.exp(-x / (tau if tau > 0 else 1e-9))
 
     df = {"tau": np.zeros(n_regions), "se(tau)": np.zeros(n_regions)}
     for idx, x in enumerate(X):  # loop over regions
@@ -114,6 +114,7 @@ def estimate_timescales_ols(X: np.ndarray, n_regions: int, n_jobs=-2, batch_size
     phi, se_phi = map(np.concatenate, zip(*ar1_fit))
 
     # phi to tau (timescale), and apply delta method to std errs
+    phi[phi <= 0] = 1e-9  # tau undefined for phi <= 0
     tau = -1 / np.log(phi)
     se_tau = (1 / (phi * np.log(phi) ** 2)) * se_phi
     return {"phi": phi, "se(phi)": se_phi, "tau": tau, "se(tau)": se_tau}
