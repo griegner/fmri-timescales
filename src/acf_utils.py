@@ -1,41 +1,68 @@
+from typing import Optional
+
 import numpy as np
-import scipy as sp
+from joblib import Parallel, delayed
+from scipy import linalg, signal
 from statsmodels.tsa.arima_process import arma_acf
 
 
-def acf_fft(X: np.ndarray, n_timepoints: int) -> np.ndarray:
-    """Estimate the full-lag auto-correlation function (ACF) of an array of timeseries using the Fast Fourier Transform
-    -- O(n_timepoints log n_timepoints) complexity instead of O(n_timepoints^2) for the time-domain method.
+class ACF:
+    """Empirical Autocorrelation Function (ACF)
 
     Parameters
     ----------
-    X : ndarray of shape (n_regions, n_timepoints)
-        An array containing the timeseries of each region.
-    n_timepoints : int
-        Number of timepoints/samples.
-
-    Returns
-    -------
-    ndarray of shape (n_regions, n_timepoints)
-        The full-lag ACF of each timeseries.
-
-    Raises
-    ------
-    ValueError
-        If `X` is not in (n_regions, n_timepoints) form.
+    n_lags : int, optional
+        Number of lags to return autocorrelation for, by default None.
+        If None, the full lag ACF will be returned
+    copy_X : bool, optional
+        If True X will be copied, else it may be overwritten, by default False
+    n_jobs : int, optional
+        The number of jobs to use for the computation, by default None
     """
 
-    if X.shape[1] != n_timepoints:
-        raise ValueError("X should be in (n_regions, n_timepoints) form")
+    def __init__(
+        self,
+        n_lags: Optional[int] = None,
+        copy_X: bool = False,
+        n_jobs: Optional[int] = None,
+    ) -> None:
+        self.n_lags = n_lags
+        self.copy_X = copy_X
+        self.n_jobs = n_jobs
+        self.acorr_ = None
 
-    X -= X.mean(axis=1, keepdims=True)  # mean center timeseries
-    n_fft = 2 ** int(np.ceil(np.log2(2 * n_timepoints - 1)))  # zero-pad
-    X_fft = np.fft.rfft(X, n=n_fft, axis=1)  # frequency domain
-    X_acov = np.fft.irfft(X_fft * np.conj(X_fft), axis=1)[:, :n_timepoints]  # time domain
-    X_avar = np.sum(X**2, axis=1)  # auto-variances
-    X_acf = X_acov / X_avar.reshape(-1, 1)  # auto-covariances > auto-correlations
+    def fit_transform(self, X: np.ndarray, n_timepoints: int) -> np.ndarray:
+        """Fit using the Fast Fourier Transform: O(n log n) time complexity.
 
-    return X_acf
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_timepoints, n_regions)
+            An array containing the timeseries of each region
+        n_timepoints : int
+            The number of timepoints in X
+
+        Returns
+        ------
+        X_acf_ : np.ndarray of shape (n_lags, n_regions)
+            An array containing the empirical ACF for each region in X
+
+        Raises
+        ------
+        ValueError
+            If X is not in (n_timepoints, n_regions) form.
+        """
+
+        if X.shape[0] != n_timepoints:
+            raise ValueError("X should be in (n_timepoints, n_regions) form")
+        X = X.copy() if self.copy_X else X
+        X = (X - X.mean(axis=0)) / X.std(axis=0)  # mean zero, variance one
+
+        X_acov_ = Parallel(n_jobs=self.n_jobs)(
+            delayed(signal.convolve)(X[:, idx], X[::-1, idx], mode="full", method="fft")
+            for idx in range(X.shape[1])
+        )
+        X_acf_ = np.array(X_acov_).T[n_timepoints - 1 :, : self.n_lags] / n_timepoints
+        return X_acf_
 
 
 def acf_to_toeplitz(acf: np.ndarray, n_timepoints: int) -> np.ndarray:
@@ -67,13 +94,13 @@ def acf_to_toeplitz(acf: np.ndarray, n_timepoints: int) -> np.ndarray:
 
     if acf.ndim == 1:
         acorr = np.pad(acf, (0, n_timepoints - acf.size))
-        return sp.linalg.toeplitz(acorr)
+        return linalg.toeplitz(acorr)
 
     else:
         acorrs = []
         for region in acf:
             acorr = np.pad(region, (0, n_timepoints - region.size))
-            acorrs.append(sp.linalg.toeplitz(acorr))
+            acorrs.append(linalg.toeplitz(acorr))
         return np.array(acorrs)
 
 

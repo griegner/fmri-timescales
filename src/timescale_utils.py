@@ -18,8 +18,6 @@ class OLS:
         The lag truncation number for the bartlett kernel, by default None
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
-    standardize_X : bool, optional
-        If True, columns of X will be demeaned and standardized, by default True
     n_jobs : int, optional
         The number of jobs to use for the computation, by default None
 
@@ -38,13 +36,11 @@ class OLS:
         cov_estimator: str = "newey-west",
         cov_n_lags: Optional[int] = None,
         copy_X: bool = False,
-        standardize_X: bool = True,
         n_jobs: Optional[int] = None,
     ) -> None:
         self.cov_estimator = cov_estimator
         self.cov_n_lags = cov_n_lags
         self.copy_X = copy_X
-        self.standardize_X = standardize_X
         self.n_jobs = n_jobs
         self.estimates_ = {}
 
@@ -76,7 +72,7 @@ class OLS:
         if X.shape[0] != n_timepoints:
             raise ValueError("X should be in (n_timepoints, n_regions) form")
         X = X.copy() if self.copy_X else X
-        X = (X - X.mean(axis=0)) / X.std(axis=0) if self.standardize_X else X
+        X = (X - X.mean(axis=0)) / X.std(axis=0)  # mean zero, variance 1
 
         ols_fits = Parallel(n_jobs=self.n_jobs)(
             delayed(self._fit_ols)(X[:, idx]) for idx in range(X.shape[1])
@@ -98,8 +94,6 @@ class NLS:
     ----------
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
-    standardize_X : bool, optional
-        If True, columns of X will be demeaned and standardized, by default True
     n_jobs : _type_, optional
         The number of jobs to use for the computation, by default None
 
@@ -114,16 +108,14 @@ class NLS:
     def __init__(
         self,
         copy_X: bool = False,
-        standardize_X: bool = True,
         n_jobs: Optional[int] = None,
     ) -> None:
         self.copy_X = copy_X
-        self.standardize_X = standardize_X
         self.n_jobs = n_jobs
         self.estimates_ = {}
 
     def fit(self, X: np.ndarray, n_timepoints: int) -> None:
-        """Fit exponential decay function to empirical autocorrelation function.
+        """Fit exponential decay function to empirical ACF.
 
         Parameters
         ----------
@@ -140,15 +132,16 @@ class NLS:
         if X.shape[0] != n_timepoints:
             raise ValueError("X should be in (n_timepoints, n_regions) form")
         X = X.copy() if self.copy_X else X
-        X = (X - X.mean(axis=0)) / X.std(axis=0) if self.standardize_X else X
-        X_acf = acf_utils.acf_fft(X.T, X.shape[0]).T
+        X = (X - X.mean(axis=0)) / X.std(axis=0)
+
+        X_acf_ = acf_utils.ACF().fit_transform(X, X.shape[0])
 
         exp_decay = lambda k, tau: np.exp(-k / (tau if tau > 0 else 1e-6))
         lags = np.arange(n_timepoints)
 
         exp_fits = Parallel(n_jobs=self.n_jobs)(
-            delayed(curve_fit)(f=exp_decay, xdata=lags, ydata=X_acf[:, idx])
-            for idx in range(X_acf.shape[1])
+            delayed(curve_fit)(f=exp_decay, xdata=lags, ydata=X_acf_[:, idx])
+            for idx in range(X_acf_.shape[1])
         )
         taus_, var_taus_ = map(np.ravel, zip(*exp_fits))
 

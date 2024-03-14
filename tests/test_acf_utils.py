@@ -14,27 +14,27 @@ acorrs = [
 
 
 @pytest.mark.parametrize("acorr", acorrs)
-def test_acf_fft(acorr):
-    "Test against np.correlate function, which is slower for large inputs"
+def test_ACF(acorr):
+    """Test against np.correlate function, which is slower for large inputs"""
     X = sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints, random_seed=10)
 
     # compute ACF in the frequency domain
-    X_acf = acf_utils.acf_fft(X, n_timepoints)
+    X_acf_ = acf_utils.ACF(n_jobs=-2).fit_transform(X.T, X.shape[1])
 
     # compute ACF in the time domain
-    np_acf = np.zeros_like(X_acf)
-    for region in range(n_regions):
-        acov = np.correlate(X[region, :], X[region, :], mode="full")[n_timepoints - 1 :]
-        np_acf[region, :] = acov / np.var(X[region, :]) / n_timepoints
+    X_np_acf_ = np.zeros(X.T.shape)
+    for idx in range(X.shape[0]):
+        acov = np.correlate(X[idx, :], X[idx, :], mode="full")[n_timepoints - 1 :]
+        X_np_acf_[:, idx] = acov / np.var(X[idx, :]) / n_timepoints
 
-    assert np.allclose(X_acf, np_acf)
+    np.allclose(X_acf_, X_np_acf_)
 
 
-def test_acf_fft_checkfail():
+def test_ACF_checkfail():
     """Test if the function raises the expected ValueError"""
-    X = np.zeros((n_timepoints, n_regions))
+    X = np.zeros((n_regions, n_timepoints))
     with pytest.raises(ValueError):
-        acf_utils.acf_fft(X, n_timepoints)
+        acf_utils.ACF().fit_transform(X, n_timepoints)
 
 
 def test_acf_to_toeplitz():
@@ -57,12 +57,12 @@ def test_ar_to_acf():
 
     # AR(1)
     n_lags = 10
-    ar_coeffs = [0.8]
+    ar_coeffs = np.array([0.8])
     acf = np.power(ar_coeffs, np.arange(0, n_lags))
     assert np.allclose(acf_utils.ar_to_acf(ar_coeffs, n_lags=n_lags), acf)
 
     # AR(2)
     n_lags = 3
-    ar_coeffs = [0.75, -0.25]
+    ar_coeffs = np.array([0.75, -0.25])
     acf = [1, 0.6, 0.2]  # solved by Yule-Walker
     assert np.allclose(acf_utils.ar_to_acf(ar_coeffs, n_lags=n_lags), acf)

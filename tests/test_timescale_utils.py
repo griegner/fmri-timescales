@@ -23,6 +23,14 @@ def test_OLS():
     assert np.isclose(ols.estimates_["tau"].std(), ols.estimates_["se(tau)"].mean(), atol=0.01)
 
 
+def test_OLS_checkfail():
+    """Test if the function raises the expected ValueError"""
+    X = np.zeros((n_repeats, n_timepoints))
+    ols = timescale_utils.OLS()
+    with pytest.raises(ValueError):
+        ols.fit(X, n_timepoints)
+
+
 def test_NLS():
     """Test if the NLS estimator returns the expected estimates of an AR(1) process"""
 
@@ -36,3 +44,11 @@ def test_NLS():
     # test difference btw true and estimated paramaters
     assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.01)
     assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.19)
+
+
+def test_NLS_checkfail():
+    """Test if the function raises the expected ValueError"""
+    X = np.zeros((n_repeats, n_timepoints))
+    nls = timescale_utils.NLS()
+    with pytest.raises(ValueError):
+        nls.fit(X, n_timepoints)
