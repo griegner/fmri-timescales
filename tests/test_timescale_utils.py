@@ -35,4 +35,4 @@ def test_NLS():
 
     # test difference btw true and estimated paramaters
     assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.01)
-    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.26)
+    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.19)

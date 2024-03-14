@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.optimize import curve_fit
@@ -6,21 +8,48 @@ from src import acf_utils
 
 
 class OLS:
+    """Ordinary Least Squares Autoregressive Model.
+
+    Parameters
+    ----------
+    cov_estimator : str, optional
+        The covariance estimator to use. Options are "newey-west" or "non-robust", by default "newey-west"
+    cov_n_lags : int, optional
+        The lag truncation number for the bartlett kernel, by default None
+    copy_X : bool, optional
+        If True X will be copied, else it may be overwritten, by default False
+    standardize_X : bool, optional
+        If True, columns of X will be demeaned and standardized, by default True
+    n_jobs : int, optional
+        The number of jobs to use for the computation, by default None
+
+    Attributes
+    ----------
+    estimates_ : dict
+    A dictionary containing four np.ndarray of shape (n_regions, ):
+    - "phi": AR(1) coefficient estimates, for each region in X.
+    - "se(phi)": Standard errors of AR(1) coefficients.
+    - "tau": Timescale estimates, for each region in X.
+    - "se(tau)": Standard errors of timescales.
+    """
+
     def __init__(
         self,
-        cov_estimator="newey-west",
-        cov_n_lags=None,
-        copy_X=False,
-        standardize_X=True,
-        n_jobs=None,
-    ):
+        cov_estimator: str = "newey-west",
+        cov_n_lags: Optional[int] = None,
+        copy_X: bool = False,
+        standardize_X: bool = True,
+        n_jobs: Optional[int] = None,
+    ) -> None:
         self.cov_estimator = cov_estimator
         self.cov_n_lags = cov_n_lags
         self.copy_X = copy_X
         self.standardize_X = standardize_X
         self.n_jobs = n_jobs
+        self.estimates_ = {}
 
-    def _fit_ols(self, x):
+    def _fit_ols(self, x: np.ndarray) -> tuple:
+        """fit model to a single timeseries x in X"""
         T = x.shape[0] - 1
         # x_t = X[1:], x_{t-1} = x[:-1]
         phi_ = np.sum((x[1:] * x[:-1])) / np.sum(x[:-1] ** 2)
@@ -28,7 +57,21 @@ class OLS:
         se_phi_ = np.sqrt(sigma2_ / np.sum(x[:-1] ** 2))
         return phi_, se_phi_
 
-    def fit(self, X, n_timepoints):
+    def fit(self, X: np.ndarray, n_timepoints: int) -> None:
+        """Fit AR(1) model estimated using OLS.
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_timepoints, n_regions)
+            An array containing the timeseries of each region.
+        n_timepoints : int
+            The number of timepoints in X.
+
+        Raises
+        ------
+        ValueError
+            If `X` is not in (n_timepoints, n_regions) form.
+        """
 
         if X.shape[0] != n_timepoints:
             raise ValueError("X should be in (n_timepoints, n_regions) form")
@@ -49,31 +92,64 @@ class OLS:
 
 
 class NLS:
+    """Non-linear Least Squares.
+
+    Parameters
+    ----------
+    copy_X : bool, optional
+        If True X will be copied, else it may be overwritten, by default False
+    standardize_X : bool, optional
+        If True, columns of X will be demeaned and standardized, by default True
+    n_jobs : _type_, optional
+        The number of jobs to use for the computation, by default None
+
+    Attributes
+    ----------
+    estimates_ : dict
+    A dictionary containing two np.ndarray of shape (n_regions, ):
+    - "tau": Timescale estimates, for each region in X.
+    - "se(tau)": Standard errors of timescales.
+    """
+
     def __init__(
         self,
-        copy_X=False,
-        standardize_X=True,
-        n_jobs=None,
-    ):
+        copy_X: bool = False,
+        standardize_X: bool = True,
+        n_jobs: Optional[int] = None,
+    ) -> None:
         self.copy_X = copy_X
         self.standardize_X = standardize_X
         self.n_jobs = n_jobs
+        self.estimates_ = {}
 
-    def fit(self, X, n_timepoints):
+    def fit(self, X: np.ndarray, n_timepoints: int) -> None:
+        """Fit exponential decay function to empirical autocorrelation function.
 
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_timepoints, n_regions)
+            An array containing the timeseries of each region.
+        n_timepoints : int
+            The number of timepoints in X.
+
+        Raises
+        ------
+        ValueError
+            If `X` is not in (n_timepoints, n_regions) form.
+        """
         if X.shape[0] != n_timepoints:
             raise ValueError("X should be in (n_timepoints, n_regions) form")
         X = X.copy() if self.copy_X else X
         X = (X - X.mean(axis=0)) / X.std(axis=0) if self.standardize_X else X
         X_acf = acf_utils.acf_fft(X.T, X.shape[0]).T
 
-        exp_decay = lambda k, tau: np.exp(-k / (tau if tau > 0 else 1e-9))
+        exp_decay = lambda k, tau: np.exp(-k / (tau if tau > 0 else 1e-6))
         lags = np.arange(n_timepoints)
 
         exp_fits = Parallel(n_jobs=self.n_jobs)(
             delayed(curve_fit)(f=exp_decay, xdata=lags, ydata=X_acf[:, idx])
             for idx in range(X_acf.shape[1])
         )
-        taus_, se_taus_ = map(np.ravel, zip(*exp_fits))
+        taus_, var_taus_ = map(np.ravel, zip(*exp_fits))
 
-        self.estimates_ = {"tau": taus_, "se(tau)": se_taus_}
+        self.estimates_ = {"tau": taus_, "se(tau)": np.sqrt(var_taus_)}
