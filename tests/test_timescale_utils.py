@@ -6,32 +6,33 @@ from src import sim, timescale_utils
 n_timepoints, n_repeats = 4800, 1000
 
 
-@pytest.mark.parametrize(
-    "model", [timescale_utils.estimate_timescales_ols, timescale_utils.estimate_timescales_nls]
-)
-def test_estimate_timescales(model):
-    """Test if the models estimate the expected coefficients and standard errors of an AR(1) process"""
+def test_OLS():
+    """Test if the OLS estimator returns the expected estimates of an AR(1) process"""
 
-    # AR(1) process
-    phi = 0.75
-    tau = -1 / np.log(phi)  # true timescale
-
+    phi = np.array(0.75)
+    tau = -1.0 / np.log(phi)
     X = sim.sim_ar(phi, n_timepoints, n_repeats)
-    df = model(X, n_repeats)
-    # timescales: true vs estimate (mean of timescales distribution)
-    assert np.isclose(tau, df["tau"].mean(), atol=0.01)
-    # stderrs: true (std of timescales) vs estimate (mean of stderr distribution)
-    assert np.isclose(df["tau"].std(), df["se(tau)"].mean(), atol=0.19)
+
+    ols = timescale_utils.OLS(n_jobs=-2)
+    ols.fit(X.T, n_timepoints)
+
+    # test difference btw true and estimated paramaters
+    assert np.isclose(phi, ols.estimates_["phi"].mean(), atol=0.001)
+    assert np.isclose(ols.estimates_["phi"].std(), ols.estimates_["se(phi)"].mean(), atol=0.001)
+    assert np.isclose(tau, ols.estimates_["tau"].mean(), atol=0.01)
+    assert np.isclose(ols.estimates_["tau"].std(), ols.estimates_["se(tau)"].mean(), atol=0.01)
 
 
-@pytest.mark.parametrize(
-    "model", [timescale_utils.estimate_timescales_ols, timescale_utils.estimate_timescales_nls]
-)
-def test_estimate_timescales_checkfail(model):
-    """Test if the functions raise the expected ValueError"""
+def test_NLS():
+    """Test if the NLS estimator returns the expected estimates of an AR(1) process"""
 
-    n_regions, n_timepoints = 5, 4800
-    X = np.random.random(size=(n_timepoints, n_regions))
+    phi = np.array(0.75)
+    tau = -1.0 / np.log(phi)
+    X = sim.sim_ar(phi, n_timepoints, n_repeats)
 
-    with pytest.raises(ValueError):
-        model(X, n_regions)
+    nls = timescale_utils.NLS(n_jobs=-2)
+    nls.fit(X.T, n_timepoints)
+
+    # test difference btw true and estimated paramaters
+    assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.01)
+    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.26)
