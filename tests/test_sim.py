@@ -6,49 +6,49 @@ from src import acf_utils, sim
 
 # set parameters
 n_regions, n_timepoints = 3, 1200
-xcorrs = [
+xcms = [
     np.eye(n_regions),
     np.array([[1.0, 0.9, 0.3], [0.9, 1.0, 0], [0.3, 0, 1.0]]),
 ]
-acorrs = [
+acms = [
     np.eye(n_timepoints),
     acf_utils.acf_to_toeplitz(np.load("tests/data/fmri-acf.npy"), n_timepoints),
 ]
 
 
-@pytest.mark.parametrize("xcorr", xcorrs)
-@pytest.mark.parametrize("acorr", acorrs)
-def test_sim_fmri(xcorr, acorr):
+@pytest.mark.parametrize("xcm", xcms)
+@pytest.mark.parametrize("acm", acms)
+def test_sim_fmri(xcm, acm):
     """Test if the generated data returns the expected {auto,cross}-correlation parameters"""
-    xcorr_corrected = True if acorr.ndim == 3 else False
-    acf = acorr[:, 0] if acorr.ndim == 2 else acorr[:, :, 0]
-    X = sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints, random_seed=0)
+    xcm_corrected = True if acm.ndim == 3 else False
+    acf = np.tile(acm[0, ...], (3, 1)).T if acm.ndim == 2 else acm[0, ...]
+    X = sim.sim_fmri(xcm, acm, n_regions, n_timepoints, random_seed=0)
 
     # cross-correlation
-    assert np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, xcorr_corrected), atol=0.1)
+    assert np.allclose(xcm, sim.calc_xcm(X, n_timepoints, xcm_corrected), atol=0.1)
     # auto-correlation
-    assert np.allclose(acf, acf_utils.acf_fft(X, n_timepoints), atol=0.3)
+    assert np.allclose(acf, acf_utils.ACF().fit_transform(X, n_timepoints), atol=0.3)
 
 
 def test_sim_fmri_checkfail():
     """Test if the function raises the expected ValueError"""
-    xcorr = np.eye(n_regions)
-    acorr = np.zeros((n_timepoints, n_timepoints, n_regions))
+    xcm = np.eye(n_regions)
+    acm = np.zeros((n_regions, n_timepoints, n_timepoints))
 
     with pytest.raises(ValueError):
-        sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints)
+        sim.sim_fmri(xcm, acm, n_regions, n_timepoints)
 
 
 def test_calc_xcorr():
     "Test if simulation artifacts are removed by the correction"
-    xcorr = xcorrs[1]
-    acorr = acorrs[1]
-    X = sim.sim_fmri(xcorr, acorr, n_regions, n_timepoints, random_seed=0)
+    xcm = xcms[1]
+    acm = acms[1]
+    X = sim.sim_fmri(xcm, acm, n_regions, n_timepoints, random_seed=0)
 
     # not corrected
-    assert not np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, corrected=False), atol=0.1)
+    assert not np.allclose(xcm, sim.calc_xcm(X, n_timepoints, corrected=False), atol=0.1)
     # corrected
-    assert np.allclose(xcorr, sim.calc_xcorr(X, n_timepoints, corrected=True), atol=0.1)
+    assert np.allclose(xcm, sim.calc_xcm(X, n_timepoints, corrected=True), atol=0.1)
 
 
 def test_gen_ar2_coeffs():
@@ -81,4 +81,4 @@ def test_sim_ar():
 
 def test_sim_ar_shape():
     """Test function returns the correct shape"""
-    assert sim.sim_ar([1], n_timepoints, n_repeats=n_regions).shape == (n_regions, n_timepoints)
+    assert sim.sim_ar([1], n_timepoints, n_repeats=n_regions).shape == (n_timepoints, n_regions)

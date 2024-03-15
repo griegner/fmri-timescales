@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 from scipy.signal import lfilter
 
@@ -5,19 +7,18 @@ from src import acf_utils
 
 
 def sim_fmri(
-    xcov: np.ndarray, acov: np.ndarray, n_regions: int, n_timepoints: int, random_seed: int = 0
+    xcm: np.ndarray, acm: np.ndarray, n_regions: int, n_timepoints: int, random_seed: int = 0
 ) -> np.ndarray:
-    """Sample cross-correlated (`xcov`) and auto-correlated (`acov`) timeseries from the multivariate normal distribution
-    -- multiply a standard normal random variable `z` by the Cholesky decomposition of the `xcov` and `acov` matrices.
+    """Sample cross-correlated and auto-correlated timeseries from the multivariate normal distribution.
 
     Parameters
     ----------
-    xcov : ndarray of shape (n_regions, n_regions)
-        The cross-covariance matrix, i.e. spatial correlation.
-    acov : ndarray of shape either (n_timepoints, n_timepoints) or (n_regions, n_timepoints, n_timepoints)
-        The auto-covariance matrix, i.e. temporal correlation.
-        If the shape is (n_timepoints, n_timepoints), all timeseries will have the same ACF.
-        If the shape is (n_regions, n_timepoints, n_timepoints), each timeseries will have a different ACF.
+    xcm : np.ndarray of shape (n_regions, n_regions)
+        The cross-correlation matrix, i.e. spatial correlation.
+    acm : np.ndarray of shape either (n_timepoints, n_timepoints) or (n_timepoints, n_timepoints, n_regions)
+        The auto-correlation toeplitz matrix, i.e. temporal correlation.
+        If the shape is (n_timepoints, n_timepoints), all timeseries will have the same acf.
+        If the shape is (n_timepoints, n_timepoints, n_regions), each timeseries will have a different acf.
     n_regions : int
         Number of regions/timeseries.
     n_timepoints : int
@@ -27,52 +28,55 @@ def sim_fmri(
 
     Returns
     -------
-    ndarray of shape (n_regions, n_timepoints)
-        Simulated timeseries with the specified `xcov` and `acov`.
+    np.ndarray of shape (n_timepoints, n_regions)
+        Simulated timeseries with the specified {cross, auto}-correlations.
 
     Raises
     ------
     ValueError
-        If `acov` is not in (n_timepoints, n_timepoints) or (n_regions, n_timepoints, n_timepoints) form.
+        If `xcm` is not in (n_regions, n_regions) form.
+        If `acm` is not in (n_timepoints, n_timepoints) or (n_timepoints, n_timepoints, n_regions) form.
     """
 
-    if acov.ndim != 2 and acov.ndim != 3:
-        raise ValueError("acov should be in ([n_regions], n_timepoints, n_timepoints) form")
+    if xcm.ndim != 2 or xcm.shape != (n_regions, n_regions):
+        raise ValueError("xcm should be in (n_regions, n_regions) form")
 
-    random_state = np.random.default_rng(seed=random_seed)
-    rv = random_state.standard_normal(size=(n_regions, n_timepoints))
+    rng = np.random.default_rng(seed=random_seed)
+    Z = rng.standard_normal(size=(n_regions, n_timepoints))  # ~ WN(0,1)
 
-    xcov_rv = np.linalg.cholesky(xcov) @ rv  # cross-correlation
+    xcf_Z = np.linalg.cholesky(xcm) @ Z  # cross-correlation
 
-    # all timeseries have the same ACF
-    if acov.ndim == 2:
-        X = xcov_rv @ np.linalg.cholesky(acov)  # auto-correlation
+    # all timeseries have the same acf
+    if acm.ndim == 2 and acm.shape == (n_timepoints, n_timepoints):
+        X = (xcf_Z @ np.linalg.cholesky(acm)).T  # auto-correlation
         return X
 
-    # each timeseries has a different ACF
+    # each timeseries has a different acf
+    elif acm.ndim == 3 and acm.shape == (n_timepoints, n_timepoints, n_regions):
+        X = np.zeros((n_timepoints, n_regions))
+        for idx in range(acm.shape[-1]):
+            X[:, idx] = xcf_Z[idx, :] @ np.linalg.cholesky(acm[..., idx])  # auto-correlation
+        return X
+
     else:
-        if acov.shape[0] != n_regions:
-            raise ValueError("acov should index n_regions")
-
-        X = np.zeros((n_regions, n_timepoints))
-        for idx, region in enumerate(acov):
-            X[idx] = xcov_rv[idx, :] @ np.linalg.cholesky(region)  # auto-correlation
-        return X
+        raise ValueError(
+            "acm should be in (n_timepoints, n_timepoints) or (n_timepoints, n_timepoints, n_regions) form"
+        )
 
 
-def calc_xcorr(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.ndarray:
+def calc_xcm(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.ndarray:
     """
-    Compute pairwise cross-correlations from simulated cross- and auto-correlated timeseries.
+    Compute the cross-correlation matrix of X generated from `sim_fmri()`.
 
 
     Parameters
     ----------
-    X : np.ndarray of shape (n_regions, n_timepoints)
+    X : np.ndarray of shape (n_timepoints, n_regions)
         An array containing the timeseries of each region.
     n_timepoints : int
         Number of timepoints/samples.
     corrected : bool, optional
-        When each timeseries is generated with a different auto-correlation function, spurious cross-correlations can arise.
+        If each timeseries is generated with a different auto-correlation function, spurious cross-correlations can arise.
         This can be corrected by `Eq. S9 (Afyouni et al, 2019)`. By default True.
 
     Returns
@@ -83,7 +87,7 @@ def calc_xcorr(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.n
     Raises
     ------
     ValueError
-        If `X` is not in (n_regions, n_timepoints) form.
+        If `X` is not in (n_timepoints, n_regions) form.
 
     References
     ----------
@@ -92,26 +96,24 @@ def calc_xcorr(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.n
     NeuroImage 199 (October 2019): 609-25. https://doi.org/10.1016/j.neuroimage.2019.05.011.
     """
 
-    if X.shape[1] != n_timepoints:
-        raise ValueError("X should be in (n_regions, n_timepoints) form")
+    if X.ndim != 2 or X.shape[0] != n_timepoints:
+        raise ValueError("X should be in (n_timepoints, n_regions) form")
 
-    acf = acf_utils.acf_fft(X, n_timepoints)
-    acorr = acf_utils.acf_to_toeplitz(acf, n_timepoints)
-    xcorr = np.corrcoef(X)
+    X_acf_ = acf_utils.ACF().fit_transform(X, X.shape[0])
+    acm = acf_utils.acf_to_toeplitz(X_acf_, X.shape[0])
+    xcm = np.corrcoef(X.T)
 
     if not corrected:
-        return xcorr
+        return xcm
 
     else:  # Eq S9 in Section S3.1 (Afyouni et al., 2019)
-        xcorr_corrected = np.ones_like(xcorr)
-        for i, region_i in enumerate(acorr):
-            cholesky_i = np.linalg.cholesky(region_i)
-            for j, region_j in enumerate(acorr):
-                cholesky_j = np.linalg.cholesky(region_j)
-                xcorr_corrected[i, j] = (
-                    xcorr[i, j] / np.trace(cholesky_i @ cholesky_j.T) * n_timepoints
-                )
-        return xcorr_corrected
+        xcm_corrected = np.ones_like(xcm)
+        for i in range(acm.shape[-1]):
+            cholesky_i = np.linalg.cholesky(acm[..., i])
+            for j in range(acm.shape[-1]):
+                cholesky_j = np.linalg.cholesky(acm[..., j])
+                xcm_corrected[i, j] = xcm[i, j] / np.trace(cholesky_i @ cholesky_j.T) * n_timepoints
+        return xcm_corrected
 
 
 def gen_ar2_coeffs(oscillatory: bool = False, random_seed: int = 4) -> np.ndarray:
@@ -128,8 +130,8 @@ def gen_ar2_coeffs(oscillatory: bool = False, random_seed: int = 4) -> np.ndarra
 
     Returns
     -------
-    list
-        A list of two coefficients for the AR(2) process
+    np.ndarray of shape (2, )
+        The two coefficients of a stationary AR(2) process
     """
     rng = np.random.default_rng(seed=random_seed)
     phi1 = rng.uniform(-2, 2)
@@ -141,7 +143,7 @@ def gen_ar2_coeffs(oscillatory: bool = False, random_seed: int = 4) -> np.ndarra
 
 
 def sim_ar(
-    ar_coeffs: np.ndarray,
+    ar_coeffs: Union[list, np.ndarray],
     n_timepoints: int,
     n_repeats: int = 1,
     scale: float = 1.0,
@@ -172,6 +174,6 @@ def sim_ar(
         ar_coeffs = np.array(ar_coeffs)
 
     random_state = np.random.default_rng(seed=random_seed)
-    X_iid = scale * random_state.standard_normal(size=(n_repeats, n_timepoints))
+    Z = scale * random_state.standard_normal(size=(n_timepoints, n_repeats))  # ~ WN(0,1)
 
-    return lfilter([1], np.r_[1, -ar_coeffs], X_iid)
+    return lfilter([1], np.r_[1, -ar_coeffs], Z, axis=0)  # type: ignore

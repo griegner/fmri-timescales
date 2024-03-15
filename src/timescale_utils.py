@@ -69,7 +69,7 @@ class OLS:
             If `X` is not in (n_timepoints, n_regions) form.
         """
 
-        if X.shape[0] != n_timepoints:
+        if X.ndim != 2 or X.shape[0] != n_timepoints:
             raise ValueError("X should be in (n_timepoints, n_regions) form")
         X = X.copy() if self.copy_X else X
         X = (X - X.mean(axis=0)) / X.std(axis=0)  # mean zero, variance 1
@@ -129,7 +129,7 @@ class NLS:
         ValueError
             If `X` is not in (n_timepoints, n_regions) form.
         """
-        if X.shape[0] != n_timepoints:
+        if X.ndim != 2 or X.shape[0] != n_timepoints:
             raise ValueError("X should be in (n_timepoints, n_regions) form")
         X = X.copy() if self.copy_X else X
         X = (X - X.mean(axis=0)) / X.std(axis=0)

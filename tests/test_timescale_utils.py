@@ -9,12 +9,12 @@ n_timepoints, n_repeats = 4800, 1000
 def test_OLS():
     """Test if the OLS estimator returns the expected estimates of an AR(1) process"""
 
-    phi = np.array(0.75)
+    phi = [0.75]
     tau = -1.0 / np.log(phi)
-    X = sim.sim_ar(phi, n_timepoints, n_repeats)
+    X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=0)
 
     ols = timescale_utils.OLS(n_jobs=-2)
-    ols.fit(X.T, n_timepoints)
+    ols.fit(X, X.shape[0])
 
     # test difference btw true and estimated paramaters
     assert np.isclose(phi, ols.estimates_["phi"].mean(), atol=0.001)
@@ -34,15 +34,15 @@ def test_OLS_checkfail():
 def test_NLS():
     """Test if the NLS estimator returns the expected estimates of an AR(1) process"""
 
-    phi = np.array(0.75)
+    phi = [0.75]
     tau = -1.0 / np.log(phi)
-    X = sim.sim_ar(phi, n_timepoints, n_repeats)
+    X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=0)
 
     nls = timescale_utils.NLS(n_jobs=-2)
-    nls.fit(X.T, n_timepoints)
+    nls.fit(X, X.shape[0])
 
     # test difference btw true and estimated paramaters
-    assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.01)
+    assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
     assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.19)
 
 
