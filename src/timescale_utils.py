@@ -3,11 +3,12 @@ from typing import Optional
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.optimize import curve_fit
+from sklearn.base import BaseEstimator
 
 from src import acf_utils
 
 
-class OLS:
+class OLS(BaseEstimator):
     """Ordinary Least Squares Autoregressive Model.
 
     Parameters
@@ -53,7 +54,7 @@ class OLS:
         se_phi_ = np.sqrt(sigma2_ / np.sum(x[:-1] ** 2))
         return phi_, se_phi_
 
-    def fit(self, X: np.ndarray, n_timepoints: int) -> None:
+    def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
         """Fit AR(1) model estimated using OLS.
 
         Parameters
@@ -85,9 +86,10 @@ class OLS:
         se_taus_ = (1.0 / (phis_ * np.log(phis_) ** 2)) * se_phis_
 
         self.estimates_ = {"phi": phis_, "se(phi)": se_phis_, "tau": taus_, "se(tau)": se_taus_}
+        return self.estimates_
 
 
-class NLS:
+class NLS(BaseEstimator):
     """Non-linear Least Squares.
 
     Parameters
@@ -114,7 +116,7 @@ class NLS:
         self.n_jobs = n_jobs
         self.estimates_ = {}
 
-    def fit(self, X: np.ndarray, n_timepoints: int) -> None:
+    def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
         """Fit exponential decay function to empirical ACF.
 
         Parameters
@@ -138,11 +140,13 @@ class NLS:
 
         exp_decay = lambda k, tau: np.exp(-k / (tau if tau > 0 else 1e-6))
         lags = np.arange(n_timepoints)
+        curve_fit_kwargs = dict(bounds=(0, np.inf), ftol=1e-6)
 
         exp_fits = Parallel(n_jobs=self.n_jobs)(
-            delayed(curve_fit)(f=exp_decay, xdata=lags, ydata=X_acf_[:, idx])
+            delayed(curve_fit)(f=exp_decay, xdata=lags, ydata=X_acf_[:, idx], **curve_fit_kwargs)
             for idx in range(X_acf_.shape[1])
         )
         taus_, var_taus_ = map(np.ravel, zip(*exp_fits))
 
         self.estimates_ = {"tau": taus_, "se(tau)": np.sqrt(var_taus_)}
+        return self.estimates_

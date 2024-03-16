@@ -3,10 +3,11 @@ from typing import Optional, Union
 import numpy as np
 from joblib import Parallel, delayed
 from scipy import linalg, signal
+from sklearn.base import BaseEstimator
 from statsmodels.tsa.arima_process import arma_acf
 
 
-class ACF:
+class ACF(BaseEstimator):
     """Empirical Autocorrelation Function
 
     Parameters
