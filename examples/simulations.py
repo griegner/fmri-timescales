@@ -5,7 +5,7 @@ from src import acf_utils, sim, timescale_utils
 
 
 def mc_simulation(phis, n_timepoints, n_repeats=1000, random_seed=10):
-    ols = timescale_utils.OLS(n_jobs=-2)
+    ols = timescale_utils.OLS(cov_estimator="newey-west", cov_n_lags=100, n_jobs=-2)
     nls = timescale_utils.NLS(n_jobs=-2)
     estimates_ = {}
     for phi in phis:

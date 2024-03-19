@@ -1,6 +1,7 @@
 from typing import Optional
 
 import numpy as np
+import statsmodels.stats.sandwich_covariance as sw_cov
 from joblib import Parallel, delayed
 from scipy.optimize import curve_fit
 from sklearn.base import BaseEstimator
@@ -49,9 +50,22 @@ class OLS(BaseEstimator):
         """fit model to a single timeseries x in X"""
         T = x.shape[0] - 1
         # x_t = X[1:], x_{t-1} = x[:-1]
-        phi_ = np.sum((x[1:] * x[:-1])) / np.sum(x[:-1] ** 2)
-        sigma2_ = np.sum((x[1:] - phi_ * x[:-1]) ** 2) / (T - 1)
-        se_phi_ = np.sqrt(sigma2_ / np.sum(x[:-1] ** 2))
+        q_ = np.sum(x[:-1] ** 2)
+        phi_ = np.sum((x[1:] * x[:-1])) / q_
+
+        if self.cov_estimator == "non-robust":
+            sigma2_ = np.sum((x[1:] - phi_ * x[:-1]) ** 2) / (T - 1)
+            se_phi_ = np.sqrt(sigma2_ / q_)
+        elif self.cov_estimator == "newey-west":
+            u_ = x[:-1] * (x[1:] - phi_ * x[:-1])
+            sigma_ = sw_cov.S_hac_simple(
+                u_, nlags=self.cov_n_lags, weights_func=sw_cov.weights_bartlett
+            ).squeeze()
+            var_ = (1 / q_) * sigma_ * (1 / q_)
+            var_ *= T / (T - 1)
+            se_phi_ = np.sqrt(var_)
+        else:
+            raise ValueError("cov_estimator must be either 'newey-west' or 'non-robust'")
         return phi_, se_phi_
 
     def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
