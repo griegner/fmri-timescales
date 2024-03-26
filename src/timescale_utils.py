@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 import statsmodels.stats.sandwich_covariance as sw_cov
 from joblib import Parallel, delayed
-from scipy.optimize import curve_fit
+from scipy.optimize import least_squares
 from sklearn.base import BaseEstimator
 
 from src import acf_utils
@@ -108,6 +108,8 @@ class NLS(BaseEstimator):
 
     Parameters
     ----------
+    cov_estimator : str, optional
+        The covariance estimator to use. Options are "non-robust", by default "non-robust"
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
     n_jobs : _type_, optional
@@ -123,12 +125,32 @@ class NLS(BaseEstimator):
 
     def __init__(
         self,
+        cov_estimator: str = "non-robust",
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
+        self.cov_estimator = cov_estimator
         self.copy_X = copy_X
         self.n_jobs = n_jobs
         self.estimates_ = {}
+
+    def _fit_nls(self, x_acf_: np.ndarray) -> tuple:
+        """fit model to a single autocorrelation function x_acf_ in X_acf_"""
+        T = x_acf_.shape[0]
+        exp_decay = lambda tau, k: np.exp(-k / (tau if tau > 0 else 1e-6))
+        loss = lambda tau_, k, y: exp_decay(tau_, k) - y
+        ks = np.arange(T)
+
+        nls_fit = least_squares(fun=loss, args=(ks, x_acf_), x0=1.0, bounds=(0, np.inf), ftol=1e-6)
+        tau_ = nls_fit.x[0]
+
+        if self.cov_estimator == "non-robust":
+            q_ = (nls_fit.jac.T @ nls_fit.jac).squeeze()
+            sigma2_ = np.sum(nls_fit.fun**2) / (T - 1)
+            se_tau_ = np.sqrt(sigma2_ / q_)
+        else:
+            raise ValueError("cov_estimator must be either 'newey-west' or 'non-robust'")
+        return tau_, se_tau_
 
     def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
         """Fit exponential decay function to empirical ACF.
@@ -152,15 +174,10 @@ class NLS(BaseEstimator):
 
         X_acf_ = acf_utils.ACF().fit_transform(X, X.shape[0])
 
-        exp_decay = lambda k, tau: np.exp(-k / (tau if tau > 0 else 1e-6))
-        lags = np.arange(n_timepoints)
-        curve_fit_kwargs = dict(bounds=(0, np.inf), ftol=1e-6)
-
-        exp_fits = Parallel(n_jobs=self.n_jobs)(
-            delayed(curve_fit)(f=exp_decay, xdata=lags, ydata=X_acf_[:, idx], **curve_fit_kwargs)
-            for idx in range(X_acf_.shape[1])
+        nls_fits = Parallel(n_jobs=self.n_jobs)(
+            delayed(self._fit_nls)(X_acf_[:, idx]) for idx in range(X_acf_.shape[1])
         )
-        taus_, var_taus_ = map(np.ravel, zip(*exp_fits))
+        taus_, se_taus_ = map(np.ravel, zip(*nls_fits))
 
-        self.estimates_ = {"tau": taus_, "se(tau)": np.sqrt(var_taus_)}
+        self.estimates_ = {"tau": taus_, "se(tau)": se_taus_}
         return self.estimates_
