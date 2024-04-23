@@ -63,9 +63,9 @@ def plot_nls_vs_ols(X, n_timepoints, nls_, ols_):
 
 
 def mc_simulation(phis, n_timepoints, acm=None, n_repeats=1000, random_seed=10):
-    ols = timescale_utils.OLS(cov_estimator="non-robust", n_jobs=-2)
-    ols_nw = timescale_utils.OLS(cov_estimator="newey-west", cov_n_lags=50, n_jobs=-2)
-    nls = timescale_utils.NLS(cov_estimator="non-robust", n_jobs=-2)
+    ols = timescale_utils.OLS(var_estimator="non-robust", n_jobs=-2)
+    ols_nw = timescale_utils.OLS(var_estimator="newey-west", cov_n_lags=50, n_jobs=-2)
+    nls = timescale_utils.NLS(var_estimator="non-robust", n_jobs=-2)
     estimates_ = {}
     for idx, phi in enumerate(phis):
         if acm is None:  # simulate autoregression

@@ -14,8 +14,8 @@ class OLS(BaseEstimator):
 
     Parameters
     ----------
-    cov_estimator : str, optional
-        The covariance estimator to use. Options are "newey-west" or "non-robust", by default "newey-west"
+    var_estimator : str, optional
+        The variance estimator to use. Options are "newey-west" or "non-robust", by default "newey-west"
     cov_n_lags : int, optional
         The lag truncation number for the bartlett kernel, by default None
     copy_X : bool, optional
@@ -35,12 +35,12 @@ class OLS(BaseEstimator):
 
     def __init__(
         self,
-        cov_estimator: str = "newey-west",
+        var_estimator: str = "newey-west",
         cov_n_lags: Optional[int] = None,
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
-        self.cov_estimator = cov_estimator
+        self.var_estimator = var_estimator
         self.cov_n_lags = cov_n_lags
         self.copy_X = copy_X
         self.n_jobs = n_jobs
@@ -53,10 +53,10 @@ class OLS(BaseEstimator):
         q_ = np.sum(x[:-1] ** 2)
         phi_ = np.sum((x[1:] * x[:-1])) / q_
 
-        if self.cov_estimator == "non-robust":
+        if self.var_estimator == "non-robust":
             sigma2_ = np.sum((x[1:] - phi_ * x[:-1]) ** 2) / (T - 1)
             se_phi_ = np.sqrt(sigma2_ / q_)
-        elif self.cov_estimator == "newey-west":
+        elif self.var_estimator == "newey-west":
             u_ = x[:-1] * (x[1:] - phi_ * x[:-1])
             sigma_ = sw_cov.S_hac_simple(
                 u_, nlags=self.cov_n_lags, weights_func=sw_cov.weights_bartlett
@@ -65,7 +65,7 @@ class OLS(BaseEstimator):
             var_ *= T / (T - 1)
             se_phi_ = np.sqrt(var_)
         else:
-            raise ValueError("cov_estimator must be either 'newey-west' or 'non-robust'")
+            raise ValueError("var_estimator must be either 'newey-west' or 'non-robust'")
         return phi_, se_phi_
 
     def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
@@ -108,8 +108,8 @@ class NLS(BaseEstimator):
 
     Parameters
     ----------
-    cov_estimator : str, optional
-        The covariance estimator to use. Options are "non-robust", by default "non-robust"
+    var_estimator : str, optional
+        The variance estimator to use. Options are "non-robust", by default "non-robust"
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
     n_jobs : _type_, optional
@@ -125,31 +125,34 @@ class NLS(BaseEstimator):
 
     def __init__(
         self,
-        cov_estimator: str = "non-robust",
+        var_estimator: str = "non-robust",
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
-        self.cov_estimator = cov_estimator
+        self.var_estimator = var_estimator
         self.copy_X = copy_X
         self.n_jobs = n_jobs
         self.estimates_ = {}
 
     def _fit_nls(self, x_acf_: np.ndarray) -> tuple:
         """fit model to a single autocorrelation function x_acf_ in X_acf_"""
-        T = x_acf_.shape[0]
+        K = x_acf_.shape[0]
         exp_decay = lambda tau, k: np.exp(-k / (tau if tau > 0 else 1e-6))
+        exp_decay_deriv = lambda tau, k: (k / tau ^ 2) * np.exp(-k / (tau if tau > 0 else 1e-6))
         loss = lambda tau_, k, y: exp_decay(tau_, k) - y
-        ks = np.arange(T)
+        ks = np.arange(K)
 
         nls_fit = least_squares(fun=loss, args=(ks, x_acf_), x0=1.0, bounds=(0, np.inf), ftol=1e-6)
         tau_ = nls_fit.x[0]
 
-        if self.cov_estimator == "non-robust":
+        if self.var_estimator == "non-robust":
             q_ = (nls_fit.jac.T @ nls_fit.jac).squeeze()
-            sigma2_ = np.sum(nls_fit.fun**2) / (T - 1)
+            sigma2_ = np.sum(nls_fit.fun**2) / (K - 1)
             se_tau_ = np.sqrt(sigma2_ / q_)
+        elif self.var_estimator == "robust":
+            pass
         else:
-            raise ValueError("cov_estimator must be either 'newey-west' or 'non-robust'")
+            raise ValueError("var_estimator must be 'non-robust'")
         return tau_, se_tau_
 
     def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
