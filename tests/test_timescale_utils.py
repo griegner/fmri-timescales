@@ -37,7 +37,7 @@ def test_OLS_vs_statsmodels():
     assert np.isclose(ols.estimates_["se(phi)"], sm_ols.bse, atol=1e-4)
 
     # newey-west std errors
-    ols.set_params(**dict(var_estimator="newey-west", cov_n_lags=100))
+    ols.set_params(**dict(var_estimator="newey-west", var_n_lags=100))
     ols.fit(X, n_timepoints)
     sm_ols = SMOLS(X[:-1], X[1:]).fit(cov_type="HAC", cov_kwds=dict(maxlags=100))
     assert np.isclose(ols.estimates_["phi"], sm_ols.params, atol=1e-4)
