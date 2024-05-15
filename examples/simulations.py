@@ -83,7 +83,7 @@ def mc_simulation(phis, n_timepoints, acm=None, n_repeats=1000, random_seed=10):
     return estimates_
 
 
-def plot_simulation(estimates_, ar1_phis, ar1_taus, fig_title=None):
+def plot_simulation(estimates_, ar1_phis, ar1_taus, exp_taus, fig_title=None):
     colors = ["#000000", "#B66B7C", "#8D9FCB", "#66C2A6", "#7D7D7D"]
     hist_kwargs = dict(bins=50, histtype="step", lw=1)
     vline_kwargs = dict(lw=2)
@@ -137,7 +137,7 @@ def plot_simulation(estimates_, ar1_phis, ar1_taus, fig_title=None):
         axs[2, 0].set_title(r"$\hat\tau$")
         axs[2, 0].set_ylabel("nls", fontsize=14, weight="bold")
         axs[2, 0].hist(nls_["tau"], color=colors[idx], **hist_kwargs)
-        axs[2, 0].axvline(ar1_taus[idx], color=colors[idx], **vline_kwargs)
+        axs[2, 0].axvline(exp_taus[idx], color=colors[idx], **vline_kwargs)
 
         # non-robust se(tau)
         axs[2, 1].set_title(r"$se_{NR}(\hat{\tau})$")
