@@ -66,7 +66,7 @@ def mc_simulation(phis, n_timepoints, acm=None, n_repeats=1000, random_seed=10):
     ols = timescale_utils.OLS(var_estimator="non-robust", n_jobs=-2)
     ols_nw = timescale_utils.OLS(var_estimator="newey-west", var_n_lags=50, n_jobs=-2)
     nls = timescale_utils.NLS(var_estimator="non-robust", n_jobs=-2)
-    nls_rb = timescale_utils.NLS(var_estimator="robust", n_jobs=-2)
+    nls_nw = timescale_utils.NLS(var_estimator="newey-west", n_jobs=-2)
     estimates_ = {}
     for idx, phi in enumerate(phis):
         if acm is None:  # simulate autoregression
@@ -78,7 +78,7 @@ def mc_simulation(phis, n_timepoints, acm=None, n_repeats=1000, random_seed=10):
         ols_ = ols.fit(X, n_timepoints)
         ols_nw_ = ols_nw.fit(X, n_timepoints)
         nls_ = nls.fit(X, n_timepoints)
-        nls_rb_ = nls_rb.fit(X, n_timepoints)
+        nls_rb_ = nls_nw.fit(X, n_timepoints)
         estimates_[str(phi)] = (ols_, ols_nw_, nls_, nls_rb_)
     return estimates_
 

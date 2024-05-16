@@ -62,12 +62,17 @@ def test_NLS():
     tau = -1.0 / np.log(phi)
     X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=0)
 
-    nls = timescale_utils.NLS(n_jobs=-2)
+    # non-robust std errors
+    nls = timescale_utils.NLS(var_estimator="non-robust", n_jobs=-2)
     nls.fit(X, X.shape[0])
-
-    # test difference btw true and estimated paramaters
     assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
-    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.19)
+    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.2)
+
+    # newey-west std errors
+    nls.set_params(**dict(var_estimator="newey-west", var_n_lags=100))
+    nls.fit(X, n_timepoints)
+    assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
+    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.2)
 
 
 def test_NLS_checkfail():

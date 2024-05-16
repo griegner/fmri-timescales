@@ -110,7 +110,9 @@ class NLS(BaseEstimator):
     Parameters
     ----------
     var_estimator : str, optional
-        The variance estimator to use. Options are "non-robust", by default "non-robust"
+        The variance estimator to use. Options are "newey-west" or "non-robust", by default "newey-west"
+    var_n_lags : int, optional
+        The lag truncation number for the bartlett kernel, by default None
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
     n_jobs : _type_, optional
@@ -126,11 +128,13 @@ class NLS(BaseEstimator):
 
     def __init__(
         self,
-        var_estimator: str = "non-robust",
+        var_estimator: str = "newey-west",
+        var_n_lags: Optional[int] = None,
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
         self.var_estimator = var_estimator
+        self.var_n_lags = var_n_lags
         self.copy_X = copy_X
         self.n_jobs = n_jobs
         self.estimates_ = {}
@@ -138,30 +142,30 @@ class NLS(BaseEstimator):
     def _fit_nls(self, x_acf_: np.ndarray) -> tuple:
         """fit model to a single autocorrelation function x_acf_ in X_acf_"""
         K = x_acf_.shape[0]
-        ifzero = lambda tau: tau if tau > 0 else 1e-6
-        exp_decay = lambda tau, k: np.exp(-k / ifzero(tau))
-        exp_decay_dtau = lambda tau, k: (k / ifzero(tau) ** 2) * np.exp(-k / ifzero(tau))
-        exp_decay_ddtau = lambda tau, k: (
-            (k**2 / ifzero(tau) ** 4) * np.exp(-k / ifzero(tau))
-        ) - ((2 * k / ifzero(tau) ** 3) * np.exp(-k / ifzero(tau)))
-        loss = lambda tau_, k, y: exp_decay(tau_, k) - y
         ks = np.arange(K)
+
+        exp_decay = lambda tau, k: np.exp(-k / tau if tau > 0 else 1e-6)
+        loss = lambda tau_, k, y: exp_decay(tau_, k) - y
 
         nls_fit = least_squares(fun=loss, args=(ks, x_acf_), x0=1.0, bounds=(0, np.inf), ftol=1e-6)
         tau_ = nls_fit.x[0]
 
-        # variance estimators
-        q_ = np.mean(exp_decay_ddtau(tau_, ks))
+        dloss = -2 * ks * (x_acf_ - exp_decay(tau_, ks)) * exp_decay(tau_, ks) / tau_**2
+
+        q_ = (nls_fit.jac.T @ nls_fit.jac).squeeze()
         if self.var_estimator == "non-robust":
-            sigma2_ = (1 / (K - 1)) * np.sum(nls_fit.fun**2)
-            var_ = (1 / K) * (1 / q_) * sigma2_
+            sigma2_ = (1 / K) * np.sum(nls_fit.fun**2)
+            var_ = (1 / q_) * sigma2_
             se_tau_ = np.sqrt(var_)
-        elif self.var_estimator == "robust":
-            omega_ = np.mean((exp_decay_ddtau(tau_, ks) ** 2) * (nls_fit.fun**2))
-            var_ = (1 / K) * ((1 / q_) * omega_ * (1 / q_))
+        elif self.var_estimator == "newey-west":
+            u_ = dloss
+            omega_ = sw_cov.S_hac_simple(
+                u_, nlags=self.var_n_lags, weights_func=sw_cov.weights_bartlett
+            ).squeeze()
+            var_ = (1 / q_) * omega_ * (1 / q_)
             se_tau_ = np.sqrt(var_)
         else:
-            raise ValueError("var_estimator must be either 'robust' or 'non-robust'")
+            raise ValueError("var_estimator must be either 'newey-west' or 'non-robust'")
         return tau_, se_tau_
 
     def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
