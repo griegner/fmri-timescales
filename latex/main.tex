@@ -6,6 +6,9 @@
 \usepackage{graphicx} % figures
 \usepackage{hyperref} % hyperlinks
 \usepackage[style=nature]{biblatex} % citations + references
+\usepackage{fontspec} % font
+\usepackage[defaultsans]{opensans} % font
+\setmainfont[BoldFont={Open Sans Semibold}]{Open Sans} % bold font
 \addbibresource{latex/zotero.bib} % zotero bibliography
 
 \title{Estimating fMRI Timescale Maps}
@@ -13,6 +16,10 @@
 
 \begin{document}
 \maketitle
+
+\section{Abstract}
+The brain functions over a wide range of timescales, or time autocorrelation decay rates, from rapid synaptic events to low frequency activity that synchronize neuron populations and larger-scale networks of regions. The diverse timescales over which neural processes operate are spatially organized, forming maps that provide mechanistic insights into how different regions integrate and process information. Despite their scientific importance, current parameterization methods are defined inconsistently across studies and make restrictive assumptions about the underlying stochastic process. Generally, existing research only reports point estimates without standard errors, which hinders inference, comparison across brain regions, and generalization across subjects or groups. To address this gap, we propose two new methods for estimating fMRI timescales maps, designed to be robust under general assumptions. We establish the statistical properties (bias, consistency, limiting variance) of these estimators, enabling the assignment of standard errors to traditional point estimates. Additionally, we provide an alternative timescale definition that is computationally more efficient and scalable to high-dimensional applications like fMRI. Establishing theoretical properties will facilitate hypothesis testing and the construction of confidence intervals, allowing for scientific inference on timescale maps of the brain.
+
 
 \subfile{latex/01-introduction}
 \subfile{latex/02-methods}
