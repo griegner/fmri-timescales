@@ -3,4 +3,47 @@
 \begin{document}
 \section{Appendix}
 
+\subsubsection{tmp}
+
+notation:
+\begin{align*}
+    m(k, \tau) &= \text{exp}(-\frac{k}{\tau})\\
+    m_{\tau,k}(k, \tau) &= \frac{\partial}{\partial \tau} m(k, \tau) = \frac{k}{\tau^2} \text{ exp}(-\frac{k}{\tau})\\
+     m_{\tau\tau,k}(k, \tauz) &= \frac{\partial^2}{\partial \tau \partial \tau'} m(k, \tau) = \frac{x^2}{\tau^4} \text{ exp}(-\frac{k}{\tau}) - \frac{2k}{\tau^3} \text{ exp}(-\frac{k}{\tau})
+\end{align*}
+
+definition:
+\begin{align*}
+    S(\tau) &= \mathbb{E}[S_n(\tau)] = \mathbb{E}[(\rho - m(k, \tau))^2]\\
+    \tau_0 &= \underset{\tau}{\text{argmin }} S(\tau)
+\end{align*}
+
+estimation:
+\begin{align*}
+    \hat{S}_n(\tau) &= \frac{1}{K} \sum_{k=1}^K (\rho_k - m(k, \tau))^2\\
+    \hat \tau_{\text{nls}} &= \underset{\tau}{\text{argmin }} S_n(\tau)\\
+    \hat e_k &= \rho_k - m(k, \hat \tau_{\text{nls}})
+\end{align*}
+
+consistency: 
+\begin{align*}
+    S_n(\tau) &\underset{p}{\to} S(\tau)\\
+    \hat \tau_{\text{nls}} &\underset{p}{\to} \tau_0
+\end{align*}
+
+asymptotic distribution:
+\begin{align*}
+    Q &= \mathbb{E}[m_{\tau,k} m_{\tau, k}^{'}]\\
+    \Omega &= \mathbb{E}[m_{\tau,k} m_{\tau, k}^{'} e_k^2]\\
+    (\text{or } \Omega &= \sum_{\ell=-\infty}^{\infty} \mathbb{E}[??])\\
+    \sqrt{K}(\hat\tau - \tau_0) &\underset{d}{\to} \mathcal{N}(0, Q^{-1} \Omega Q^{-1})
+\end{align*}
+
+variance estimation:
+\begin{align*}
+    \hat Q &= \frac{1}{K} \sum_{k=1}^K \frac{\partial^2}{\partial \tau \partial \tau'} m(k, \tau)\\
+    \hat \Omega &= \frac{1}{K} \sum_{k=1}^{K} \hat m_{\tau,k}(k, \tau) \hat m_{\tau,k}^{'}(k, \tau) \hat e_k^2
+\end{align*}
+...
+
 \end{document}
