@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.arima_process import arma_generate_sample
 
 from src import acf_utils, sim
 
@@ -77,6 +78,37 @@ def test_sim_ar():
         ar_coeff_hat = ARIMA(X, order=(p, 0, 0)).fit().params[1:-1]
 
         assert np.allclose(ar_coeff, ar_coeff_hat, atol=0.1)
+
+
+def test_sim_ar_vs_statsmodels():
+
+    ar1_coeffs = np.linspace(0.1, 0.8, 5)
+    ar2_coeffs = np.array(
+        [[0.091, 0.09], [0.229, 0.182], [0.347, 0.229], [0.471, 0.24], [0.646, 0.193]]
+    )
+    for ar1_coeff in ar1_coeffs:
+        random_seed = 0
+        random_state = np.random.default_rng(seed=random_seed)
+        X_sim = sim.sim_ar(ar1_coeff, n_timepoints, random_seed=random_seed).squeeze()
+        X_sm = arma_generate_sample(
+            ar=np.r_[1, -ar1_coeff],
+            ma=[1],
+            nsample=n_timepoints,
+            distrvs=random_state.standard_normal,
+        )
+        assert np.array_equal(X_sim, X_sm)
+
+    for ar2_coeff in ar2_coeffs:
+        random_seed = 42
+        random_state = np.random.default_rng(seed=random_seed)
+        X_sim = sim.sim_ar(ar2_coeff, n_timepoints, random_seed=random_seed).squeeze()
+        X_sm = arma_generate_sample(
+            ar=np.r_[1, -ar2_coeff],
+            ma=[1],
+            nsample=n_timepoints,
+            distrvs=random_state.standard_normal,
+        )
+        assert np.array_equal(X_sim, X_sm)
 
 
 def test_sim_ar_shape():
