@@ -62,11 +62,7 @@ def plot_nls_vs_ols(X, n_timepoints, nls_, ols_):
     fig.tight_layout()
 
 
-def mc_simulation(phis, n_timepoints, acm=None, n_repeats=1000, random_seed=10):
-    ols = timescale_utils.OLS(var_estimator="non-robust", n_jobs=-2)
-    ols_nw = timescale_utils.OLS(var_estimator="newey-west", var_n_lags=50, n_jobs=-2)
-    nls = timescale_utils.NLS(var_estimator="non-robust", n_jobs=-2)
-    nls_nw = timescale_utils.NLS(var_estimator="newey-west", n_jobs=-2)
+def mc_simulation(phis, n_timepoints, estimators, acm=None, n_repeats=1000, random_seed=10):
     estimates_ = {}
     for idx, phi in enumerate(phis):
         if acm is None:  # simulate autoregression
@@ -75,78 +71,66 @@ def mc_simulation(phis, n_timepoints, acm=None, n_repeats=1000, random_seed=10):
             X = sim.sim_fmri(
                 np.eye(n_repeats), acm[..., idx], n_repeats, n_timepoints, random_seed=random_seed
             )
-        ols_ = ols.fit(X, n_timepoints)
-        ols_nw_ = ols_nw.fit(X, n_timepoints)
-        nls_ = nls.fit(X, n_timepoints)
-        nls_rb_ = nls_nw.fit(X, n_timepoints)
-        estimates_[str(phi)] = (ols_, ols_nw_, nls_, nls_rb_)
+        ols_nr_ = estimators["ols_nr"].fit(X, n_timepoints)
+        ols_nw_ = estimators["ols_nw"].fit(X, n_timepoints)
+        nls_nr_ = estimators["nls_nr"].fit(X, n_timepoints)
+        nls_nw_ = estimators["nls_nw"].fit(X, n_timepoints)
+        estimates_[str(phi)] = (ols_nr_, ols_nw_, nls_nr_, nls_nw_)
     return estimates_
 
 
-def plot_simulation(estimates_, ar1_phis, ar1_taus, exp_taus, fig_title=None):
+def plot_simulation(estimates_, param, ols_params, nls_params, fig_title=None):
+    assert param in ["phi", "tau"], "param must be either 'phi' or 'tau'"
     colors = ["#000000", "#B66B7C", "#8D9FCB", "#66C2A6", "#7D7D7D"]
-    hist_kwargs = dict(bins=50, histtype="step", lw=1)
+    hist_kwargs = dict(bins=25, histtype="step", lw=1)
     vline_kwargs = dict(lw=2)
 
-    fig, axs = plt.subplots(3, 3, figsize=(16, 6))
+    fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(16, 4))
     fig.suptitle(fig_title if fig_title is not None else "", weight="bold")
 
     # share x-axis pairs
-    axs[1, 0].sharex(axs[2, 0])
+    axs[0, 0].sharex(axs[1, 0])
+
     axs[0, 1].sharex(axs[0, 2])
     axs[1, 1].sharex(axs[1, 2])
-    axs[2, 1].sharex(axs[2, 2])
-    # axs[1, 2].sharex(axs[2, 1])
 
     for idx, phi in enumerate(estimates_.keys()):
-        ols_, ols_nw_, nls_, nls_rb_ = estimates_[phi]
+        ols_nr_, ols_nw_, nls_nr_, nls_nw_ = estimates_[phi]
 
-        # ols-phi
-        axs[0, 0].set_title(r"$\hat\phi$")
+        # --- row 0 --- #
+
+        # ols: param
         axs[0, 0].set_ylabel("ols", fontsize=14, weight="bold")
-        axs[0, 0].hist(ols_["phi"], color=colors[idx], **hist_kwargs)
-        axs[0, 0].axvline(ar1_phis[idx], color=colors[idx], **vline_kwargs)
+        axs[0, 0].set_title(r"$\hat{\tau}$" if param == "tau" else r"$\hat{\phi}$")
+        axs[0, 0].hist(ols_nr_[param], color=colors[idx], **hist_kwargs)
+        axs[0, 0].axvline(ols_params[idx], color=colors[idx], **vline_kwargs)
 
-        ## non-robust se(phi)
-        axs[0, 1].set_title(r"$se_{NR}(\hat\phi)$")
-        axs[0, 1].hist(ols_["se(phi)"], color=colors[idx], **hist_kwargs)
-        axs[0, 1].axvline(ols_["phi"].std(), color=colors[idx], **vline_kwargs)
+        ## ols: non-robust se(param)
+        axs[0, 1].set_title(r"$se_{NR}(\hat\tau)$" if param == "tau" else r"$se_{NR}(\hat\phi)$")
+        axs[0, 1].hist(ols_nr_[f"se({param})"], color=colors[idx], **hist_kwargs)
+        axs[0, 1].axvline(ols_nr_[param].std(), color=colors[idx], **vline_kwargs)
 
-        ## newey-west se(phi)
-        axs[0, 2].set_title(r"$se_{NW}(\hat\phi)$")
-        axs[0, 2].hist(ols_nw_["se(phi)"], color=colors[idx], **hist_kwargs)
-        axs[0, 2].axvline(ols_nw_["phi"].std(), color=colors[idx], **vline_kwargs)
+        ## ols: newey-west se(param)
+        axs[0, 2].set_title(r"$se_{NW}(\hat\tau)$" if param == "tau" else r"$se_{NW}(\hat\phi)$")
+        axs[0, 2].hist(ols_nw_[f"se({param})"], color=colors[idx], **hist_kwargs)
+        axs[0, 2].axvline(ols_nw_["tau"].std(), color=colors[idx], **vline_kwargs)
 
-        # ols-tau
-        axs[1, 0].set_title(r"$\hat{\tau}$")
-        axs[1, 0].set_ylabel("ols", fontsize=14, weight="bold")
-        axs[1, 0].hist(ols_["tau"], color=colors[idx], **hist_kwargs)
-        axs[1, 0].axvline(ar1_taus[idx], color=colors[idx], **vline_kwargs)
+        # --- row 1 --- #
 
-        ## non-robust se(tau)
-        axs[1, 1].set_title(r"$se_{NR}(\hat\tau)$")
-        axs[1, 1].hist(ols_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs[1, 1].axvline(ols_["tau"].std(), color=colors[idx], **vline_kwargs)
+        # nls: param
+        axs[1, 0].set_ylabel("nls", fontsize=14, weight="bold")
+        axs[1, 0].set_title(r"$\hat{\tau}$" if param == "tau" else r"$\hat{\phi}$")
+        axs[1, 0].hist(nls_nr_[param], color=colors[idx], **hist_kwargs)
+        axs[1, 0].axvline(nls_params[idx], color=colors[idx], **vline_kwargs)
 
-        ## newey-west se(tau)
-        axs[1, 2].set_title(r"$se_{NW}(\hat\tau)$")
-        axs[1, 2].hist(ols_nw_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs[1, 2].axvline(ols_nw_["tau"].std(), color=colors[idx], **vline_kwargs)
+        # nls: non-robust se(param)
+        axs[1, 1].set_title(r"$se_{NR}(\hat\tau)$" if param == "tau" else r"$se_{NR}(\hat\phi)$")
+        axs[1, 1].hist(nls_nr_[f"se({param})"], color=colors[idx], **hist_kwargs)
+        axs[1, 1].axvline(nls_nr_[param].std(), color=colors[idx], **vline_kwargs)
 
-        # nls-tau
-        axs[2, 0].set_title(r"$\hat\tau$")
-        axs[2, 0].set_ylabel("nls", fontsize=14, weight="bold")
-        axs[2, 0].hist(nls_["tau"], color=colors[idx], **hist_kwargs)
-        axs[2, 0].axvline(exp_taus[idx], color=colors[idx], **vline_kwargs)
-
-        # non-robust se(tau)
-        axs[2, 1].set_title(r"$se_{NR}(\hat{\tau})$")
-        axs[2, 1].hist(nls_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs[2, 1].axvline(nls_["tau"].std(), color=colors[idx], **vline_kwargs)
-
-        # robust se(tau)
-        axs[2, 2].set_title(r"$se_{RB}(\hat{\tau})$")
-        axs[2, 2].hist(nls_rb_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs[2, 2].axvline(nls_rb_["tau"].std(), color=colors[idx], **vline_kwargs)
+        # nls: newey-west se(param)
+        axs[1, 2].set_title(r"$se_{NW}(\hat\tau)$" if param == "tau" else r"$se_{NW}(\hat\phi)$")
+        axs[1, 2].hist(nls_nw_[f"se({param})"], color=colors[idx], **hist_kwargs)
+        axs[1, 2].axvline(nls_nw_[param].std(), color=colors[idx], **vline_kwargs)
 
     fig.tight_layout(pad=2)
