@@ -1,12 +1,27 @@
 from typing import Optional
 
 import numpy as np
-import statsmodels.stats.sandwich_covariance as sw_cov
 from joblib import Parallel, delayed
-from scipy.optimize import least_squares
+from scipy.optimize import curve_fit
 from sklearn.base import BaseEstimator
 
 from src import acf_utils
+
+
+def newey_west_omega(u, n_lags=None):
+    n_u = len(u)
+    if n_lags is None:
+        n_lags = int(np.floor(4 * (n_u / 100.0) ** (2.0 / 9.0)))
+
+    weights = 1 - np.arange(n_lags + 1) / (n_lags + 1)  # bartlett weights
+
+    S = weights[0] * np.sum(u**2)  # weights[0] is 1
+
+    for lag in range(1, n_lags + 1):
+        s = np.sum(u[lag:] * u[:-lag])
+        S += weights[lag] * (2 * s)
+
+    return S
 
 
 class OLS(BaseEstimator):
@@ -60,9 +75,7 @@ class OLS(BaseEstimator):
             se_phi_ = np.sqrt(var_)
         elif self.var_estimator == "newey-west":
             u_ = x[:-1] * (x[1:] - phi_ * x[:-1])
-            omega_ = sw_cov.S_hac_simple(
-                u_, nlags=self.var_n_lags, weights_func=sw_cov.weights_bartlett
-            ).squeeze()
+            omega_ = newey_west_omega(u_, n_lags=self.var_n_lags)
             var_ = (1 / q_) * omega_ * (1 / q_)
             se_phi_ = np.sqrt(var_)
         else:
@@ -147,24 +160,21 @@ class NLS(BaseEstimator):
         """fit model to a single autocorrelation function x_acf_ in X_acf_"""
 
         K = len(x_acf_)
-        ks = np.arange(K)
+        ks = np.linspace(0, K - 1, K)
 
-        fun = lambda phi, k, rho_k: (rho_k - phi**k)  # fun^2 is implicit ->
-        nls_fit = least_squares(fun=fun, args=(ks, x_acf_), x0=0, bounds=(-1, +1), ftol=1e-6)
-        phi_ = nls_fit.x[0]
-        dfun_dphi = ks * phi_ ** (ks - 1)
-
+        m = lambda ks, phi: phi**ks
+        dm_dphi = lambda ks, phi: ks * phi ** (ks - 1)
+        phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf_, p0=0, bounds=(-1, +1), ftol=1e-6)
+        phi_ = phi_.squeeze()
+        e_ = x_acf_ - phi_**ks
+        q_ = np.mean(dm_dphi(ks, phi_))
         if self.var_estimator == "non-robust":
-            q_ = np.mean(dfun_dphi**2)
-            sigma2_ = np.mean(nls_fit.fun**2)
+            sigma2_ = np.mean(e_**2)
             var_ = (1 / q_) * sigma2_
             se_phi_ = np.sqrt((1 / K) * var_)
         elif self.var_estimator == "newey-west":
-            q_ = np.mean(dfun_dphi**2)
-            u_ = dfun_dphi * (nls_fit.fun**2)
-            omega_ = sw_cov.S_hac_simple(
-                u_, nlags=self.var_n_lags, weights_func=sw_cov.weights_bartlett
-            ).squeeze()
+            u_ = dm_dphi(ks, phi_) * e_
+            omega_ = (1 / K) * newey_west_omega(u_, n_lags=self.var_n_lags)
             var_ = (1 / q_) * omega_ * (1 / q_)
             se_phi_ = np.sqrt((1 / K) * var_)
         else:
