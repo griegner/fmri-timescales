@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pytest
 
-from src import plts
+from fmri_timescales import plts
 
 
 @pytest.mark.parametrize("annotate", [True, False])

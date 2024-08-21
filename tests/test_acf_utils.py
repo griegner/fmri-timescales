@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src import acf_utils, sim
+from fmri_timescales import acf_utils, sim
 
 # set parameters
 n_timepoints, n_regions = 10000, 3

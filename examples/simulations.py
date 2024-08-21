@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 
-from src import acf_utils, sim, timescale_utils
+from fmri_timescales import acf_utils, sim, timescale_utils
 
 
 def ols_simulation(phis, n_timepoints, ols, acm=None, n_repeats=1000, random_seed=10):

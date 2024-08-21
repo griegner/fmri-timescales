@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from statsmodels.regression.linear_model import OLS as SMOLS
 
-from src import sim, timescale_utils
+from fmri_timescales import sim, timescale_utils
 
 n_timepoints, n_repeats = 4800, 1000
 

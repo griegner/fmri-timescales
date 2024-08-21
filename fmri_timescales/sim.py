@@ -3,7 +3,7 @@ from typing import Union
 import numpy as np
 from scipy.signal import lfilter
 
-from src import acf_utils
+from fmri_timescales import acf_utils
 
 
 def sim_fmri(

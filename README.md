@@ -20,4 +20,4 @@ The complete HCP dataset can be accessed at [ConnectomeDB](https://db.humanconne
 
 For example purposes, a subset of HCP data can be accessed as a numpy array at `./examples/data/nsubjects-10_nregions-300_hcp.npy` in the shape `(n_subjects, n_regions, n_timepoints)`.  
 
-In addition, semi-realistic fMRI timeseries can be simulated using the `src.sim.sim_fmri()` function, which can generate timeseries with specific auto- and cross-correlation structures (temporal and spatial correlation). 
+In addition, semi-realistic fMRI timeseries can be simulated using the `fmri_timescales.sim.sim_fmri()` function, which can generate timeseries with specific auto- and cross-correlation structures (temporal and spatial correlation). 

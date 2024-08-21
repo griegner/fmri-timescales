@@ -3,7 +3,7 @@ import pytest
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.arima_process import arma_generate_sample
 
-from src import acf_utils, sim
+from fmri_timescales import acf_utils, sim
 
 # set parameters
 n_regions, n_timepoints = 3, 1200

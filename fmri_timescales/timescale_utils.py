@@ -5,7 +5,7 @@ from joblib import Parallel, delayed
 from scipy.optimize import curve_fit
 from sklearn.base import BaseEstimator
 
-from src import acf_utils
+from fmri_timescales import acf_utils
 
 
 def newey_west_omega(u, n_lags=None):
