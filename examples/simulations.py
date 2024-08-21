@@ -85,15 +85,17 @@ def plot_simulation(ols_, nls_, param, ols_params, nls_params, fig_title=None):
     hist_kwargs = dict(bins=25, histtype="step", lw=1)
     vline_kwargs = dict(lw=2)
 
-    fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(16, 5))
+    fig, axs = plt.subplots(nrows=2, ncols=4, figsize=(20, 5))
     fig.suptitle(fig_title if fig_title is not None else "", weight="bold")
 
     # share x-axis pairs
     axs[0, 0].sharex(axs[1, 0])
 
     axs[0, 1].sharex(axs[0, 2])
-    axs[0, 2].sharex(axs[1, 1])
+    axs[0, 2].sharex(axs[0, 3])
+    axs[0, 3].sharex(axs[1, 1])
     axs[1, 1].sharex(axs[1, 2])
+    axs[1, 2].sharex(axs[1, 3])
 
     for idx, phi in enumerate(ols_.keys()):
         ols_nr_, ols_nw_ = ols_[phi]
@@ -115,7 +117,16 @@ def plot_simulation(ols_, nls_, param, ols_params, nls_params, fig_title=None):
         ## ols: newey-west se(param)
         axs[0, 2].set_title(r"$se_{NW}(\hat\tau)$" if param == "tau" else r"$se_{NW}(\hat\phi)$")
         axs[0, 2].hist(ols_nw_[f"se({param})"], color=colors[idx], **hist_kwargs)
-        axs[0, 2].axvline(ols_nw_["tau"].std(), color=colors[idx], **vline_kwargs)
+        axs[0, 2].axvline(ols_nw_[param].std(), color=colors[idx], **vline_kwargs)
+
+        ## ols: newey-west se / tau
+        axs[0, 3].set_title(
+            r"$se_{NW}(\hat\tau) / \hat\tau$"
+            if param == "tau"
+            else r"$se_{NW}(\hat\phi) / \hat\phi$"
+        )
+        axs[0, 3].hist(ols_nw_[f"se({param})"] / ols_nw_[param], color=colors[idx], **hist_kwargs)
+        axs[0, 3].axvline(ols_nw_["tau"].std() / ols_params[idx], color=colors[idx], **vline_kwargs)
 
         # --- row 1 --- #
 
@@ -134,5 +145,14 @@ def plot_simulation(ols_, nls_, param, ols_params, nls_params, fig_title=None):
         axs[1, 2].set_title(r"$se_{NW}(\hat\tau)$" if param == "tau" else r"$se_{NW}(\hat\phi)$")
         axs[1, 2].hist(nls_nw_[f"se({param})"], color=colors[idx], **hist_kwargs)
         axs[1, 2].axvline(nls_nw_[param].std(), color=colors[idx], **vline_kwargs)
+
+        ## nls: newey-west se / tau
+        axs[1, 3].set_title(
+            r"$se_{NW}(\hat\tau) / \hat\tau$"
+            if param == "tau"
+            else r"$se_{NW}(\hat\phi) / \hat\phi$"
+        )
+        axs[1, 3].hist(nls_nw_[f"se({param})"] / nls_nw_[param], color=colors[idx], **hist_kwargs)
+        axs[1, 3].axvline(nls_nw_["tau"].std() / nls_params[idx], color=colors[idx], **vline_kwargs)
 
     fig.tight_layout(pad=1)
