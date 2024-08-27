@@ -3,12 +3,15 @@ name = "fmri-timescales"
 version = "0.0.1"
 description = "mapping the spatial gradients of timescales in the brain"
 authors = [{name = "Gabriel Riegner", email = "gariegner@ucsd.edu"}]
-dependencies = ["matplotlib", "nilearn", "statsmodels"]
+dependencies = ["matplotlib", "nilearn", "statsmodels==0.14.1"]
 
 [project.optional-dependencies]
-dev = ["fmri-timescales[docs]", "pre-commit", "pytest"]
-docs = ["notebook", "sphinx"]
+examples = ["notebook", "hcp_utils"]
+dev = ["fmri-timescales[examples]", "pytest"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["fmri_timescales"]

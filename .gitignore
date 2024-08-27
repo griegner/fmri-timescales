@@ -1,5 +1,4 @@
 tmp*
-*egg-info
 __pycache__
 *_cache
 data/
@@ -8,3 +7,5 @@ examples/data/hcp7T.dtseries.nii
 !tests/data/
 .vscode
 .DS_Store
+.venv
+*.egg-info
