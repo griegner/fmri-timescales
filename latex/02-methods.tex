@@ -3,148 +3,194 @@
 \begin{document}
 \section{Methods}
 
+This section details the two timescale models: the \nameref{sec:linear-timescale-model} (time domain) and \nameref{sec:nonlinear-timescale-model} (autocorrelation domain). We present model assumptions, definitions, estimation, and estimator properties. Following is a description of the \nameref{sec:simulations} used to validate the theoretical properties of the estimators, and a \nameref{sec:dataset-description} used to develop these methods and estimate fMRI timescale maps.
+
 \subsection{Assumptions}
 
-Let $\{X_t, t\in \mathbb{Z}\}$ be a discrete stochastic process that is \textbf{weakly stationary} and \textbf{ergotic}, and $x_t = \{x_1, x_2, ..., x_T\}$ be a finite sample of $X_t$. For simplicity, assume $X_t$ and $x_t$ have zero mean. Stationarity implies a constant (independent of time index $t$) mean and variance, and autocovariances that only depend on time lag $k$:
+Let $\{X_t, t\in \mathbb{Z}\}$ be a discrete stochastic process that is \textbf{weakly stationary} and \textbf{ergodic}, and $x_t = \{x_1, x_2, ..., x_T\}$ be a finite sample of $X_t$. For simplicity, assume $X_t$ and $x_t$ are mean zero. Stationarity implies a constant (independent of time index $t$) mean and variance, and autocovariances that only depend on time lag $k$:
 
-\begin{align*}
+\begin{align*} 
     \gamma_k = \text{cov}[X_t, X_{t-k}] = \mathbb{E}[X_t X_{t-k}].
 \end{align*}
 
 Thus, the autocovariances of a stationary process are a function of the linear dependence between $X_t$ and its lags. By the Cauchy-Schwarz inequality, $|\gamma_k|\le \gamma_0$ for all $k$, meaning that the dependence of a stationary process on its past values tends to weaken with increasing lag. However, stationarity does not impose further restrictions on this behavior, and in constant or strongly periodic processes $\gamma_k$ may not decay.\\
 
-Ergodicity imposes a stronger restriction on the dependence between observations than stationarity, yet still allows for a wide set of time series processes. Specifically, it requires that $\underset{T\to\infty}{\text{lim}} \frac{1}{T} \sum_{k=1}^\infty \gamma_k = 0$ and $\sum_{k=1}^\infty |\gamma_k| < \infty$ \cite{hansen_econometrics_2022}. These properties guaranty the autocovariances to decay to zero asymptotically at a rate that is absolutely summable. As the time separation between $X_t$ and its lags $X_{t-k}$ increases, the degree of dependence decreases, eventually reaching independence. This condition allows us to characterize the `memory' or `persistence' of the stochastic process by analyzing the rate of decay of its autocovariances as a function of time lag.
+Ergodicity imposes a a stronger restriction on the dependence between observations than stationarity, yet still allows for a wide set of time series processes. Specifically, it requires mixing such that $\underset{T\to\infty}{\text{lim}} \frac{1}{T} \sum_{k=1}^T |\gamma_k| = 0$, and summability such that $\sum_{k=1}^\infty |\gamma_k| < \infty$ \cite{hansen_econometrics_2022}. Together, these conditions guarantee the autocovariances to decay to zero asymptotically at a rate that is absolutely summable. As the time separation between $X_t$ and its lags $X_{t-k}$ increases, the degree of dependence decreases, eventually reaching independence. These conditions allows us to characterize the `memory' or `persistence' of the stochastic process by analyzing the rate of decay of its autocovariances as a function of time lag.\\
 
-\subsection{Exponential Decay Model}
-
-\subsubsection{Definition}
-For analysis we define a scale-free measure of autocovariances, the \textbf{autocorrelation function (acf)}:
+For analysis we use a normalized measure of autocovariances, the \textbf{autocorrelation function (acf)}:
 
 \begin{align} \label{eq:acf}
 \rho_k = \text{corr}(X_t, X_{t-k}) = \frac{\gamma_k}{\gamma_0}.
 \end{align}
 
-
-
-In the neuroscience literature, the established timescale definition for a stochastic process is the exponential decay fit of its acf \eqref{eq:acf}:
-\begin{align}\label{eq:exp}
-    \rho_k = \text{exp}(-\frac{k}{\tau}) + e_k,
+In the neuroscience literature, the established timescale definition from Murray (2014) is the exponential decay fit of the acf:
+\begin{align} \label{eq:murray}
+    \rho_k = \text{exp}(-\frac{k}{\tau}),
 \end{align}
 
-where the timescale parameter $\tau$ determines where the autocorrelations reach $\frac{1}{e} \approx 0.37$, known as e-folding time \cite{murray_hierarchy_2014}. This parameter is defined by \textbf{nonlinear projection}, as the minimizer of the squared loss function:
-
-\begin{align}
-    L(\tau) &= \mathbb{E}[(\rho_k - \text{exp}(-\frac{k}{\tau}))^2]\\
-    \tau^* &= \underset{\tau}{\text{argmin }} L(\tau) \label{eq:exp-tau}
-\end{align}
-
-Implicit in this definition is that the autocorrelations decay to zero exponentially, imposing a stricter requirement than ergodicity, which alone does not guarantee any specific type of decay (exponential, gaussian, linear, etc). With an approximating exponential decay model, for when the acf decay is not strictly exponential, this definition still captures the general timescale over which such processes become decorrelated, analogous to the time constants of many physical systems.\\
+where the timescale parameter $\tau$ controls the decay rate and determines where the autocorrelations reach $1/e \approx 0.37$, known as e-folding time \cite{murray_hierarchy_2014}. Implicit in this definition is that the autocorrelations decay to zero exponentially, imposing a stricter requirement than ergodicity, which alone does not guarantee any specific type of decay (exponential, gaussian, linear, etc). In the following sections we will relax this assumption to account for approximating models, for when the acf decay is not strictly exponential, while still capturing the general timescale over which such processes become decorrelated. This is analogous to the time constants of many physical systems.\\
 
 
-The standard error of $\tau^*$ is inversely proportional to the curvature (second derivative) of the loss function \eqref{eq:exp-tau} at its minimum, and takes a sandwhich form:
-
-\begin{align}
-    \omega &= \sum_{k=-\infty}^\infty \mathbb{E}[L'(\tau^*) L'(\tau^*)]\\
-    \text{se}(\tau^*) &= \sqrt{\mathbb{E}[L''(\tau^*)]^{-1} \hspace{3px} \omega \hspace{3px} \mathbb{E}[L''(\tau^*)]^{-1}}
-\end{align}
-
-\begin{align}\label{eq:exp-se-tau}
-   \text{se}(\tau^*) = \sqrt{\sigma^2 (L''(\tau^*))^{-1}}. 
-\end{align}
-
-The caveat is that if the exponential decay pattern does not reflect the true acf, the error defined in $\eqref{eq:exp}$ will likely violate the typical assumptions of nonlinear models -- specifically, that projection errors have equal variance and are serially uncorrelated, i.e. $e_k \overset{\text{iid}}{\sim} (0, \sigma^2)$. Consequently, this will lead to biased timescale standard errors, a realistic scenario under the mild conditions of stationarity and ergodicity. To address this, we need to define standard errors that are robust to incorrect model specification and allow for errors with unequal variance and serial correlation.
-
-\subsubsection{Estimation of Exponential Decay Model}
-The sample acf for $x_t = \{x_1, x_2, ..., x_T\}$, assuming a centered series, is estimated by:
-
-\begin{align}\label{eq:acf_}
-\hat\rho_k &= (\hat\gamma_0)^{-1}(\hat\gamma_k) = (\sum_{t=1}^T x_t^2)^{-1} (\sum_{t=k+1}^{T}x_t x_{t-k}).
-\end{align}
-
-The exponential decay model \eqref{eq:exp} depends on the true acf \eqref{eq:acf}, which by ergodicity is expected to diminish to zero with increasing lag. However, sampling variability means non-zero autocorrelations will occur even when the true value is zero. Therefore this estimator imposes a bias (or regularization) towards zero by normalizing estimates by $\text{var}[x_t]$ regardless of lag.\\
-
-The \textbf{nonlinear least squares estimator} of the exponential decay model \eqref{eq:exp} is:
-
-\begin{align}
-    \hat L(\tau) &= \frac{1}{K} \sum_{k=1}^K (\hat\rho_k - \text{exp}(-\frac{k}{\tau}))^2\\
-    \hat\tau^* &= \underset{\tau}{\text{argmin }} \hat L(\tau) \label{eq:exp-tau}
-\end{align}
-
-which has no algebraic solution like linear least squares. Instead, optimization algorithms, such as the  Levenberg-Marquardt \cite{watson_levenberg-marquardt_1978} algorithm, iteratively update the estimate of $\tau$ until convergence. The stability of this estimate (standard error) is inversely proportional to the curvature of the squared loss function at the point of convergence:
-
-\begin{align}
-    \hat\sigma^2 &= \frac{1}{K-1} \hat L(\hat\tau^*) \notag\\
-    \text{se}_\text{Naive}(\hat\tau^*) &= \sqrt{\hat\sigma^2 (\hat L''(\hat\tau^*))^{-1}}.
-\end{align}
-
-As discussed, the naive standard errors will likely be biased downward in practical applications, rendering invalid confidence intervals or hypothesis tests that rely on them.
-
-\subsubsection{Properties of Nonlinear Least Squares Estimator}
-...
-
-
-\subsection{Autoregressive Model}
-\subsubsection{Definition}
-The aim here is to describe the exponential decay in autocorrelation of a stationary and ergodic process $X_t$ by a single timescale parameter $\tau$ and quantify its sampling variance. The exponential decay model \eqref{eq:exp} does this directly. However, fitting such a model requires first computing an acf and then applying iterative optimization to fit a nonlinear decay curve to the autocorrelations. This is computationally demanding for determining a single parameter, and infeasible when scaled to mass-univariate settings like brain imaging.\\
-
-A \textbf{first order autoregressive model (ar-1)} provides a convenient approximation of the dominant exponential decay pattern, which is implicit in the relationship between the ar-1 structure and exponentially decaying autocorrelations. The ar-1 model:
+\subsection{Definitions}
+\subsubsection{Linear Timescale Model}\label{sec:linear-timescale-model}
+The aim here is to describe the exponential decay in autocorrelation of a stationary and ergodic process $X_t$ by a single timescale parameter $\tau$. The exponential decay model from Murray (2014) does this directly \ref{eq:murray}. Alternatively, a \textbf{first order autoregressive model (ar-1)} provides a convenient linear approximation of the dominant exponential decay pattern, which is implicit in the relationship between the ar-1 structure and exponentially decaying autocorrelations. And it is used across a number of neural timescale papers \cite{kaneoke_variance_2012, meisel_decline_2017, huang_timescales_2018, lurie_cortical_2024, shinn_functional_2023, shafiei_topographic_2020}. The ar-1 model:
 
 \begin{align}\label{eq:ar1}
     X_t = \phi X_{t-1} + e_t
 \end{align}
 
-implies a theoretical acf that decays exponentially with a rate determined by $\phi$, i.e. $\rho_k = \phi^k$. For a stationary process with $|\phi|<1$, the exponential decay rate can be extrapolated directly from $\phi$, with a timescale equal to the lag at which the theoretical acf reaches $\frac{1}{e}$. Thus, the parameter $\phi$ can be defined by \textbf{linear projection} and the timescale parameter $\tau$ by a change of variable:
+defines a parametric regression function where the relationship between $X_t$ and $X_{t-1}$ is linear in $\phi$. It also implies a theoretical acf that decays exponentially with a rate determined by $\phi$, $\rho_k = \phi^k$. For a stationary process with $|\phi|<1$, the exponential decay rate can be extrapolated directly from $\phi$, with a timescale equal to the lag at which the theoretical acf reaches $1/e \approx 0.37$. Thus, the parameter $\phi$ can be defined by \textbf{linear projection} and the timescale parameter $\tau$ by a change of variable:
 
 \begin{align}
     \phi &= (\mathbb{E}[X_{t-1}^2])^{-1}(\mathbb{E}[X_t X_{t-1}]) \label{eq:ar1-phi}\\
-    \tau &= g(\phi) = -\frac{1}{\text{log}(|\phi|)}. \label{eq:ar1-tau}
+    \tau &= g(\phi) = -{\text{log}(|\phi|)}^{-1}. \label{eq:ar1-tau}
 \end{align}
- \\
+\\
 
-Importantly, we do not assume that $X_t$ strictly follows an ar-1 process, with $e_t \overset{\text{iid}}{\sim} (0, \sigma^2)$, and this flexibility allows for projection errors that may exhibit unequal variance and serial correlation. Relaxing the constraints on the errors allows for approximating ar-1 models where deviations from true ar-1 processes are captured by the error term. And since $X_t$ is stationary with finite variance, the parameters $\phi$ and $\tau$ defined by projection \eqref{eq:ar1-phi} are unique; in fact, any approximating autoregressive model is identifiable if $\mathbb{E}[X_{t-1}^2]$ is non-negative (from theorem 14.28 \cite{hansen_econometrics_2022}).\\
+Importantly, we do not assume that $X_t$ strictly follows an ar-1 process, with $e_t \overset{\text{iid}}{\sim} (0, \sigma^2)$, and this flexibility allows for projection errors that may exhibit unequal variance and residual autocorrelation. Relaxing the constraints on the errors allows for approximating ar-1 models where deviations from true ar-1 processes are captured by the error term. And since $X_t$ is stationary with finite variance, the parameters $\phi$ and $\tau$ defined by projection are unique; in fact, any approximating autoregressive model is identifiable if $\mathbb{E}[X_{t-1}^2]$ is non-negative (from theorem 14.28 \cite{hansen_econometrics_2022}).\\
 
-Under the assumptions that $X_t$ is stationary and ergodic, so too are the projection errors \eqref{eq:ar1}, and we can define \textbf{heteroskedasticity and autocorrelation robust} standard errors:
+In addition to the timescale parameter $\tau$, we provide an expression for its standard error. Assuming that $X_t$ is stationary and ergodic, so too are the projection errors in equation \eqref{eq:ar1}, so we can define a standard error for the ar-1 coefficient $\phi$ that is robust to model misspecification. Further, since the timescale $\tau$ can be expressed as a nonlinear function of $\phi$, denoted $g(\phi)$ in equation \eqref{eq:ar1-tau} with first derivative $\frac{d}{d\phi} g(\phi)$, the delta method can approximate its standard error:
 
 \begin{align}
-    u_t &= X_{t-1} e_t \notag\\
-    \omega &= \sum_{k=-\infty}^{\infty} \mathbb{E}[u_t u_{t-k}] \notag\\
-    \text{se}(\phi) &= \sqrt{(\mathbb{E}[X_{t-1}^2])^{-1} \hspace{3px} \omega \hspace{3px} \mathbb{E}[X_{t-1}^2])^{-1}}, \label{eq:se-phi}
+    \text{se}_{\text{NW}}(\phi) &= \sqrt{q^{-1}\; \omega \; q^{-1}} \label{eq:se-ar1-phi}\\
+    \text{se}_{\text{NW}}(\tau) &\approx \text{se}_{\text{NW}}(\phi) \cdot \frac{d}{d\phi} g(\phi),
 \end{align}
 
-that take a sandwich form. This formula assumes specification error in the model, so the covariance structure of the errors are explicitly incorporated, yielding standard errors that are asymptotically correct. The covariance terms in $\omega$ capture how the error structure deviates from the standard \textit{iid} case. For the special case of fitting an ar-1 process, this reduces to an expression similar to \eqref{eq:exp-se-tau} $\text{se}(\phi) = \sqrt{\sigma^2 (\mathbb{E}[X_{t-1}^2])^{-1}}$, where $\sigma^2$ is the error variance. \\
+where
 
-Further, since the timescale can be expressed as a nonlinear function of the ar-1 coefficient \eqref{eq:ar1-tau}, $g(\phi)$ with first derivative $g'(\phi)$, the delta method can approximate its standard error:
-\begin{align}\label{se-tau}
-    \text{se}(\tau) \approx \text{se}(\phi) g'(\phi).
-\end{align}
+\begin{align*}
+    q = \mathbb{E}[X_{t-1}^2] \quad\text{and}\quad \omega = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[(X_{t-1} \cdot e_t)(X_{t-1-\ell} \cdot e_{t-\ell})].
+\end{align*}
 
-Compared with the exponential decay model \eqref{eq:exp-tau}, the ar-1 model \eqref{eq:ar1-tau} is computationally tractable for mass-univariate applications like brain imaging. This is because linear least squares has a closed form solution, and saves the cost of computing the acf and fitting nonlinear least squares by iterative optimization. Additionally, this framework can approximate a general class of decay processes as exponential with standard errors that are robust to model misspecification. This importantly allows for the construction of asymptotic approximations, confidence intervals, and null hypothesis tests. Therefore, inferences can be made even when the ar-1 model is incorrect.
+The expression takes a sandwich form, as described by Newey and West (1987), for 'heteroskedasticity and autocorrelation consistent (hac)' standard errors \cite{newey_simple_1987}. This formula explicitly adjusts for misspecification by accounting for the covariance structure of the errors, which ensures that the standard errors are asymptotically correct (see ??). The covariance terms in $\omega$ capture deviations in the error structure from the standard \textit{iid} case. For the special case of correct specification ($X_t$ is a true ar-1 process), the standard error of the ar-1 coefficient $\phi$ reduces to $\text{se}_{\text{Naive}}(\phi) = \sqrt{\sigma^2 q^{-1}}$, where $\sigma^2$ is the error variance. \\
 
-\subsubsection{Estimation of Autoregressive Model}
-The \textbf{linear least squares estimator} of an ar-1 model has the following closed form:
+This framework can approximate a general class of decay processes as exponential with standard errors that are robust to model misspecification. This importantly allows for the construction of asymptotic approximations, confidence intervals, and null hypothesis tests. Therefore, inferences can be made even when the ar-1 model is incorrect.
+
+\subsubsection{Nonlinear Timescale Model}\label{sec:nonlinear-timescale-model}
+
+The nonlinear timescale model, as introduced by Murray (2014), has gained prominence in the neuroscience literature \cite{murray_hierarchy_2014, rossi-pool_invariant_2021, cirillo_neural_2018, ito_cortical_2020, runyan_distinct_2017, zeraati_flexible_2022, nougaret_intrinsic_2021, wasmuht_intrinsic_2018, muller_core_2020, maisson_choice-relevant_2021, li_hierarchical_2022, shafiei_topographic_2020}. While both linear and nonlinear timescale models describe exponential decay in autocorrelation, they differ in their domains and parameterization methods. Specifically, the \nameref{sec:linear-timescale-model} operates in the time domain, characterizing decay using a single time lag, where $\phi$ from equation \eqref{eq:ar1-phi} is equivalent to the autocorrelation at lag-1 ($\phi = \rho_1$). In contrast, the nonlinear timescale model is defined in the autocorrelation domain across multiple ($K$) lags of the acf. This subtle distinction affects the parameterization of $\phi$ and $\tau$.\\
+
+For consistent notation with the linear timescale model above, we write the nonlinear timescale model as:
 
 \begin{align}
-    \hat\phi &= (\sum_{t=2}^T x_{t-1}^2)^{-1} (\sum_{t=2}^T x_t x_{t-1}).
+    \rho_k = \phi^k + e_k, \; \text{for}\; k \in \{0, 1, ..., K\},
 \end{align}
 
-If the ar-1 model describes the true stochastic process, the non-robust estimators for the error variance and standard error are: 
+where $\rho_k$ denotes the autocorrelation at lag $k$ and $e_k$ is the error term. The relationship between $\rho_k$ and $k$ is nonlinear in the parameter $\phi$ which determines the exponential decay. Therefore, $\phi$ is determined via a \textbf{nonlinear projection}, and the timescale $\tau$ by a change of variable:
 
 \begin{align}
-    \hat\sigma^2 &= \frac{1}{T-1} \sum_{t=2}^T (x_t - \hat\phi x_{t-1})^2 \notag\\
-    \text{se}_\text{Naive}(\hat\phi) &= \hat\sigma^2 (\sum_{t=2}^T x_{t-1}^2)^{-1}
+    S(\phi) &= \mathbb{E}[(\rho_k - \phi^k)^2]\\
+    \phi^* &= \underset{\phi}{\text{argmin}} \; S(\phi) \label{eq:nlm-phi}\\
+    \tau^* &= g(\phi^*) = -{\text{log}(|\phi|)}^{-1} \label{eq:nlm-tau}.
 \end{align}
 
-When the ar-1 model is misspecified and the errors have positive serial correlation, 
-while it does not bias the estimates of $\hat \phi$, the standard errors tend to be underestimated (and the t-scores overestimated). To consistently estimate the variance of $\phi$ and $\tau$ for more general processes, we apply the \textbf{heteroskedasticity and autocorrelation robust} variance estimator derived by Newey and West \cite{newey_simple_1987}:
+Here, $\phi^*$ is the minimizer of the expected squared error function $S(\phi)$ (i.e., the loss or objective function). Although the model defines a parametric regression function with an exponential decay form, it can accommodate deviations from this decay pattern by incorporating the error term $e_k$, allowing for more general stationary and ergodic processes.\\
+
+Following Hansen (2022), if $\phi^*$ uniquely minimizes $S(\phi)$, such that $S(\phi) > S(\phi^*)$ for all $\phi \neq \phi^*$, the standard error of $\phi^*$ can be computed using a sandwich form that reflects both the curvature of the objective function and the covariance of the errors \cite{hansen_econometrics_2022}. Furthermore, since the timescale $\tau$ is a nonlinear function of $\phi^*$, represented by $g(\phi^*)$ in equation \eqref{eq:nlm-tau}, the delta method provides an approximation of its standard error:
 
 \begin{align}
-    \hat u_t &= x_{t-1} \hat e_t \notag\\
-    \hat \omega &= \sum_{k=-M}^M (1 - \frac{|k|}{M+1}) \sum_{t-k}^T \hat u_t \hat u_{t-k} \notag\\
-    \text{se}_{NW}(\hat\phi) &= (\sum_{t=2}^T x_{t-1})^{-1} \quad \hat \omega \quad (\sum_{t=2}^T x_{t-1})^{-1}.
+    \text{se}_\text{NW}(\phi^*) &= \sqrt{q^{-1}\; \omega \;q^{-1}}\\
+    \text{se}_\text{NW}(\tau^*) &\approx \text{se}_\text{NW}(\phi^*) \cdot \frac{d}{d\phi}g(\phi^*).
 \end{align}
 
-This estimator calculates a weighted sum of covariances of the regression scores $\hat u_t$ which show time-lag dependence. The true $\omega$ is approximated by $\hat \omega$ by taking a finite sum of autocovariances, where $M$ is the lag-truncation (or bandwidth) hyperparameter. The weighting function that decreases linearly with increasing lag is known as a Barlett kernel, which ensures the standard errors remain non-negative and regularizes $\hat \omega$ to change smoothly with $M$.
+The components $q$ and $\omega$ are derived from the regression function $m(k, \phi) = \phi^k$ and its derivative $m_{\phi, k} = \frac{d}{d\phi} m(k, \phi) = k \phi^{k-1}$, defined as:
 
+\begin{align*}
+    q = \mathbb{E}[m_{\phi^*, k}^2] = \mathbb{E}[(k \phi^{*k-1})^2] \quad\text{and}\quad
+    \omega = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[(m_{\phi^*, k} \cdot e_{k})(m_{\phi^*, k-\ell} \cdot e_{k-\ell})].
+\end{align*}
+
+The derivative of the regression function evaluated at $\phi^*$, $m_{\phi^*, k}$, is known as the 'linearized regressor', and is used to locally approximate the nonlinear model by a linear one. As with the linear case (equation \eqref{eq:se-ar1-phi}), this form ensures that the standard errors are asymptotically valid even with model deviations, which is a realistic scenario under the mild conditions of stationarity and ergodicity. In the correctly specified case, where $e_k \overset{\text{iid}}{\sim} (0, \sigma^2)$, the standard error of $\phi^*$ simplifies to $\text{se}_{\text{Naive}}(\phi) = \sqrt{\sigma^2 q^{-1}}$.\\
+
+
+\subsection{Estimation}
+\subsubsection{Linear Least Squares Estimator}
+The \textbf{linear least squares estimator} of the \nameref{sec:linear-timescale-model} has the following closed-form expression:
+
+\begin{align}
+    \hat\phi_{\text{LLS}} &= (\sum_{t=2}^T x_{t-1}^2)^{-1} (\sum_{t=2}^T x_t x_{t-1})\\
+    \hat\tau_{\text{LLS}} &= g(\hat\phi_{\text{LLS}}) = - {\text{log}(|\hat\phi_{\text{LLS}}|)}^{-1},
+\end{align}
+
+where $\hat\phi_{\text{LLS}}$ is the linear least squares estimator of an ar-1 model \cite{hansen_econometrics_2022}, and $\hat\tau_{\text{LLS}}$ is the timescale estimator.\\
+
+
+If the model is misspecified and the errors have positive autocorrelation, while it does not bias the estimates of $\hat\phi_{\text{LLS}}$ or $\hat\tau_{\text{LLS}}$, the standard errors will be underestimated (and the t-scores overestimated). To consistently estimate the standard errors for more general processes we apply the Newey and West sandwhich formula \cite{newey_simple_1987}:
+
+\begin{align}
+\text{se}_{\text{NW}}(\hat\phi_{\text{LLS}}) &= \sqrt{\hat q^{-1}\;\hat\omega\; \hat q^{-1}}\\
+\text{se}_{\text{NW}}(\hat\tau_{\text{LLS}}) &= \text{se}_{\text{NW}}(\hat\phi_{\text{LLS}}) \cdot \frac{d}{d\phi} g(\hat\phi_{\text{LLS}})
+\end{align}
+
+where
+
+\begin{align*}
+    \hat q = \frac{1}{T} \sum_{t=2}^T x_{t-1}^2 \quad\text{and}\quad
+    \hat \omega = \sum_{\ell=-M}^M (1 - \frac{|\ell|}{M+1}) \frac{1}{T} \sum_{1\le t - \ell \le T} (x_{t-1} \cdot \hat e_t)(x_{t-1-\ell} \cdot \hat e_{t-\ell}).
+\end{align*}
+
+This estimator calculates a weighted sum of the regression scores $x_{t-1} \hat e_t$, where $\hat e_t = x_t - \hat\phi_{\text{LLS}} x_{t-1}$. The true $\omega$ is approximated by $\hat \omega$ by taking a finite sum of the regression score autocovariances up to lag $M$, where $M$ is the lag-truncation (or bandwidth). The weights used in the sum decrease linearly with lag $\ell$, following a Bartlett kernel. This kernel not only ensures the standard errors remain non-negative but also and regularizes $\hat \omega$ to change smoothly with $M$.\\
+
+
+The model is correctly specified if $x_t$ is generated by an ar-1 process, in which case the naive estimator applies:
+
+\begin{align} 
+    \text{se}_\text{Naive}(\hat\phi_{\text{LLS}}) &= \hat\sigma^2 \hat q^{-1}\\
+    \text{se}_\text{Naive}(\hat\tau_{\text{LLS}}) &= \text{se}_{\text{Naive}}(\hat\phi_{\text{LLS}}) \frac{d}{d\phi} g(\hat\phi_{\text{LLS}})
+\end{align}
+
+where $\hat\sigma^2 = \frac{1}{T} \sum_{t=2}^T \hat e_t^2$ is an estimate of the error variance.
+
+\subsubsection{Nonlinear Least Squares Estimator}
+
+Given that the \nameref{sec:nonlinear-timescale-model} is fit to the autocorrelation function (acf), we first transform the time series data into the autocorrelation domain. The sample acf for $x_t = \{x_1, x_2, ..., x_T\}$, assuming the series is centered, is estimated by:
+
+\begin{align}\label{eq:acf_}
+    \hat\rho_k &= (\hat\gamma_0)^{-1}(\hat\gamma_k) = (\sum_{t=1}^T x_t^2)^{-1} (\sum_{t=k+1}^{T}x_t x_{t-k}),
+\end{align}
+
+where $\hat\gamma_k$ is the sample covariance at lag $k$.\\
+
+
+The \nameref{sec:nonlinear-timescale-model} depends on the theoretical acf from equation \eqref{eq:acf}, which by ergodicity diminishes to zero as lag $k$ increases. However, due to sampling variability, non-zero autocorrelations will occur when the true value is zero. To mitigate this, the acf estimator imposes a bias (or regularization) towards zero by scaling estimates by the variance of $x_t$ regardless of lag.\\
+
+
+Since the acf decay is nonlinear, the previously presented linear least squares estimator does not apply. Instead, parameters are estimated by \textbf{nonlinear least squares} which falls in the class of numerical optimization methods. The parameter $\phi^*$ that minimizes $S(\phi)$ in equation \eqref{eq:nlm-phi} is estimated by minimizing the sample analog $\hat S(\phi)$:
+
+\begin{align}
+    \hat S(\phi) &= \frac{1}{K} \sum_{k=0}^K (\hat\rho_k - \phi^k)^2\\
+    \hat \phi^*_{\text{NLS}} &= \underset{\phi}{\text{argmin}} \; \hat S(\phi)\\
+    \hat \tau^*_{\text{NLS}} &= g(\hat \phi^*_{\text{NLS}}) = -{\text{log}(|\hat\phi_{\text{NLS}}|)}^{-1}.
+\end{align}
+
+In this case $\hat \phi^*_{\text{NLS}}$ does not have an explicit algebraic solution. Consequently, numerical optimization algorithms, such as the Levenberg-Marquardt \cite{watson_levenberg-marquardt_1978} algorithm, iteratively update the estimate of $\hat \phi^*_{\text{NLS}}$ until convergence. \\
+
+The stability of these parameters at the point of convergence is assessed using a sandwich estimator of the standard error. This approach involves the linearized regressor -- defined as the derivative of the regression function with respect to $\phi$, evaluated at the estimated parameter $\hat \phi^*_{\text{NLS}}$ -- which is used as a local linear approximation of the nonlinear model. This approximation facilitates the calculation of standard errors, quantifying the uncertainty in both the location of the regression function and the precision of the parameter estimates.
+
+\begin{align}
+\text{se}_{\text{NW}}(\hat\phi^*_{\text{NLS}}) &= \sqrt{\hat q^{-1}\;\hat\omega\; \hat q^{-1}}\\
+\text{se}_{\text{NW}}(\hat\tau^*_{\text{NLS}}) &= \text{se}_{\text{NW}}(\hat\phi^*_{\text{NLS}}) \cdot \frac{d}{d\phi} g(\hat\phi^*_{\text{NLS}})
+\end{align}
+
+where
+
+\begin{align*}
+    \hat q &= \frac{1}{K} \sum_{k=0}^K \hat m_{\phi,k}^2 = \frac{1}{K} \sum_{k=0}^K (k \hat\phi_{\text{NLS}}^{k-1})^2,\\
+    \hat \omega &= \sum_{\ell=-M}^M (1 - \frac{|\ell|}{M+1}) \frac{1}{K} \sum_{1 \le k - \ell \le K} (\hat m_{\phi, k} \cdot \hat e_k) (\hat m_{\phi, k-\ell} \cdot \hat e_{k-\ell}).
+\end{align*}
+
+This estimator calculates a weighted sum of the linearized regression scores $m_{\phi, k} \cdot \hat e_k$ where $\hat e_k = \hat\rho_k - (\hat\phi^*_{\text{NLS}})^k$. The estimate of $\hat\omega$ takes a finite sum of these scores up to lag $M$, with Bartlett weights, so that $\hat\omega$ changes smoothly with $M$.\\
+
+As discussed previously, naive standard errors will likely be biased downward in practical applications, rendering invalid confidence intervals or hypothesis tests that rely on them. However, in the case of correct specification, the equation simplifies to:
+
+\begin{align} 
+    \text{se}_\text{Naive}(\hat\phi^*_{\text{NLS}}) &= \hat\sigma^2 \hat q^{-1}\\
+    \text{se}_\text{Naive}(\hat\tau^*_{\text{NLS}}) &= \text{se}_{\text{Naive}}(\hat\phi^*_{\text{NLS}}) \frac{d}{d\phi} g(\hat\phi^*_{\text{NLS}})
+\end{align}
+
+where $\hat\sigma^2 = \frac{1}{K} \sum_{k=0}^K \hat e_k^2$ is an estimate of the error variance.\\
+
+\subsection{Estimator Properties}
 \subsubsection{Properties of Linear Least Squares Estimator}
 Following the description in Hansen 2022 \cite{hansen_econometrics_2022}, the ergodic theorem shows that ergodicity is a sufficient condition for \textbf{consistent estimation}. Since $X_t$ is stationary and ergodic, so too are $X_{t-1}^2$ and $X_t X_{t-1}$, and as $T \to \infty$:
 
@@ -158,54 +204,73 @@ Applying the continuous mapping theorem yields:
     \hat\phi = (\frac{1}{T} \sum_{t=2}^T x_{t-1}^2)^{-1} ( \frac{1}{T} \sum_{t=2}^T x_t x_{t-1}) &\underset{p}{\to} (\mathbb{E}[X_{t-1}^2])^{-1}(\mathbb{E}[X_t X_{t-1}]) = \phi.
 \end{align*}
 
-This shows that the coefficients of an ar-1 model can be consistently estimated by least squares, for any stationary and ergodic process with coefficients defined by projection. Similarly:
+This shows that the coefficients of \nameref{sec:linear-timescale-model} can be consistently estimated by least squares, for any stationary and ergodic process with coefficients defined by projection. Similarly:
 \begin{align*}
     \hat \omega \underset{p}{\to} \omega
 \end{align*}
-
 
 The asymptotic distribution under model misspecification states that as $T\to\infty$ we can approximate the \textbf{limiting variance} of $\phi$ using a Central Limit Theorem for correlated observations (theorem 14.33 \cite{hansen_econometrics_2022}):
 \begin{align*}
 \frac{\hat\phi - \phi}{\text{se}_{NW}(\hat\phi)} \underset{d}{\to} \mathcal{N}(0, 1)
 \end{align*}
 
-And by the delta method we obtain the limiting variance for $\tau$:
+And by the delta method we obtain the limiting variance for the timescale $\tau$:
 \begin{align*}
     \frac{\hat{\tau} - \tau}{\text{se}_{NW}(\hat{\phi}) \cdot g'(\phi)} \underset{d}{\to} \mathcal{N}(0,1).
 \end{align*}
 
-Therefore, when the ar-1 model is incorrectly specified, the asymptotic distribution is still gaussian with a limiting variance that can consistently be estimated and the resulting t-ratios are asymptotically gaussian. This allows us to construct hypothesis tests and confidence intervals over timescale maps of the brain.
+Therefore, when the linear timescale model is incorrectly specified, the asymptotic distribution is still gaussian with a limiting variance that can consistently be estimated and the resulting t-ratios are asymptotically gaussian. This allows us to construct hypothesis tests and confidence intervals over timescale maps of the brain.
 
-\subsection{Simulations}\label{subsec:simulations}
+
+\subsubsection{Properties of Nonlinear Least Squares Estimator}
+(section under construction)\\
+
+\textbf{Consistency}: if the minimizer $\phi^k$ is unique, $S(\phi) > S(\phi^*)$ for all $\phi \ne \phi^*$, then as $K\to\infty$
+\begin{align}
+\hat \phi^* \underset{p}{\to} \phi^*
+\end{align}
+
+And under (??):\\
+\begin{align}
+\hat \omega \underset{p}{\to} \omega
+\end{align}
+
+\textbf{Limiting Variance}: as $K\to\infty$ we can approximate the asymptotic variance of $\phi$ and $\tau$ using a CLT for correlated observations (\cite{hansen_econometrics_2022}).
+
+\begin{align}
+\frac{\hat\phi^* - \phi^*}{\text{se}_{NW}(\hat\phi^*)} \underset{d}{\to} \mathcal{N}(0, 1)\\
+\frac{\hat{\tau^*} - \tau^*}{\text{se}_{NW}(\hat{\phi^*}) \cdot \frac{d}{d\phi}g(\phi^*)} \underset{d}{\to} \mathcal{N}(0,1)
+\end{align}
+
+\subsection{Simulations}\label{sec:simulations}
  
-We simulate samples of stationary and ergodic time series $x_t = \{x_1, x_2, ..., x_T\}$ with three different autocorrelation structures: ar-1, ar-2, and rfMRI-derived autocorrelations (from subject $\#100610$ of the methods development dataset \ref{subsec:dataset-description}). For these three types of time dependence, the strength of the autocorrelations were controlled at fixed parameter values $\tau \in \{0.43, 0.77, 1.25, 2.13, 4.48\}$ (and equivalent ar-1 projections $\phi \in \{0.1, 0.28, 0.45, 0.62, 0.8\}$). For each setting, the performance of the \textbf{nonlinear least squares (NLS)} \eqref{eq:ar1-tau} and \textbf{linear least squares (LLS)} \eqref{eq:exp-tau} estimators were evaluated using $10k$ independent replications of length $T=4800$. The empirical bias of parameter and standard error estimates were compared to true values to assess the quality (in the sense of sampling bias and variance) of the estimators. \\
-
+We simulate samples of stationary and ergodic time series $x_t = \{x_1, x_2, ..., x_T\}$ with three different autocorrelation structures: ar-1, ar-2, and rfMRI-derived autocorrelations (from subject $\#100610$ of the methods development dataset; see \nameref{sec:dataset-description}). For each of these three types of time dependence, the strength of the autocorrelations were controlled at fixed parameter values $\tau \in \{0.43, 0.77, 1.25, 2.13, 4.48\}$ (and equivalent ar-1 projections $\phi \in \{0.1, 0.28, 0.45, 0.62, 0.8\}$) for a total of 15 settings. For each setting, the performance of the \textbf{nonlinear least squares (NLS)} \eqref{eq:ar1-tau} and \textbf{linear least squares (LLS)} \eqref{eq:nlm-tau} estimators were evaluated using $N = 10000$ independent replications of length $T=4800$ timepoints. The empirical bias of parameter and standard error estimates were compared to true values to assess the performance of the estimators, in the sense of sampling bias and variance. \\
 
 Autoregressive correlation structures were generated by applying a recursive infinite impulse response (IIR) filter to gaussian white noise, $e_t \overset{\text{iid}}{\sim} \mathcal{N}(0, 1)$. Specifically, ar-1 and ar-2 processes were generated according to the following autoregressive equations:
 \begin{align*}
     \text{ar-1: }x_t &= \phi_1 x_{t-1} + e_t\\ 
     \phi_1 &\in \{0.1, 0.28, 0.45, 0.62, 0.8\}\\
     \text{ar-2: }x_t &= \phi_1 x_{t-1} + \phi_2 x_{t-2} + e_t\\
-    \phi_1, \phi_2 &\in \{[0.09, 0.09], [0.23, 0.18], [0.35, 0.23], [0.47, 0.24], [0.65, 0.19]\}
+    [\phi_1, \phi_2] &\in \{[0.09, 0.09], [0.23, 0.18], [0.35, 0.23], [0.47, 0.24], [0.65, 0.19]\}
 \end{align*}
 
-that define the structure of the IIR filter, with parameters $[\phi_1, \phi_2]$ as the filter coefficients. \\
+that define the structure of the IIR filter, with parameters as the filter coefficients. \\
 
-The fixed parameter values were chosen based on the range observed by fitting autoregressive models to the methods development dataset \ref{subsec:dataset-description}, ensuring stationarity conditions were met. Since empirical data yielded only positive parameter estimates, we fixed the range of simulation parameters to be positive. For ar-1 processes, this generates time series with acfs that decay exponentially, $\rho_k = \phi_1^k$. An ar-2 process, though still a linear time process, can have much more complicated stochastic dynamics. Depending on the underlying parameters, this can include signals that are periodic with acfs that decay as damped cosines or mixes of decaying exponentials. However, since we constrained the range of parameters to be positive, which was the case with real data, the resulting simulations tested only a subset of stationary non-periodic ar-2 processes.\\
+The fixed parameter values were chosen based on the range observed by fitting autoregressive models to the methods development dataset (see \nameref{sec:dataset-description}), ensuring stationarity conditions were met. Since empirical data yielded only positive parameter estimates, we fixed the range of simulation parameters to be positive. For ar-1 processes, this generates time series with acfs that decay exponentially, $\rho_k = \phi_1^k$. An ar-2 process, though still a linear time process, can have much more complicated stochastic dynamics. Depending on the underlying parameters, this can include signals that are periodic with acfs that decay as damped cosines or mixes of decaying exponentials. However, since we constrained the range of parameters to be positive, which was the case with real data, the resulting simulations tested only a subset of stationary non-periodic ar-2 processes.\\
 
-The third setting did not follow an autoregressive process. Instead, it directly inherited autocorrelation structures from five specific regions $\# \{7, 12, 126, 137, 143\}$ from subject $\#100610$ of the methods development dataset \ref{subsec:dataset-description}. These regions were selected because they have equivalent ar-1 projections to the previous two simulation settings. We estimated the acf \eqref{eq:acf_} for each region and represented these estimates as Toeplitz matrices, where the $k^{\text{th}}$ off-diagonal represents the sample acf at lag $k$. Due to the assumption of stationarity, these matrices take a Toeplitz structure with constant and symmetric diagonals ($T_{i-k, j-k} = T_{i+k, j+k}$). To simulate realizations $x_t = \{x_1, x_2, ..., x_T\}$ with the same acf as the observed data, we generated gaussian white noise ($e_t \overset{\text{iid}}{\sim} \mathcal{N}(0, 1)$) multiplied by the Cholesky factor $L$ of the Toeplitz matrix $T$:
+The third setting did not follow an autoregressive process. Instead, it directly inherited autocorrelation structures from five regions $\# \{7, 12, 126, 137, 143\}$ from subject $\#100610$ of the methods development dataset. These regions were selected because they have equivalent ar-1 projections to the previous two simulation settings. We estimated the acf \eqref{eq:acf_} for each region and represented these estimates as Toeplitz matrices, where the $k^{\text{th}}$ off-diagonal represents the sample acf at lag $k$. Due to the assumption of stationarity, these matrices take a Toeplitz structure with constant and symmetric diagonals ($T_{i-k, j-k} = T_{i+k, j+k}$). To simulate realizations $x_t = \{x_1, x_2, ..., x_T\}$ with the same acf as the observed data, we generated gaussian white noise ($e_t \overset{\text{iid}}{\sim} \mathcal{N}(0, 1)$) multiplied by the Cholesky factor $L$ of the Toeplitz matrix $T$:
 
 \begin{align*}
     T &= LL^T\\
     x_t &= L e_t.
 \end{align*}
 
-\subsection{Dataset Description}\label{subsec:dataset-description}
+\subsection{Dataset Description}\label{sec:dataset-description}
 
 Resting fMRI (rfMRI) scans were provided by the Human Connectome Project (HCP), WU-Minn Consortium (led by principal investigators David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers supporting the NIH Blueprint for Neuroscience Research, and by the McDonnell Center for Systems Neuroscience at Washington University \cite{van_essen_wu-minn_2013}. The HCP young adult (ages 22-35) dataset is publicly available under a \href{https://www.humanconnectome.org/storage/app/media/data_use_terms/DataUseTerms-HCP-Open-Access-26Apr2013.pdf}{data usage agreement}. The present paper used two subsets of the larger dataset: one for method development (and defining realistic simulation parameters, see \ref{subsec:simulations}), and the other for estimating high-resolution timescale maps of the cortex and subcortex.\\
 
 For \textbf{method development}, we used the first ten subjects (\#100004 - \#101410) with rfMRI scans acquired using a 3-tesla gradient-echo EPI sequence (TR=720ms, TE=33.1ms, flip angle=52\textdegree, FOV=208x180mm, slice thickness=2.0mm) \cite{van_essen_wu-minn_2013}. Subjects were awake with their eyes open focused on a fixation cross projected on a dark background for four runs (15 minutes each, 4800 total timepoints). Minimal preprocessing was applied to each run, detailed in \cite{glasser_minimal_2013}. This included anatomical surface reconstruction \cite{robinson_msm_2014} and functional data registered to grayordinates (a spatial map including surface vertices and subcortical gray matter voxels). Additionally, functional time series were preprocessed by applying high-pass filtering, regression of head motion parameters, and removal of temporal artifacts detected by the FIX algorithm \cite{salimi-khorshidi_automatic_2014}. This ensured the removal of nonstationary signal drift and noise (e.g., movement, physiological confounds). To reduce dimensionality, we took weighted spatial averages within 300 brain regions defined by a group-level independent component analysis (ICA) atlas \cite{smith_resting-state_2013}. This yielded a dataset with the dimensions \{10 subjects, 4800 timepoints, 300 regions\}.\\
 
-For \textbf{estimating timescale maps}, we used the subset of 184 HCP subjects with rfMRI scans acquired with a 7-tesla gradient-echo EPI sequence (TR=1000ms, TE=22.2ms, flip angle=45\textdegree, FOV=208 x 208mm, slice thickness=1.6 mm) \cite{van_essen_wu-minn_2013, moeller_multiband_2010}. This sequence offers the highest available spatial resolution for detailed timescale map estimation. Four runs of 16 minutes (3600 total timepoints) were collected using the same eyes-open fixation protocol. Preprocessing mirrored the method development dataset. However, functional data were analysed on the grayordinate map, yielding a dataset with the dimensions \{184 subjects, 3600 timepoints, 91282 grayordinates\}. We independently fit the \eqref{eq:ar1-tau} to each grayordinate, a mass-univariate analysis approach that resulted in subject-level maps of timescale estimates and their standard errors.
+For \textbf{estimating timescale maps}, we used the subset of 184 HCP subjects with rfMRI scans acquired with a 7-tesla gradient-echo EPI sequence (TR=1000ms, TE=22.2ms, flip angle=45\textdegree, FOV=208 x 208mm, slice thickness=1.6 mm) \cite{van_essen_wu-minn_2013, moeller_multiband_2010}. This sequence offers the highest available spatial resolution for detailed timescale map estimation. Four runs of 16 minutes (3600 total timepoints) were collected using the same eyes-open fixation protocol. Preprocessing mirrored the method development dataset. However, functional data were analysed on the grayordinate map, yielding a dataset with the dimensions \{184 subjects, 3600 timepoints, 91282 grayordinates\}. We independently fit the \nameref{sec:linear-timescale-model} and \nameref{sec:nonlinear-timescale-model} to each grayordinate, a mass-univariate analysis approach that resulted in subject-level maps of timescale estimates and their standard errors.
 
 \end{document}

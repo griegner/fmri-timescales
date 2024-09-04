@@ -2,4 +2,6 @@
 
 \begin{document}
 \section{Results}
+
+The exponential decay model  does this directly. However, fitting such a model requires first computing an acf and then applying iterative optimization to fit a nonlinear decay curve to the autocorrelations. This is computationally demanding for determining a single parameter, and infeasible when scaled to mass-univariate settings like brain imaging...Compared with the exponential decay model, the ar-1 model is computationally tractable for mass-univariate applications like brain imaging. This is because linear least squares has a closed form solution, and saves the cost of computing the acf and fitting nonlinear least squares by iterative optimization.
 \end{document}
