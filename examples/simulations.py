@@ -5,8 +5,8 @@ from scipy.optimize import curve_fit
 from fmri_timescales import acf_utils, sim, timescale_utils
 
 
-def ols_simulation(phis, n_timepoints, ols, acm=None, n_repeats=1000, random_seed=10):
-    ols_ = {}
+def lls_simulation(phis, n_timepoints, lls, acm=None, n_repeats=1000, random_seed=10):
+    lls_ = {}
     for idx, phi in enumerate(phis):
         if acm is None:  # simulate autoregression
             X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=random_seed)
@@ -14,10 +14,10 @@ def ols_simulation(phis, n_timepoints, ols, acm=None, n_repeats=1000, random_see
             X = sim.sim_fmri(
                 np.eye(n_repeats), acm[..., idx], n_repeats, n_timepoints, random_seed=random_seed
             )
-        ols_nr_ = ols["ols_nr"].fit(X, n_timepoints)
-        ols_nw_ = ols["ols_nw"].fit(X, n_timepoints)
-        ols_[str(phi)] = (ols_nr_, ols_nw_)
-    return ols_
+        lls_nr_ = lls["lls_nr"].fit(X, n_timepoints)
+        lls_nw_ = lls["lls_nw"].fit(X, n_timepoints)
+        lls_[str(phi)] = (lls_nr_, lls_nw_)
+    return lls_
 
 
 def nls_simulation(phis, n_lags, n_interp, acfs=None, n_repeats=1000, random_seed=10):
@@ -79,7 +79,7 @@ def nls_simulation(phis, n_lags, n_interp, acfs=None, n_repeats=1000, random_see
     return nls_
 
 
-def plot_simulation(ols_, nls_, param, ols_params, nls_params, fig_title=None):
+def plot_simulation(lls_, nls_, param, lls_params, nls_params, fig_title=None):
     assert param in ["phi", "tau"], "param must be either 'phi' or 'tau'"
     colors = ["#000000", "#B66B7C", "#8D9FCB", "#66C2A6", "#7D7D7D"]
     hist_kwargs = dict(bins=25, histtype="step", lw=1)
@@ -97,36 +97,36 @@ def plot_simulation(ols_, nls_, param, ols_params, nls_params, fig_title=None):
     axs[1, 1].sharex(axs[1, 2])
     axs[1, 2].sharex(axs[1, 3])
 
-    for idx, phi in enumerate(ols_.keys()):
-        ols_nr_, ols_nw_ = ols_[phi]
+    for idx, phi in enumerate(lls_.keys()):
+        lls_nr_, lls_nw_ = lls_[phi]
         nls_nr_, nls_nw_ = nls_[phi]
 
         # --- row 0 --- #
 
-        # ols: param
-        axs[0, 0].set_ylabel("OLS", weight="bold")
+        # lls: param
+        axs[0, 0].set_ylabel("LLS", weight="bold")
         axs[0, 0].set_title(r"$\hat{\tau}$" if param == "tau" else r"$\hat{\phi}$")
-        axs[0, 0].hist(ols_nr_[param], color=colors[idx], **hist_kwargs)
-        axs[0, 0].axvline(ols_params[idx], color=colors[idx], **vline_kwargs)
+        axs[0, 0].hist(lls_nr_[param], color=colors[idx], **hist_kwargs)
+        axs[0, 0].axvline(lls_params[idx], color=colors[idx], **vline_kwargs)
 
-        ## ols: non-robust se(param)
+        ## lls: non-robust se(param)
         axs[0, 1].set_title(r"$se_{NR}(\hat\tau)$" if param == "tau" else r"$se_{NR}(\hat\phi)$")
-        axs[0, 1].hist(ols_nr_[f"se({param})"], color=colors[idx], **hist_kwargs)
-        axs[0, 1].axvline(ols_nr_[param].std(), color=colors[idx], **vline_kwargs)
+        axs[0, 1].hist(lls_nr_[f"se({param})"], color=colors[idx], **hist_kwargs)
+        axs[0, 1].axvline(lls_nr_[param].std(), color=colors[idx], **vline_kwargs)
 
-        ## ols: newey-west se(param)
+        ## lls: newey-west se(param)
         axs[0, 2].set_title(r"$se_{NW}(\hat\tau)$" if param == "tau" else r"$se_{NW}(\hat\phi)$")
-        axs[0, 2].hist(ols_nw_[f"se({param})"], color=colors[idx], **hist_kwargs)
-        axs[0, 2].axvline(ols_nw_[param].std(), color=colors[idx], **vline_kwargs)
+        axs[0, 2].hist(lls_nw_[f"se({param})"], color=colors[idx], **hist_kwargs)
+        axs[0, 2].axvline(lls_nw_[param].std(), color=colors[idx], **vline_kwargs)
 
-        ## ols: newey-west se / tau
+        ## lls: newey-west se / tau
         axs[0, 3].set_title(
             r"$se_{NW}(\hat\tau) / \hat\tau$"
             if param == "tau"
             else r"$se_{NW}(\hat\phi) / \hat\phi$"
         )
-        axs[0, 3].hist(ols_nw_[f"se({param})"] / ols_nw_[param], color=colors[idx], **hist_kwargs)
-        axs[0, 3].axvline(ols_nw_["tau"].std() / ols_params[idx], color=colors[idx], **vline_kwargs)
+        axs[0, 3].hist(lls_nw_[f"se({param})"] / lls_nw_[param], color=colors[idx], **hist_kwargs)
+        axs[0, 3].axvline(lls_nw_["tau"].std() / lls_params[idx], color=colors[idx], **vline_kwargs)
 
         # --- row 1 --- #
 

@@ -24,8 +24,8 @@ def newey_west_omega(u, n_lags=None):
     return S
 
 
-class OLS(BaseEstimator):
-    """Ordinary Least Squares Autoregressive Model.
+class LLS(BaseEstimator):
+    """Linear Least Squares Autoregressive Model.
 
     Parameters
     ----------

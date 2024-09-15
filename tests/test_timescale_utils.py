@@ -14,7 +14,7 @@ def test_OLS():
     tau = -1.0 / np.log(phi)
     X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=0)
 
-    ols = timescale_utils.OLS(n_jobs=-2)
+    ols = timescale_utils.LLS(n_jobs=-2)
     ols.fit(X, X.shape[0])
 
     # test difference btw true and estimated paramaters
@@ -30,7 +30,7 @@ def test_OLS_vs_statsmodels():
     X = sim.sim_ar(ar2_phi, n_timepoints, n_repeats=1, random_seed=0)
 
     # non-robust std errors
-    ols = timescale_utils.OLS(var_estimator="non-robust", n_jobs=1)
+    ols = timescale_utils.LLS(var_estimator="non-robust", n_jobs=1)
     ols.fit(X, n_timepoints)
     sm_ols = SMOLS(X[:-1], X[1:]).fit()
     assert np.isclose(ols.estimates_["phi"], sm_ols.params, atol=1e-4)
@@ -47,7 +47,7 @@ def test_OLS_vs_statsmodels():
 def test_OLS_checkfail():
     """Test if the function raises the expected ValueError"""
     X = np.zeros((n_repeats, n_timepoints))
-    ols = timescale_utils.OLS()
+    ols = timescale_utils.LLS()
     with pytest.raises(ValueError):  # X shape error
         ols.fit(X, n_timepoints)
     with pytest.raises(ValueError):  # var_estimator not ["non-robust" or "newey-west"]
