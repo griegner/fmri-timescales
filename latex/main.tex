@@ -4,12 +4,13 @@
 \usepackage{fullpage} % 1-in margins
 \usepackage{amsmath, amsfonts, amssymb} % equations
 \usepackage{graphicx} % figures
+\usepackage{float} % figures
 \usepackage{hyperref} % hyperlinks
-\usepackage[style=nature]{biblatex} % citations + references
+\usepackage[square,numbers]{natbib} % citations + references
+\bibliographystyle{abbrvnat} % citations + references
 \usepackage{fontspec} % font
 \usepackage[defaultsans]{opensans} % font
 \setmainfont[BoldFont={Open Sans Semibold}]{Open Sans} % bold font
-\addbibresource{latex/zotero.bib} % zotero bibliography
 
 \title{Estimating fMRI Timescale Maps}
 \author{Gabriel Riegner}
@@ -17,17 +18,17 @@
 \begin{document}
 \maketitle
 
-\section{Abstract}
-The brain functions over a wide range of timescales, from rapid synaptic events to low frequency activities that synchronize neuron populations and larger-scale networks of regions. The diverse timescales over which neural processes operate are spatially organized, forming maps that provide mechanistic insights into how different regions integrate and process information. Despite their scientific importance, current parameterization methods are inconsistently defined across studies and make restrictive assumptions about the underlying stochastic process. Generally, existing research only reports point estimates without standard errors,  limiting the ability to draw inferences, compare brain regions, and generalize findings across subjects or groups. To address this gap, we propose both linear and nonlinear timescale models that are robust under general assumptions and scalable to high-dimensional fMRI datasets. The statistical properties of these estimators -- bias, consistency, and limiting variance -- are established, enabling the assignment of standard errors to traditional point estimates, and thus facilitating hypothesis testing and the construction of confidence intervals. Simulations and resting-state fMRI analyses demonstrate that these estimators enable valid scientific inferences on timescale maps of the brain.
+\section*{Abstract}
+The brain operates across a wide range of timescales, from rapid synaptic events to slower oscillations that synchronize neuron populations and large-scale networks. These diverse neural timescales are spatially organized, forming maps that provide mechanistic insights into how different brain regions integrate and process information. Despite their scientific importance, current methods for parameterizing timescales vary across studies and often rely on restrictive assumptions about the underlying process. Additionally, most research reports only point estimates without standard errors, limiting the ability to make statistical inferences, compare brain regions, and generalize findings across individuals or groups. To address these gaps, we propose both linear and nonlinear timescale models that are robust under general assumptions. We establish the statistical properties of these estimators -- bias, consistency, and limiting variance -- enabling the assignment of standard errors to point estimates, which facilitates hypothesis testing and the construction of confidence intervals. Comparatively, the linear model is more computationally efficient and scalable to mass-univariate settings like fMRI, while the nonlinear model is more sensitive to long-range temporal dependencies and offers greater precision in terms of relative standard errors under model misspecification. Simulations and resting-state fMRI analyses demonstrate that these estimators enable valid scientific inferences on timescale maps of the brain.
 
 \subfile{latex/01-introduction}
 \subfile{latex/02-methods}
 \subfile{latex/03-results}
 \subfile{latex/04-discussion}
-\subfile{latex/05-appendix}
+% \subfile{latex/05-appendix}
 
 % references
-\printbibliography
+\bibliography{latex/zotero}
 
 
 \end{document}
