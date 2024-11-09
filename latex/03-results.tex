@@ -8,7 +8,7 @@ This section presents simulation results and timescale maps from resting fMRI (r
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{latex/results/fig01-ar1.png} 
+    \includegraphics[width=1\textwidth]{latex/figures/fig01-ar1.png} 
     \caption{
     \textbf{AR1 simulations}.
     (\textbf{A}) Simulation Settings. Five fixed settings are illustrated, where the solid line represents the simulated autocorrelation function (ACF), and the dashed line represents the AR1-projected ACF. Since both ACFs follow AR1, they overlap. Solid dots mark the timescale at which the AR1-projected ACF reaches $1/e \approx 0.37$.
@@ -21,7 +21,7 @@ This section presents simulation results and timescale maps from resting fMRI (r
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{latex/results/fig02-ar2.png} 
+    \includegraphics[width=1\textwidth]{latex/figures/fig02-ar2.png} 
     \caption{
     \textbf{AR2 simulations}.
     (\textbf{A}) Simulation Settings. The AR2 stationary region (gray triangle) in the $(\phi_1, \phi_2)$ plane is defined by the conditions $\phi_2<1+\phi_1, \phi_2<1-\phi_1, \phi_2>-1$. Within this region, the theoretical boundary between periodic and aperiodic behavior is given by $\phi_2 = -\phi_1^2/4$. Five fixed $(\phi_1, \phi_2)$ pairs within the stationary and aperiodic region were used to simulate AR2 processes with AR1 projections (dashed lines) equivalent to Figure \ref{fig:sim-ar1}. In the autocorrelation domain, the solid lines represents the simulated autocorrelation function (ACF), and the dashed line represents the AR1-projected ACF. Since the simulated ACF is AR2 and the projected is AR1, the lines do not overlap. Solid dots mark the timescale at which the AR1-projected ACF reaches $1/e \approx 0.37$.
@@ -35,7 +35,7 @@ This section presents simulation results and timescale maps from resting fMRI (r
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{latex/results/fig03-hcp.png} 
+    \includegraphics[width=1\textwidth]{latex/figures/fig03-hcp.png} 
     \caption{
     \textbf{Realistic rfMRI simulations}.
     (\textbf{A}) Simulation Settings. Five fixed settings are illustrated, where the solid line represents the simulated autocorrelation function (ACF) of the specified brain region from subject $\#100610$ of the Human Connectome Project, and the dashed line represents the AR1-projected ACF. Since the simulated ACF depends on rfMRI data and the projected is AR1, the lines do not overlap. Solid dots mark the timescale at which the AR1-projected ACF reaches $1/e \approx 0.37$.
@@ -58,7 +58,7 @@ Realistic rfMRI simulation results (Figure \ref{fig:sim-hcp}) explore the perfor
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{latex/results/fig04-hcp1.png} 
+    \includegraphics[width=1\textwidth]{latex/figures/fig04-hcp1.png} 
     \caption{
     \textbf{Human Connectome Project subject-level timescale maps}.
     (\textbf{A-D}) panels display cortical gray-matter maps from subject $\# 100610$ of the Human Connectome Project (see \nameref{sec:dataset-description}). Displays include lateral-left, lateral-right, medial-left, and medial-right views (excluding the medial wall). The upper bounds on the colorbars are set for each panel at the $99^\text{th}$ percentile of the cortical map values. For each panel, the top row shows the results of linear least squares estimator (LLS; see \nameref{sec:time-domain-linear-model}), and the bottom row shows the results of the nonlinear least squares estimator (NLS; see \nameref{sec:autocorrelation-domain-nonlinear-model}). 
@@ -72,7 +72,7 @@ Realistic rfMRI simulation results (Figure \ref{fig:sim-hcp}) explore the perfor
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{latex/results/fig05-hcp180.png} 
+    \includegraphics[width=1\textwidth]{latex/figures/fig05-hcp180.png} 
     \caption{
     \textbf{Human Connectome Project group-level timescale maps.}
     (\textbf{A-D}) panels display cortical gray-matter maps from the group of $N=180$ subjects in the Human Connectome Project dataset (see \nameref{sec:dataset-description}). Displays include lateral-left, lateral-right, medial-left, and medial-right views (excluding the medial wall). The upper bounds on the colorbars are set for each panel at the $99^\text{th}$ percentile of the cortical map values. The top row in each panel shows results from the linear least squares estimator (LLS; see \nameref{sec:time-domain-linear-model}), and the bottom row shows results from the nonlinear least squares estimator (NLS; see \nameref{sec:autocorrelation-domain-nonlinear-model}). 
