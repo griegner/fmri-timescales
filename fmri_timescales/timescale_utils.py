@@ -25,7 +25,7 @@ def newey_west_omega(u, n_lags=None):
 
 
 class LLS(BaseEstimator):
-    """Linear Least Squares Autoregressive Model.
+    """Time Domain Linear Model, Fit by Linear Least Squares (LLS).
 
     Parameters
     ----------
@@ -91,7 +91,7 @@ class LLS(BaseEstimator):
         return phi_, se_phi_
 
     def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
-        """Fit AR(1) model estimated using OLS.
+        """Fit by LLS.
 
         Parameters
         ----------
@@ -126,7 +126,7 @@ class LLS(BaseEstimator):
 
 
 class NLS(BaseEstimator):
-    """Non-linear Least Squares.
+    """Autocorrelation Domain Nonlinear Model, fit by Nonlinear Least Squares (NLS).
 
     Parameters
     ----------
@@ -198,7 +198,7 @@ class NLS(BaseEstimator):
         return phi_, se_phi_
 
     def fit(self, X: np.ndarray, n_timepoints: int) -> dict:
-        """Fit exponential decay function to empirical ACF.
+        """Fit by NLS.
 
         Parameters
         ----------

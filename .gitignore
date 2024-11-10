@@ -1,11 +1,8 @@
 tmp*
 __pycache__
 *_cache
-data/
-!examples/data/
-examples/data/hcp7T.dtseries.nii
-!tests/data/
 .vscode
 .DS_Store
 .venv
 *.egg-info
+notebooks/data/hcp7T.dtseries.nii
