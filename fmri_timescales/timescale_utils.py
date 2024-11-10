@@ -46,6 +46,14 @@ class LLS(BaseEstimator):
     - "se(phi)": Standard errors of AR(1) coefficients.
     - "tau": Timescale estimates, for each region in X.
     - "se(tau)": Standard errors of timescales.
+
+    Examples
+    --------
+    >>> from fmri_timescales import sim, timescale_utils
+    >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
+    >>> lls = timescale_utils.LLS(var_estimator="newey-west")
+    >>> lls.fit(X=X, n_timepoints=1000)
+    {'phi': array([0.79789847]), 'se(phi)': array([0.02028763]), 'tau': array([4.42920958]), 'se(tau)': array([0.49881125])}
     """
 
     def __init__(
@@ -139,6 +147,14 @@ class NLS(BaseEstimator):
     A dictionary containing two np.ndarray of shape (n_regions, ):
     - "tau": Timescale estimates, for each region in X.
     - "se(tau)": Standard errors of timescales.
+
+    Examples
+    --------
+    >>> from fmri_timescales import sim, timescale_utils
+    >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
+    >>> nls = timescale_utils.NLS(var_estimator="newey-west")
+    >>> nls.fit(X=X, n_timepoints=1000)
+    {'phi': array([0.78021159]), 'se(phi)': array([0.01071285]), 'tau': array([4.02916908]), 'se(tau)': array([0.22290691])}
     """
 
     def __init__(
