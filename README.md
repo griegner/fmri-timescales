@@ -1,7 +1,9 @@
 ### fMRI-timescales
 > Estimating fMRI Timescale Maps
 
-<img src="./figures/hcp-tstats.png" width="600"/>
+<img src="./figures/hcp-tstats.png" width="400"/>
+
+**[Manuscript Draft](latex/main.pdf)**  
 
 **Project Organization**
 ```
