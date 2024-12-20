@@ -28,7 +28,7 @@ As introduced by \citet{murray_hierarchy_2014}, the timescale of a neural proces
 This highlights an important distinction between the data-generating process and the simplified parametric model used to describe the timescale over which such a processes become decorrelated. In the present paper, we adopt broad assumptions, requiring only that the process is stationary and ergodic, to account for cases where the ACF decay may not be strictly exponential. Acknowledging that the data-generating process and the fitted model will likely be different in practice, the following sections describe robust standard errors that account for this mismatch, enabling valid inference despite specification error.
 
 \subsection{Timescale Definitions}
-The aim here is to describe exponential decay in autocorrelation of a stationary and ergodic process $X_t$ by a single timescale parameter $\tau$. We evaluate two working timescale models that and are commonly applied across neuroimaging modalities (fMRI, EEG, ECoG, MEG) to estimate timescale maps of the brain. 
+The aim here is to describe exponential decay in autocorrelation of a stationary and ergodic process $X_t$ by a single timescale parameter $\tau$. We evaluate two working timescale models that are commonly applied across neuroimaging modalities (fMRI, EEG, ECoG, MEG) to estimate timescale maps of the brain. 
 
 
 \subsubsection{Time Domain Linear Model}\label{sec:time-domain-linear-model}
@@ -137,7 +137,9 @@ The \textbf{nonlinear least squares} estimator falls in the class of optimizatio
 \subsection{Standard Error Definitions}
 \subsubsection{Time Domain Linear Model}
 
-In addition to the timescale parameter $\tau^*$, we provide an expression for its standard error under general conditions, such as when the data-generating process is not AR1. Assuming that $X_t$ is stationary and ergodic, so too are the model errors from equation \eqref{eq:ar1} ($e_t = X_t - \phi X_{t-1}$), so we can define a standard error knowing that the autocorrelation of the errors will decay to zero asymptotically (see \nameref{sec:assumptions}). Further, since the timescale $\tau^*$ can be expressed as a nonlinear function of $\phi^*$, denoted $g(\phi^*)$ in equation \eqref{eq:ar1-tau}, with first partial derivative $\frac{d}{d\phi} g(\phi^*)$, the delta method can approximate its standard error:
+In addition to the timescale parameter $\tau^*$, we provide an expression for its standard error under general conditions, such as when the data-generating process is not AR1. The subscript \textit{NW} stands for the authors Newey and West, who describe a method to obtain heteroskedasticity and autocorrelation consistent standard errors \citep{newey_simple_1987}. The subscript \textit{Naive} refers to the case where standard errors assume correct model specification, ignoring potential serial correlation and heteroskedasticity in the errors.\\
+
+Assuming that $X_t$ is stationary and ergodic, so too are the model errors from equation \eqref{eq:ar1} ($e_t = X_t - \phi X_{t-1}$), so we can define a standard error knowing that the autocorrelation of the errors will decay to zero asymptotically (see \nameref{sec:assumptions}). Further, since the timescale $\tau^*$ can be expressed as a nonlinear function of $\phi^*$, denoted $g(\phi^*)$ in equation \eqref{eq:ar1-tau}, with first partial derivative $\frac{d}{d\phi} g(\phi^*)$, the delta method can approximate its standard error:
 
 \begin{align}
     \text{se}_{\text{NW}}(\phi^*) &= \sqrt{q^{-1}\; \omega \; q^{-1}} \label{eq:se-ar1-phi}\\
@@ -150,7 +152,7 @@ In addition to the timescale parameter $\tau^*$, we provide an expression for it
     q = \mathbb{E}[X_{t-1}^2] \quad\text{and}\quad \omega = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[(X_{t-1} \cdot e_t)(X_{t-1-\ell} \cdot e_{t-\ell})].
 \end{align}
 
-The expression takes a sandwich form, as described by \citet{newey_simple_1987}, for 'heteroskedasticity and autocorrelation consistent (HAC)' standard errors \citep[theorem 14.32]{hansen_econometrics_2022}. This formula explicitly adjusts for misspecification by accounting for the covariance structure of the errors, which ensures that the standard errors are asymptotically correct (see \eqref{eq:ar1-phi-clt}). The covariance terms in $\omega$ capture deviations in the error structure from the standard \textit{iid} case. For the special case of correct specification, when $X_t$ is a true AR1 process, the standard error of the AR1 coefficient $\phi^*$ reduces to:
+The expression takes a sandwich form and explicitly adjusts for misspecification by accounting for the covariance structure of the errors, which ensures that the standard errors are asymptotically correct \citep[theorem 14.32]{hansen_econometrics_2022}. The covariance terms in $\omega$ capture deviations in the error structure from the standard \textit{iid} case. For the special case of correct specification, when $X_t$ is a true AR1 process, the standard error of the AR1 coefficient $\phi^*$ reduces to:
 
 \begin{align}
     \text{se}_{\text{Naive}}(\phi^*) = \sqrt{\sigma^2 q^{-1}}
@@ -199,7 +201,7 @@ If the data-generating process is not AR1 and the errors have positive autocorre
     \hat \omega = \sum_{\ell=-M}^M (1 - \frac{|\ell|}{M+1}) \quad \frac{1}{T} \sum_{1\le t - \ell \le T} (x_{t-1} \cdot \hat e_t)(x_{t-1-\ell} \cdot \hat e_{t-\ell}).
 \end{align}
 
-This estimator calculates a weighted sum of the regression scores $x_{t-1} \cdot \hat e_t$, where $\hat e_t = x_t - \hat\phi^*_{\scriptscriptstyle\text{LLS}} \cdot x_{t-1}$. The true $\omega$ is approximated by $\hat \omega$ by taking a finite sum of the regression score autocovariances up to lag $M$, where $M$ is the lag-truncation (or bandwidth). The weights used in the sum decrease linearly with lag $\ell$, following a Bartlett kernel. This kernel not only ensures the standard errors remain non-negative but also and regularizes $\hat \omega$ to change smoothly with $M$ \citep[chapter~14.35]{hansen_econometrics_2022}.\\
+This estimator calculates a weighted sum of the regression scores $x_{t-1} \cdot \hat e_t$, where $\hat e_t = x_t - \hat\phi^*_{\scriptscriptstyle\text{LLS}} \cdot x_{t-1}$. The true $\omega$ is approximated by $\hat \omega$ by taking a finite sum of the regression score autocovariances up to lag $M$, where $M$ is the lag-truncation (or bandwidth). The weights used in the sum decrease linearly with lag $\ell$, following a Bartlett kernel \citep{newey_simple_1987}. This kernel not only ensures the standard errors remain non-negative but also and regularizes $\hat \omega$ to change smoothly with $M$ \citep[chapter~14.35]{hansen_econometrics_2022}.\\
 
 
 Although an unlikely scenario when working with real data, for completeness we also include the naive estimator which simplifies under the assumption that $x_t$ is an AR1 process. The simplified form is:
