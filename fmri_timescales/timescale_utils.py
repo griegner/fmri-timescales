@@ -69,7 +69,8 @@ class LLS(BaseEstimator):
         self.n_jobs = n_jobs
         self.estimates_ = {}
 
-    def _fit_ols(self, x: np.ndarray) -> tuple:
+    @delayed
+    def _fit_lls(self, x: np.ndarray) -> tuple:
         """fit model to a single timeseries x in X"""
         T = x.shape[0] - 1
         # x_t = X[1:], x_{t-1} = x[:-1]
@@ -111,10 +112,9 @@ class LLS(BaseEstimator):
         X = X.copy() if self.copy_X else X
         X = (X - X.mean(axis=0)) / X.std(axis=0)  # mean zero, variance 1
 
-        ols_fits = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._fit_ols)(X[:, idx]) for idx in range(X.shape[1])
-        )
-        phis_, se_phis_ = map(np.array, zip(*ols_fits))
+        with Parallel(n_jobs=self.n_jobs) as parallel:
+            lls_fits = parallel(self._fit_lls(X[:, idx]) for idx in range(X.shape[1]))
+            phis_, se_phis_ = map(np.array, zip(*lls_fits))
 
         # phi to tau (timescale), and apply delta method to std err
         phis_ = np.abs(phis_)  # tau undefined for phi <= 0
@@ -172,6 +172,7 @@ class NLS(BaseEstimator):
         self.n_jobs = n_jobs
         self.estimates_ = {}
 
+    @delayed
     def _fit_nls(self, x_acf_: np.ndarray) -> tuple:
         """fit model to a single autocorrelation function x_acf_ in X_acf_"""
 
@@ -219,10 +220,9 @@ class NLS(BaseEstimator):
 
         X_acf_ = acf_utils.ACF(n_lags=self.acf_n_lags).fit_transform(X, X.shape[0])
 
-        nls_fits = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._fit_nls)(X_acf_[:, idx]) for idx in range(X_acf_.shape[1])
-        )
-        phis_, se_phis_ = map(np.array, zip(*nls_fits))
+        with Parallel(n_jobs=self.n_jobs) as parallel:
+            nls_fits = parallel(self._fit_nls(X[:, idx]) for idx in range(X.shape[1]))
+            phis_, se_phis_ = map(np.array, zip(*nls_fits))
 
         # phi to tau (timescale), and apply delta method to std err
         phis_ = np.abs(phis_)  # tau undefined for phi <= 0
