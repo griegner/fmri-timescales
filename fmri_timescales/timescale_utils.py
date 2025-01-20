@@ -221,7 +221,7 @@ class NLS(BaseEstimator):
         X_acf_ = acf_utils.ACF(n_lags=self.acf_n_lags).fit_transform(X, X.shape[0])
 
         with Parallel(n_jobs=self.n_jobs) as parallel:
-            nls_fits = parallel(self._fit_nls(X[:, idx]) for idx in range(X.shape[1]))
+            nls_fits = parallel(self._fit_nls(X_acf_[:, idx]) for idx in range(X.shape[1]))
             phis_, se_phis_ = map(np.array, zip(*nls_fits))
 
         # phi to tau (timescale), and apply delta method to std err
