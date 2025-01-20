@@ -6,8 +6,8 @@ from scipy.optimize import curve_fit
 from fmri_timescales import acf_utils, sim, timescale_utils
 
 
-def lls_simulation(phis, n_timepoints, lls, acm=None, n_repeats=1000, random_seed=10):
-    lls_ = {}
+def run_simulation(phis, n_timepoints, models, acm=None, n_repeats=1000, random_seed=10):
+    results = {}
     for idx, phi in enumerate(phis):
         if acm is None:  # simulate autoregression
             X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=random_seed)
@@ -15,72 +15,13 @@ def lls_simulation(phis, n_timepoints, lls, acm=None, n_repeats=1000, random_see
             X = sim.sim_fmri(
                 np.eye(n_repeats), acm[..., idx], n_repeats, n_timepoints, random_seed=random_seed
             )
-        lls_nr_ = lls["lls_nr"].fit(X, n_timepoints)
-        lls_nw_ = lls["lls_nw"].fit(X, n_timepoints)
-        lls_[str(phi)] = (lls_nr_, lls_nw_)
-    return lls_
+
+        results[str(phi)] = {m_name: m.fit(X, n_timepoints) for m_name, m in models.items()}
+
+    return results
 
 
-def nls_simulation(phis, n_lags, n_interp, acfs=None, n_repeats=1000, random_seed=10):
-    nls_ = {}
-    rng = np.random.default_rng(seed=random_seed)
-    ks = np.linspace(0, n_lags - 1, n_lags)
-    ks_interp = np.linspace(0, n_lags - 1, (n_lags * n_interp))
-    for idx, phi in enumerate(phis):
-        if acfs is None:
-            acf = acf_utils.ar_to_acf(phi, n_lags)
-        else:
-            acf = acfs[:, idx]
-
-        acf_interp = np.interp(ks_interp, ks, acf)
-
-        m = lambda ks, phi: phi**ks
-
-        phis_, nr_se_, nw_se_ = (
-            np.zeros(n_repeats),
-            np.zeros(n_repeats),
-            np.zeros(n_repeats),
-        )
-        for rep in range(n_repeats):
-            acf_e = acf_interp + rng.normal(0, 0.2, size=(n_lags * n_interp))
-            phi_, _ = curve_fit(m, ks_interp, acf_e, p0=0, bounds=(-1, +1))
-            phis_[rep] = phi_.squeeze()
-
-            # standard errors
-            dm_dphi = ks_interp * phi_ ** (ks_interp - 1)
-            q_ = np.mean(dm_dphi**2)
-            e_ = acf_e - phi_**ks_interp
-
-            # NR
-            sigma2_ = np.mean(e_**2)
-            var_ = (1 / q_) * sigma2_
-            nr_se_[rep] = np.sqrt((1 / (n_lags * n_interp)) * var_)
-
-            # NW
-            u_ = dm_dphi * e_
-            omega_ = (1 / (n_lags * n_interp)) * timescale_utils.newey_west_omega(u_, n_lags=3)
-            var_ = (1 / q_) * omega_ * (1 / q_)
-            nw_se_[rep] = np.sqrt((1 / (n_lags * n_interp)) * var_)
-
-        nls_nr_ = {
-            "phi": phis_,
-            "se(phi)": nr_se_,
-            "tau": -1 / np.log(phis_),
-            "se(tau)": (1.0 / (phis_ * np.log(phis_) ** 2)) * nr_se_,
-        }
-        nls_nw_ = {
-            "phi": phis_,
-            "se(phi)": nw_se_,
-            "tau": -1 / np.log(phis_),
-            "se(tau)": (1.0 / (phis_ * np.log(phis_) ** 2)) * nw_se_,
-        }
-
-        nls_[str(phi)] = (nls_nr_, nls_nw_)
-
-    return nls_
-
-
-def plot_simulation(lls_, nls_, lls_params, nls_params):
+def plot_simulation(results, lls_params, nls_params):
     colors = ["#313695", "#72ABD0", "#FEDE8E", "#F57245", "#A70226"]
     hist_kwargs = dict(bins=25, histtype="step", lw=3)
     vline_kwargs = dict(lw=5)
@@ -115,9 +56,11 @@ def plot_simulation(lls_, nls_, lls_params, nls_params):
     axs["e"].sharex(axs["E"])
     axs["f"].sharex(axs["F"])
 
-    for idx, phi in enumerate(lls_.keys()):
-        lls_nr_, lls_nw_ = lls_[phi]
-        nls_nr_, nls_nw_ = nls_[phi]
+    for idx, phi in enumerate(results.keys()):
+        lls_nr_ = results[phi]["lls_nr"]
+        lls_nw_ = results[phi]["lls_nw"]
+        nls_nr_ = results[phi]["nls_nr"]
+        nls_nw_ = results[phi]["nls_nw"]
 
         # --- row 0 --- #
 
