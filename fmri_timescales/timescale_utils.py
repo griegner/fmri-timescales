@@ -192,9 +192,10 @@ class NLS(BaseEstimator):
         # define the regression function (m), and its linearized regressor (dm_dphi)
         m = lambda ks, phi: phi**ks
         dm_dphi = lambda ks, phi: ks * phi ** (ks - 1)
+        jac = lambda ks, phi: dm_dphi(ks, phi).reshape(-1, 1)
 
         # phi estimator
-        phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf_, p0=0, bounds=(-1, +1), ftol=1e-6)
+        phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf_, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
 
         # variance estimators
         def non_robust_time():
