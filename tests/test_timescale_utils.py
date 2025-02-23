@@ -5,7 +5,7 @@ from statsmodels.regression.linear_model import OLS as SMOLS
 
 from fmri_timescales import acf_utils, sim, timescale_utils
 
-n_timepoints, n_repeats = 4800, 1000
+n_timepoints, n_lags, n_repeats = 4800, 100, 1000
 
 
 def test_LLS():
@@ -61,14 +61,15 @@ def test_LLS_checkfail():
         lls.fit(X.T, n_timepoints)
 
 
-def test_NLS():
+def test_NLS_time():
     """Test if the NLS estimator returns the expected estimates of an AR(1) process"""
 
+    # X_domain='time'
     phi = [0.75]
     tau = -1.0 / np.log(phi)
     X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=0)
 
-    # variance estimation in time domain only
+    # var_domain='time'
     nls = timescale_utils.NLS(n_jobs=-2, var_estimator="non-robust", var_domain="time")
     nls.fit(X, X.shape[0])
 
@@ -82,6 +83,32 @@ def test_NLS():
     # test difference btw true and estimated paramaters
     assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
     assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.1)
+
+
+def test_NLS_autocorrelation():
+    """Test when X_domain='autocorrelation'"""
+
+    rng = np.random.default_rng(seed=0)
+
+    phi = [0.9]
+    tau = -1.0 / np.log(phi)
+    X = acf_utils.ar_to_acf(phi, n_lags=n_lags)
+    X = np.tile(acf_utils.ar_to_acf(phi, n_lags=n_lags), (n_repeats, 1)).T
+    X += rng.normal(loc=0, scale=0.05, size=X.shape)
+
+    nls = timescale_utils.NLS(X_domain="autocorrelation", var_estimator="non-robust", var_domain="autocorrelation")
+    nls.fit(X, n_lags)
+
+    # test difference btw true and estimated paramaters
+    assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
+    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.005)
+
+    nls.set_params(var_estimator="newey-west")
+    nls.fit(X, n_lags)
+
+    # test difference btw true and estimated paramaters
+    assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
+    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.05)
 
 
 def test_NLS_vs_scipy():
