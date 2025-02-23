@@ -19,7 +19,7 @@ def newey_west_omega(u: np.ndarray, n_lags: Optional[int] = None) -> float:
     return omega
 
 
-def _phi_to_tau(phis, se_phis):
+def _phi_to_tau(phis: np.ndarray, se_phis: np.ndarray) -> tuple:
     """phi to tau (timescale), and apply delta method to std err"""
     phis_abs = np.abs(phis)  # tau undefined for negative phi
     taus = -1.0 / np.log(phis_abs)
@@ -138,11 +138,14 @@ class NLS(BaseEstimator):
     var_estimator : str, optional
         The variance estimator to use. Options are "newey-west" or "non-robust", by default "newey-west"
     var_domain : str, optional
-        The domain to fit variance estimator. Options are "time" or "autocorrelation", be default "time"
+        The domain to fit variance estimator. Options are "time" or "autocorrelation", be default "time"\n
+        "autocorrelation" is required if X_domain="autocorrelation"
     var_n_lags : int, optional
         The lag truncation number for the bartlett kernel, by default None
     acf_n_lags : int, optional
         The lag truncation number for the autocorrelation function, by default None
+    X_domain : str, optional
+        The domain of X. Options are "time" or "autocorrelation", be default "time"
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
     n_jobs : _type_, optional
@@ -170,6 +173,7 @@ class NLS(BaseEstimator):
         var_domain: str = "time",
         var_n_lags: Optional[int] = None,
         acf_n_lags: Optional[int] = None,
+        X_domain: str = "time",
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
@@ -177,31 +181,38 @@ class NLS(BaseEstimator):
         self.var_domain = var_domain
         self.var_n_lags = var_n_lags
         self.acf_n_lags = acf_n_lags
+        self.X_domain = X_domain
         self.copy_X = copy_X
         self.n_jobs = n_jobs
 
     @delayed
     def _fit_nls(self, x: np.ndarray) -> tuple:
-        """fit model to a single timeseries x in X"""
+        """fit model to a single timeseries/autocorrelation function x in X"""
 
-        x_acf_ = acf_utils.ACF(n_lags=self.acf_n_lags).fit_transform(x.reshape(-1, 1), len(x)).squeeze()
-
-        T, K = len(x), len(x_acf_)
-        ks = np.linspace(0, K - 1, K)
+        if self.X_domain == "time":
+            n_timepoints = len(x)
+            x_acf = acf_utils.ACF(n_lags=self.acf_n_lags).fit_transform(x.reshape(-1, 1), n_timepoints).squeeze()
+            n_lags = len(x_acf)
+        elif self.X_domain == "autocorrelation":
+            n_lags = len(x)
+            x_acf = x
+        else:
+            raise ValueError("X_domain must be 'time' or 'autocorrelation'")
 
         # define the regression function (m), and its linearized regressor (dm_dphi)
+        ks = np.linspace(0, n_lags - 1, n_lags)
         m = lambda ks, phi: phi**ks
         dm_dphi = lambda ks, phi: ks * phi ** (ks - 1)
         jac = lambda ks, phi: dm_dphi(ks, phi).reshape(-1, 1)
 
         # phi estimator
-        phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf_, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
+        phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
 
         # variance estimators
         def non_robust_time():
             e_ = x[1:] - phi_ * x[:-1]
             q_ = np.sum(x[:-1] ** 2)
-            sigma2_ = (1 / T) * np.sum(e_**2)
+            sigma2_ = (1 / n_timepoints) * np.sum(e_**2)
             return (1 / q_) * sigma2_
 
         def newey_west_time():
@@ -212,13 +223,13 @@ class NLS(BaseEstimator):
             return (1 / q_) * omega_ * (1 / q_)
 
         def non_robust_autocorrelation():
-            e_ = x_acf_ - phi_**ks
+            e_ = x_acf - phi_**ks
             q_ = np.sum(dm_dphi(ks, phi_) ** 2)
-            sigma2_ = (1 / K) * np.sum(e_**2)
+            sigma2_ = (1 / n_lags) * np.sum(e_**2)
             return (1 / q_) * sigma2_
 
         def newey_west_autocorrelation():
-            e_ = x_acf_ - phi_**ks
+            e_ = x_acf - phi_**ks
             q_ = np.sum(dm_dphi(ks, phi_) ** 2)
             u_ = dm_dphi(ks, phi_) * e_
             omega_ = newey_west_omega(u_, n_lags=self.var_n_lags)
@@ -237,28 +248,32 @@ class NLS(BaseEstimator):
                 "var_domain must be either 'time' or 'autocorrelation'"
             )
 
+        if self.X_domain == "autocorrelation" and self.var_domain == "time":
+            raise ValueError("var_domain='time' incompatible with X_domain='autocorrelation'.")
+
         var_ = var_estimators[(self.var_estimator, self.var_domain)]()
         return phi_, np.sqrt(var_)
 
-    def fit(self, X: np.ndarray, n_timepoints: int):
+    def fit(self, X: np.ndarray, n_features: int):
         """Fit the NLS model.
 
         Parameters
         ----------
-        X : np.ndarray of shape (n_timepoints, n_regions)
-            An array containing the timeseries of each region.
-        n_timepoints : int
-            The number of timepoints in X.
+        X : np.ndarray of shape (n_timepoints, n_regions) if X_domain='time'\n
+            or shape (n_lags, n_regions) if X_domain='autocorrelation'
+        n_features : int
+            The number of timepoints/lags in X.
 
         Raises
         ------
         ValueError
             If `X` is not in (n_timepoints, n_regions) form.
         """
-        if X.ndim != 2 or X.shape[0] != n_timepoints:
+        if X.ndim != 2 or X.shape[0] != n_features:
             raise ValueError("X should be in (n_timepoints, n_regions) form")
         X = X.copy() if self.copy_X else X
-        X = (X - X.mean(axis=0)) / X.std(axis=0)
+
+        X = (X - X.mean(axis=0)) / X.std(axis=0) if self.X_domain == "time" else X
 
         with Parallel(n_jobs=self.n_jobs) as parallel:
             nls_fits = parallel(self._fit_nls(X[:, idx]) for idx in range(X.shape[1]))
