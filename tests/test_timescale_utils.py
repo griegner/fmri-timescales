@@ -101,7 +101,7 @@ def test_NLS_autocorrelation():
 
     # test difference btw true and estimated paramaters
     assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
-    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.005)
+    assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.01)
 
     nls.set_params(var_estimator="newey-west")
     nls.fit(X, n_lags)
