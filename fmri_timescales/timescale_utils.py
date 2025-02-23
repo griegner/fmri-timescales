@@ -207,6 +207,7 @@ class NLS(BaseEstimator):
 
         # phi estimator
         phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
+        phi_ = phi_.squeeze()
 
         # variance estimators
         def non_robust_time():
