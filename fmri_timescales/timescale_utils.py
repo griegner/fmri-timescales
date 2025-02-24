@@ -36,6 +36,8 @@ class LLS(BaseEstimator):
         The variance estimator to use. Options are "newey-west" or "non-robust", by default "newey-west"
     var_n_lags : int, optional
         The lag truncation number for the bartlett kernel, by default None
+    X_sfreq : float, optional
+        The sampling frequency in Hz, by default 1
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
     n_jobs : int, optional
@@ -63,11 +65,13 @@ class LLS(BaseEstimator):
         self,
         var_estimator: str = "newey-west",
         var_n_lags: Optional[int] = None,
+        X_sfreq: Optional[float] = 1.0,
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
         self.var_estimator = var_estimator
         self.var_n_lags = var_n_lags
+        self.X_sfreq = X_sfreq
         self.copy_X = copy_X
         self.n_jobs = n_jobs
 
@@ -75,20 +79,21 @@ class LLS(BaseEstimator):
     def _fit_lls(self, x: np.ndarray) -> tuple:
         """fit model to a single timeseries x in X"""
         T = len(x) - 1
-        # x_t = X[1:], x_{t-1} = x[:-1]
-        phi_ = np.sum((x[1:] * x[:-1])) / np.sum(x[:-1] ** 2)
+        lag = int(self.X_sfreq)
+        # x_t = X[1:], x_{t-1} = x[:-1] (Hz=1)
+        phi_ = np.sum((x[lag:] * x[:-lag])) / np.sum(x[:-lag] ** 2)
 
         # variance estimators
         def non_robust():
-            e_ = x[1:] - phi_ * x[:-1]
-            q_ = np.sum(x[:-1] ** 2)
+            e_ = x[lag:] - phi_ * x[:-lag]
+            q_ = np.sum(x[:-lag] ** 2)
             sigma2_ = (1 / T) * np.sum(e_**2)
             return (1 / q_) * sigma2_
 
         def newey_west():
-            e_ = x[1:] - phi_ * x[:-1]
-            q_ = np.sum(x[:-1] ** 2)
-            u_ = x[:-1] * e_
+            e_ = x[lag:] - phi_ * x[:-lag]
+            q_ = np.sum(x[:-lag] ** 2)
+            u_ = x[:-lag] * e_
             omega_ = newey_west_omega(u_, n_lags=self.var_n_lags)
             return (1 / q_) * omega_ * (1 / q_)
 
@@ -146,6 +151,8 @@ class NLS(BaseEstimator):
         The lag truncation number for the autocorrelation function, by default None
     X_domain : str, optional
         The domain of X. Options are "time" or "autocorrelation", be default "time"
+    X_sfreq : float, optional
+        The sampling frequency in Hz, by default 1
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
     n_jobs : _type_, optional
@@ -174,6 +181,7 @@ class NLS(BaseEstimator):
         var_n_lags: Optional[int] = None,
         acf_n_lags: Optional[int] = None,
         X_domain: str = "time",
+        X_sfreq: Optional[float] = 1.0,
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
@@ -182,6 +190,7 @@ class NLS(BaseEstimator):
         self.var_n_lags = var_n_lags
         self.acf_n_lags = acf_n_lags
         self.X_domain = X_domain
+        self.X_sfreq = X_sfreq
         self.copy_X = copy_X
         self.n_jobs = n_jobs
 
@@ -190,17 +199,17 @@ class NLS(BaseEstimator):
         """fit model to a single timeseries/autocorrelation function x in X"""
 
         if self.X_domain == "time":
-            n_timepoints = len(x)
-            x_acf = acf_utils.ACF(n_lags=self.acf_n_lags).fit_transform(x.reshape(-1, 1), n_timepoints).squeeze()
-            n_lags = len(x_acf)
+            T = len(x)
+            x_acf = acf_utils.ACF(n_lags=self.acf_n_lags).fit_transform(x.reshape(-1, 1), T).squeeze()
+            K = len(x_acf)
         elif self.X_domain == "autocorrelation":
-            n_lags = len(x)
+            K = len(x)
             x_acf = x
         else:
             raise ValueError("X_domain must be 'time' or 'autocorrelation'")
 
         # define the regression function (m), and its linearized regressor (dm_dphi)
-        ks = np.linspace(0, n_lags - 1, n_lags)
+        ks = np.linspace(0, K - 1, K) * (1.0 / self.X_sfreq)
         m = lambda ks, phi: phi**ks
         dm_dphi = lambda ks, phi: ks * phi ** (ks - 1)
         jac = lambda ks, phi: dm_dphi(ks, phi).reshape(-1, 1)
@@ -209,24 +218,26 @@ class NLS(BaseEstimator):
         phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
         phi_ = phi_.squeeze()
 
+        lag = int(self.X_sfreq + 1)
+
         # variance estimators
         def non_robust_time():
-            e_ = x[1:] - phi_ * x[:-1]
-            q_ = np.sum(x[:-1] ** 2)
-            sigma2_ = (1 / n_timepoints) * np.sum(e_**2)
+            e_ = x[lag:] - phi_ * x[:-lag]
+            q_ = np.sum(x[:-lag] ** 2)
+            sigma2_ = (1 / T) * np.sum(e_**2)
             return (1 / q_) * sigma2_
 
         def newey_west_time():
-            e_ = x[1:] - phi_ * x[:-1]
-            q_ = np.sum(x[:-1] ** 2)
-            u_ = x[:-1] * e_
+            e_ = x[lag:] - phi_ * x[:-lag]
+            q_ = np.sum(x[:-lag] ** 2)
+            u_ = x[:-lag] * e_
             omega_ = newey_west_omega(u_, n_lags=self.var_n_lags)
             return (1 / q_) * omega_ * (1 / q_)
 
         def non_robust_autocorrelation():
             e_ = x_acf - phi_**ks
             q_ = np.sum(dm_dphi(ks, phi_) ** 2)
-            sigma2_ = (1 / n_lags) * np.sum(e_**2)
+            sigma2_ = (1 / K) * np.sum(e_**2)
             return (1 / q_) * sigma2_
 
         def newey_west_autocorrelation():

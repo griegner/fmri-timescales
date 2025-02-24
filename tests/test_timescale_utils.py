@@ -92,19 +92,18 @@ def test_NLS_autocorrelation():
 
     phi = [0.9]
     tau = -1.0 / np.log(phi)
-    X = acf_utils.ar_to_acf(phi, n_lags=n_lags)
-    X = np.tile(acf_utils.ar_to_acf(phi, n_lags=n_lags), (n_repeats, 1)).T
-    X += rng.normal(loc=0, scale=0.05, size=X.shape)
+    X_acf = acf_utils.ar_to_acf(phi, n_lags=n_lags).repeat(n_repeats).reshape(n_lags, n_repeats)
+    X_acf += rng.normal(loc=0, scale=0.05, size=X_acf.shape)
 
     nls = timescale_utils.NLS(X_domain="autocorrelation", var_estimator="non-robust", var_domain="autocorrelation")
-    nls.fit(X, n_lags)
+    nls.fit(X_acf, n_lags)
 
     # test difference btw true and estimated paramaters
     assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
     assert np.isclose(nls.estimates_["tau"].std(), nls.estimates_["se(tau)"].mean(), atol=0.01)
 
     nls.set_params(var_estimator="newey-west")
-    nls.fit(X, n_lags)
+    nls.fit(X_acf, n_lags)
 
     # test difference btw true and estimated paramaters
     assert np.isclose(tau, nls.estimates_["tau"].mean(), atol=0.015)
