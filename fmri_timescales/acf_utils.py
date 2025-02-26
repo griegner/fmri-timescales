@@ -59,8 +59,7 @@ class ACF(BaseEstimator):
         X = (X - X.mean(axis=0)) / X.std(axis=0)  # mean zero, variance one
 
         X_acov_ = Parallel(n_jobs=self.n_jobs)(
-            delayed(signal.convolve)(X[:, idx], X[::-1, idx], mode="full", method="fft")
-            for idx in range(X.shape[1])
+            delayed(signal.convolve)(X[:, idx], X[::-1, idx], mode="full", method="fft") for idx in range(X.shape[1])
         )
         X_acf_ = np.array(X_acov_).T[n_timepoints - 1 : n_timepoints + n_lags - 1, :] / n_timepoints
         return X_acf_
@@ -103,21 +102,29 @@ def acf_to_toeplitz(acf: np.ndarray, n_lags: int) -> np.ndarray:
         raise ValueError("acf should be in (n_lags,) or (n_lags, n_regions) form")
 
 
-def ar_to_acf(ar_coeffs: Union[list, np.ndarray], n_lags: int = 10) -> np.ndarray:
+def ar_to_acf(ar_coeffs: Union[list, np.ndarray], n_lags: int = 10, sfreq: int = 1) -> np.ndarray:
     """Calculates the theoretical autocorrelation function of an AutoRegressive (AR) process.
 
     Parameters
     ----------
     ar_coeffs : list or np.ndarray of shape (p,)
-        A list of AR(p) coefficients in the form [phi_1, phi_2, ..., phi_p], excluding phi_0.
+        A list of AR(p) coefficients in the form [phi_1, phi_2, ..., phi_p], excluding phi_0
     n_lags : int, optional
         Number of lags, by default 10
-
+    sfreq : int, optional
+        Sampling frequency in Hz, the ACF is iterpolated to have (n_lags * sfreq) samples, by default 1
     Returns
     -------
-    np.ndarray of shape (n_lags, )
+    np.ndarray of shape (n_lags * sfreq, )
         The autocorrelation function for the given AR(p) coefficients up to n_lags.
     """
     if isinstance(ar_coeffs, list):
         ar_coeffs = np.array(ar_coeffs)
-    return arma_acf(ar=np.r_[1, -ar_coeffs], ma=[1], lags=n_lags)
+
+    acf = arma_acf(ar=np.r_[1, -ar_coeffs], ma=[1], lags=n_lags)
+
+    if sfreq > 1:
+        ks, ks_interp = np.arange(n_lags), np.linspace(0, n_lags - 1, (n_lags * sfreq))
+        acf = np.interp(ks_interp, ks, acf)
+
+    return acf
