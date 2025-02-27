@@ -107,8 +107,8 @@ def plot_simulation(results, lls_taus, nls_taus):
     """
 
     # subplot setup
-    fig, axs = plt.subplot_mosaic(layout, figsize=(24, 16), layout="constrained")
-    axs_inset = {k: v.inset_axes([1.1, 0, 0.3, 1]) for k, v in axs.items()}
+    fig, axs = plt.subplot_mosaic(layout, figsize=(24, 15), layout="constrained")
+    axs_inset = {k: v.inset_axes([1.1, 0, 0.3, 0.99]) for k, v in axs.items()}
 
     # tick formatting
     for ax in axs.values():
@@ -144,8 +144,8 @@ def plot_simulation(results, lls_taus, nls_taus):
 
         # --- row 1 --- #
 
-        # nls AA: tau
-        true, estimates_ = nls_taus[idx], result["nls_aa_nr"]["tau"]
+        # nls TT/TA: tau
+        true, estimates_ = nls_taus[idx], result["nls_tt_nr"]["tau"]
         axs["B"].set_ylabel("NLS")
         axs["B"].set_xlabel(r"$\hat\tau_\text{NLS}$")
         axs["B"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
@@ -155,8 +155,8 @@ def plot_simulation(results, lls_taus, nls_taus):
 
         # --- row 2 --- #
 
-        # nls TT/TA: tau
-        true, estimates_ = nls_taus[idx], result["nls_tt_nr"]["tau"]
+        # nls AA: tau
+        true, estimates_ = nls_taus[idx], result["nls_aa_nr"]["tau"]
         axs["d"].set_ylabel("NLS")
         axs["d"].set_xlabel(r"$\hat\tau_\text{NLS}$")
         axs["d"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
@@ -185,8 +185,8 @@ def plot_simulation(results, lls_taus, nls_taus):
 
         # --- row 4 --- #
 
-        # nls var_domain="time": naive se(tau)
-        true, estimates_ = result["nls_aa_nr"]["tau"].std(), result["nls_aa_nr"]["se(tau)"]
+        # nls var_domain="autocorrelation": naive se(tau)
+        true, estimates_ = result["nls_tt_nr"]["tau"].std(), result["nls_tt_nr"]["se(tau)"]
         axs["e"].set_ylabel("NLS")
         axs["e"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{NLS})$")
         axs["e"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
@@ -194,18 +194,30 @@ def plot_simulation(results, lls_taus, nls_taus):
         axs_inset["e"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
         axs_inset["e"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{Naive})$")
 
-        # nls var_domain="time": newey-west se(tau)
-        true, estimates_ = result["nls_aa_nw"]["tau"].std(), result["nls_aa_nw"]["se(tau)"]
+        true, estimates_ = result["nls_ta_nr"]["tau"].std(), result["nls_ta_nr"]["se(tau)"]
+        axs["e"].hist(estimates_, color=colors[idx], alpha=0.75, ls="--", **hist_kwargs)
+        axs_inset["e"].scatter(
+            idx, rrmse(true, estimates_), color=colors[idx], ls="--", facecolors="none", **scatter_kwargs
+        )
+
+        # nls var_domain="autocorrelation": newey-west se(tau)
+        true, estimates_ = result["nls_tt_nw"]["tau"].std(), result["nls_tt_nw"]["se(tau)"]
         axs["f"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{NLS})$")
         axs["f"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["f"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["f"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
         axs_inset["f"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{NW})$")
 
+        true, estimates_ = result["nls_ta_nw"]["tau"].std(), result["nls_ta_nw"]["se(tau)"]
+        axs["f"].hist(estimates_, color=colors[idx], alpha=0.75, ls="--", range=hist_range(estimates_), **hist_kwargs)
+        axs_inset["f"].scatter(
+            idx, rrmse(true, estimates_), color=colors[idx], ls="--", facecolors="none", **scatter_kwargs
+        )
+
         # --- row 5 --- #
 
-        # nls var_domain="autocorrelation": naive se(tau)
-        true, estimates_ = result["nls_tt_nr"]["tau"].std(), result["nls_tt_nr"]["se(tau)"]
+        # nls var_domain="time": naive se(tau)
+        true, estimates_ = result["nls_aa_nr"]["tau"].std(), result["nls_aa_nr"]["se(tau)"]
         axs["E"].set_ylabel("NLS")
         axs["E"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{NLS})$")
         axs["E"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
@@ -213,24 +225,12 @@ def plot_simulation(results, lls_taus, nls_taus):
         axs_inset["E"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
         axs_inset["E"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{Naive})$")
 
-        true, estimates_ = result["nls_ta_nr"]["tau"].std(), result["nls_ta_nr"]["se(tau)"]
-        axs["E"].hist(estimates_, color=colors[idx], alpha=0.75, ls="--", **hist_kwargs)
-        axs_inset["E"].scatter(
-            idx, rrmse(true, estimates_), color=colors[idx], ls="--", facecolors="none", **scatter_kwargs
-        )
-
-        # nls var_domain="autocorrelation": newey-west se(tau)
-        true, estimates_ = result["nls_tt_nw"]["tau"].std(), result["nls_tt_nw"]["se(tau)"]
+        # nls var_domain="time": newey-west se(tau)
+        true, estimates_ = result["nls_aa_nw"]["tau"].std(), result["nls_aa_nw"]["se(tau)"]
         axs["F"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{NLS})$")
         axs["F"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["F"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["F"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
         axs_inset["F"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{NW})$")
-
-        true, estimates_ = result["nls_ta_nw"]["tau"].std(), result["nls_ta_nw"]["se(tau)"]
-        axs["F"].hist(estimates_, color=colors[idx], alpha=0.75, ls="--", range=hist_range(estimates_), **hist_kwargs)
-        axs_inset["F"].scatter(
-            idx, rrmse(true, estimates_), color=colors[idx], ls="--", facecolors="none", **scatter_kwargs
-        )
 
     return fig
