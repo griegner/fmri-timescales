@@ -22,7 +22,7 @@ def get_nls_params(coeffs, coeff_type, n_timepoints):
     return phi.squeeze()
 
 
-def gridsearch_n_lags(estimator, X, n_rows, var_n_lags=np.arange(0, 50, 2)):
+def gridsearch_n_lags(estimator, X, n_rows, var_n_lags=np.arange(1, 31)):
     """grid search var_n_lags to minimize rrmse"""
     best_n_lags = None
     best_rrmse = np.inf
@@ -68,17 +68,22 @@ def run_simulation(phis, n_timepoints, n_lags, estimators, acm=None, n_repeats=1
             X_acf += rng.normal(0, scales[idx], size=X_acf.shape)
 
         for name, estimator in estimators.items():
+            if name not in results[idx]:
+                results[idx][name] = {}
+
             if "aa" in name:
                 estimator.set_params(X_sfreq=sfreq)
                 if "nw" in name:
                     var_n_lags = gridsearch_n_lags(estimator, X_acf[:, :100], n_rows=n_lags * sfreq)
+                    results[idx][name]["var_n_lags"] = var_n_lags
                     estimator.set_params(var_n_lags=var_n_lags)
-                results[idx][name] = estimator.fit(X_acf, n_lags * sfreq).estimates_
+                results[idx][name].update(estimator.fit(X_acf, n_lags * sfreq).estimates_)
             else:
                 if "nw" in name:
                     var_n_lags = gridsearch_n_lags(estimator, X[:, :100], n_rows=n_timepoints)
+                    results[idx][name]["var_n_lags"] = var_n_lags
                     estimator.set_params(var_n_lags=var_n_lags)
-                results[idx][name] = estimator.fit(X, n_timepoints).estimates_
+                results[idx][name].update(estimator.fit(X, n_timepoints).estimates_)
 
     return results
 

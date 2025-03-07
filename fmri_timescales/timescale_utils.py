@@ -212,7 +212,7 @@ class NLS(BaseEstimator):
         ks = np.linspace(0, K - 1, K) * (1.0 / self.X_sfreq)
         m = lambda ks, phi: phi**ks
         dm_dphi = lambda ks, phi: ks * phi ** (ks - 1)
-        jac = lambda ks, phi: dm_dphi(ks, phi).reshape(-1, 1)
+        jac = lambda ks, phi: dm_dphi(ks, phi + 1e-10).reshape(-1, 1)
 
         # phi estimator
         phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
@@ -266,7 +266,7 @@ class NLS(BaseEstimator):
         var_ = var_estimators[(self.var_estimator, self.var_domain)]()
         return phi_, np.sqrt(var_)
 
-    def fit(self, X: np.ndarray, n_features: int):
+    def fit(self, X: np.ndarray, n_timepoints: int):
         """Fit the NLS model.
 
         Parameters
@@ -281,7 +281,7 @@ class NLS(BaseEstimator):
         ValueError
             If `X` is not in (n_timepoints, n_regions) form.
         """
-        if X.ndim != 2 or X.shape[0] != n_features:
+        if X.ndim != 2 or X.shape[0] != n_timepoints:
             raise ValueError("X should be in (n_timepoints, n_regions) form")
         X = X.copy() if self.copy_X else X
 
