@@ -13,6 +13,10 @@
 \usepackage{fontspec} % font
 \usepackage[defaultsans]{opensans} % font
 \setmainfont[BoldFont={Open Sans Semibold}]{Open Sans} % bold font
+\usepackage{titlesec} % sections/subsections/subsubsections
+\titleformat{\section}{\bfseries\Large}{\thesection}{1em}{}
+\titleformat{\subsection}{\bfseries\itshape\large}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\itshape\normalsize}{\thesubsubsection}{1em}{}
 
 \title{Estimating fMRI Timescale Maps}
 \author{
@@ -35,18 +39,17 @@ Division of Biostatistics, University of California San Diego\\
 \maketitle
 
 \section*{Abstract}
-Timescales describe the rate at which time-dependent processes decay, including activity in neurons, neural populations, and large-scale brain networks. The spatial organization of timescales over the brain offers mechanistic insight into how regions integrate and process information over time. Despite their functional significance, current estimation methods rely on restrictive assumptions and report only point estimates, limiting statistical inference. This paper introduces two robust models for timescale estimation that are evaluated under general assumptions: a time-domain linear model and an autocorrelation-domain nonlinear model. We establish the theoretical properties of these models (bias, consistency, limiting variance), enabling standard errors for point estimates, hypothesis testing, and confidence intervals. Sampling bias and variance are evaluated via simulations. Timescale maps are estimated using resting fMRI from the Human Connectome Project. Comparatively, the linear model is more computationally efficient and scalable to mass-univariate settings like fMRI, while the nonlinear model is more sensitive to long-range temporal dependencies. Both models employ robust standard errors to address biases under model misspecification, improving reliability in simulated and empirical settings. These methods yield cortical timescale maps consistent with known anatomical hierarchies, providing a framework for mapping and inferring neural timescales and enabling reliable comparisons across brain regions, conditions, and individuals.
+Brain activity unfolds over hierarchical timescales that reflect how brain regions integrate and process information, linking functional and structural organization. While timescale studies are prevalent, existing estimation methods rely on the restrictive assumption of exponentially decaying autocorrelation and only provide point estimates without standard errors, limiting statistical inference. In this paper, we formalize and evaluate two methods for mapping timescales: a time-domain fit of an autoregressive (AR1) model and an autocorrelation-domain fit of an exponential decay model. The assumptions are generalized to include all stationary and ergodic processes by incorporating robust standard errors that account for non-exponential autocorrelation decay. We introduce theoretical properties of timescale estimators and show parameter recovery in realistic simulations, as well as applications to resting-state fMRI from the Human Connectome Project. Comparatively, the time-domain method produces more accurate estimates under model misspecification, remains computationally efficient for high-dimensional fMRI data, and yields maps aligned with known functional brain organization. In this work we show valid statistical inference on fMRI timescale maps, and provide python implementations of all methods.
 
-\vfill
-\noindent\textit{Keywords:} neuroscience, brain imaging, human connectome project, time series, autoregression, robust standard errors
 \thispagestyle{empty}
 \newpage
 \setcounter{page}{1}
 
 \subfile{latex/01-introduction}
 \subfile{latex/02-methods}
-\subfile{latex/03-results}
-\subfile{latex/04-discussion}
+\subfile{latex/03-simulations}
+\subfile{latex/04-data-analysis}
+\subfile{latex/05-conclusions}
 
 \section*{Code and Data Availability}
 All simulation results and fMRI timescale maps, inclusive of the code by which they were derived, can be accessed on \href{https://github.com/griegner/fmri-timescales}{github.com/griegner/fmri-timescales}. The code is under the open source MIT license, allowing access and reuse with attribution. The Human Connectome Project young adult dataset (ages 22-35; 2018 release) used in this study is publicly accessible under a \href{https://www.humanconnectome.org/storage/app/media/data_use_terms/DataUseTerms-HCP-Open-Access-26Apr2013.pdf}{data usage agreement}, which describes specific terms for data use and sharing.
