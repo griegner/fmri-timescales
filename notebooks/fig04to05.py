@@ -27,11 +27,30 @@ def cifti_to_volume(data, axis):
     return nib.Nifti1Image(vol_data, axis.affine)
 
 
-def se_decomposition(se, tau):
+def se_decomposition(stderrs, taus):
     """std error decomposition by the law of total variance"""
-    var_within = np.mean(se**2, axis=0)
-    var_between = np.var(tau, axis=0)
+    var_within = np.mean(stderrs**2, axis=0)
+    var_between = np.var(taus, axis=0)
     return np.sqrt(var_within + var_between)
+
+
+def get_maps(estimator):
+    """get maps for LLS or NLS estimator"""
+    taus = np.load(f"data/nsubjects-180_nregions-91282_estimator-{estimator}_tau.npy").astype(np.float32)
+    stderrs = np.load(f"data/nsubjects-180_nregions-91282_estimator-{estimator}_se.npy").astype(np.float32)
+
+    maps = {  # subject #100610
+        "tau": taus[0, :],
+        "se(tau)": stderrs[0, :],
+        "tstat": (taus[0, :] - 0.5) / stderrs[0, :],
+        "rse": stderrs[0, :] / taus[0, :],
+    }
+    maps["tau_N"] = taus.mean(axis=0)
+    maps["se(tau_N)"] = se_decomposition(stderrs, taus)
+    maps["tstat_N"] = (maps["tau_N"] - 0.5) / maps["se(tau_N)"]
+    maps["rse_N"] = maps["se(tau_N)"] / maps["tau_N"]
+
+    return maps
 
 
 def get_vmax(arr1, arr2):
@@ -52,10 +71,10 @@ def fit_timescale_models(input_path, output_path, lls, nls):
         dtseries_paths = sorted(sub_path.glob("*.dtseries.nii"))
         X = np.vstack(list(get_X(dtseries_paths)))
 
-        lls_ = lls.fit(X, n_timepoints=len(X))
+        lls_ = lls.fit(X, n_timepoints=len(X)).estimates_
         np.save(output_path / f"sub-{sub}_task-rest_estimator-lls_tau.npy", lls_["tau"])
         np.save(output_path / f"sub-{sub}_task-rest_estimator-lls_se.npy", lls_["se(tau)"])
 
-        nls_ = nls.fit(X, n_timepoints=len(X))
+        nls_ = nls.fit(X, n_timepoints=len(X)).estimates_
         np.save(output_path / f"sub-{sub}_task-rest_estimator-nls_tau.npy", nls_["tau"])
         np.save(output_path / f"sub-{sub}_task-rest_estimator-nls_se.npy", nls_["se(tau)"])

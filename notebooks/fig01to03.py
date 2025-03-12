@@ -3,101 +3,117 @@ import matplotlib.ticker as mt
 import numpy as np
 from scipy.optimize import curve_fit
 
-from fmri_timescales import acf_utils, sim, timescale_utils
+from fmri_timescales import acf_utils, sim
+
+rrmse = lambda true, estimates_: np.sqrt(np.mean((estimates_ - true) ** 2)) / np.abs(true)
 
 
-def lls_simulation(phis, n_timepoints, lls, acm=None, n_repeats=1000, random_seed=10):
-    lls_ = {}
-    for idx, phi in enumerate(phis):
-        if acm is None:  # simulate autoregression
-            X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=random_seed)
-        else:  # simulate from autocovariance matrix
-            X = sim.sim_fmri(
-                np.eye(n_repeats), acm[..., idx], n_repeats, n_timepoints, random_seed=random_seed
-            )
-        lls_nr_ = lls["lls_nr"].fit(X, n_timepoints)
-        lls_nw_ = lls["lls_nw"].fit(X, n_timepoints)
-        lls_[str(phi)] = (lls_nr_, lls_nw_)
-    return lls_
+def get_nls_params(coeffs, coeff_type, n_timepoints):
+    """theoretical nls phi parameters"""
+
+    if coeff_type == "ar_coeffs":
+        coeffs = acf_utils.ar_to_acf(coeffs, n_lags=n_timepoints)
+    elif coeff_type != "acf":
+        raise ValueError("coeff_type in 'ar_coeffs' or 'acf'")
+
+    ks = np.arange(len(coeffs))
+    m = lambda ks, phi: phi**ks
+    phi, _ = curve_fit(f=m, xdata=ks, ydata=coeffs, p0=1e-2, bounds=(-1, +1), ftol=1e-6)
+    return phi.squeeze()
 
 
-def nls_simulation(phis, n_lags, n_interp, acfs=None, n_repeats=1000, random_seed=10):
-    nls_ = {}
+def gridsearch_n_lags(estimator, X, n_rows, var_n_lags=np.arange(1, 31)):
+    """grid search var_n_lags to minimize rrmse"""
+    best_n_lags = None
+    best_rrmse = np.inf
+    for n_lags in var_n_lags:
+        lls_nw = estimator.set_params(var_estimator="newey-west", var_n_lags=n_lags)
+        lls_nw.fit(X, n_rows)
+        se_true = lls_nw.estimates_["tau"].std()
+        se_estimates = lls_nw.estimates_["se(tau)"]
+        rrmse_ = rrmse(se_true, se_estimates)
+        if rrmse_ < best_rrmse:
+            best_rrmse = rrmse_
+            best_n_lags = n_lags
+    return best_n_lags
+
+
+def run_simulation(phis, n_timepoints, n_lags, estimators, acm=None, n_repeats=1000, random_seed=0):
+    """simulate realizations of AR1, AR2, HCP and fit estimators"""
+
+    # simulation settings
     rng = np.random.default_rng(seed=random_seed)
-    ks = np.linspace(0, n_lags - 1, n_lags)
-    ks_interp = np.linspace(0, n_lags - 1, (n_lags * n_interp))
+    sfreq = 10
+    ks, ks_interp = np.arange(n_lags), np.linspace(0, n_lags - 1, (n_lags * sfreq))
+    ar1_phis = np.linspace(0.1, 0.8, 5)
+    scales = np.sqrt((1 / (1 - ar1_phis**2))) * (1 / sfreq)  # match var of AR1 w sigma^2=1
+
+    # generate X in time domain, X_acf in autocorrelation domain
+    results = {}
     for idx, phi in enumerate(phis):
-        if acfs is None:
-            acf = acf_utils.ar_to_acf(phi, n_lags)
+        results[idx] = {}
+
+        if acm is None:
+            X = sim.sim_ar(phi, n_timepoints, n_repeats, random_seed=random_seed)
+            X_acf = (
+                acf_utils.ar_to_acf(phi, n_lags=n_lags, sfreq=sfreq)
+                .repeat(n_repeats)
+                .reshape(n_lags * sfreq, n_repeats)
+            )
+            X_acf += rng.normal(0, scales[idx], size=X_acf.shape)
+
         else:
-            acf = acfs[:, idx]
+            X = sim.sim_fmri(np.eye(n_repeats), acm[..., idx], n_repeats, n_timepoints, random_seed=random_seed)
+            X_acf = np.interp(ks_interp, ks, acm[:n_lags, 0, idx]).repeat(n_repeats).reshape(n_lags * sfreq, n_repeats)
+            X_acf += rng.normal(0, scales[idx], size=X_acf.shape)
 
-        acf_interp = np.interp(ks_interp, ks, acf)
+        for name, estimator in estimators.items():
+            if name not in results[idx]:
+                results[idx][name] = {}
 
-        m = lambda ks, phi: phi**ks
+            if "aa" in name:
+                estimator.set_params(X_sfreq=sfreq)
+                if "nw" in name:
+                    var_n_lags = gridsearch_n_lags(estimator, X_acf[:, :100], n_rows=n_lags * sfreq)
+                    results[idx][name]["var_n_lags"] = var_n_lags
+                    estimator.set_params(var_n_lags=var_n_lags)
+                results[idx][name].update(estimator.fit(X_acf, n_lags * sfreq).estimates_)
+            else:
+                if "nw" in name:
+                    var_n_lags = gridsearch_n_lags(estimator, X[:, :100], n_rows=n_timepoints)
+                    results[idx][name]["var_n_lags"] = var_n_lags
+                    estimator.set_params(var_n_lags=var_n_lags)
+                results[idx][name].update(estimator.fit(X, n_timepoints).estimates_)
 
-        phis_, nr_se_, nw_se_ = (
-            np.zeros(n_repeats),
-            np.zeros(n_repeats),
-            np.zeros(n_repeats),
-        )
-        for rep in range(n_repeats):
-            acf_e = acf_interp + rng.normal(0, 0.2, size=(n_lags * n_interp))
-            phi_, _ = curve_fit(m, ks_interp, acf_e, p0=0, bounds=(-1, +1))
-            phis_[rep] = phi_.squeeze()
-
-            # standard errors
-            dm_dphi = ks_interp * phi_ ** (ks_interp - 1)
-            q_ = np.mean(dm_dphi**2)
-            e_ = acf_e - phi_**ks_interp
-
-            # NR
-            sigma2_ = np.mean(e_**2)
-            var_ = (1 / q_) * sigma2_
-            nr_se_[rep] = np.sqrt((1 / (n_lags * n_interp)) * var_)
-
-            # NW
-            u_ = dm_dphi * e_
-            omega_ = (1 / (n_lags * n_interp)) * timescale_utils.newey_west_omega(u_, n_lags=3)
-            var_ = (1 / q_) * omega_ * (1 / q_)
-            nw_se_[rep] = np.sqrt((1 / (n_lags * n_interp)) * var_)
-
-        nls_nr_ = {
-            "phi": phis_,
-            "se(phi)": nr_se_,
-            "tau": -1 / np.log(phis_),
-            "se(tau)": (1.0 / (phis_ * np.log(phis_) ** 2)) * nr_se_,
-        }
-        nls_nw_ = {
-            "phi": phis_,
-            "se(phi)": nw_se_,
-            "tau": -1 / np.log(phis_),
-            "se(tau)": (1.0 / (phis_ * np.log(phis_) ** 2)) * nw_se_,
-        }
-
-        nls_[str(phi)] = (nls_nr_, nls_nw_)
-
-    return nls_
+    return results
 
 
-def plot_simulation(lls_, nls_, lls_params, nls_params):
+def plot_simulation(results, lls_taus, nls_taus):
+    """compare true and estimated timescales + standard errors"""
+
+    hist_range = lambda estimates_: (
+        np.min(estimates_),
+        np.mean(estimates_) + 3 * np.std(estimates_),
+    )
+
     colors = ["#313695", "#72ABD0", "#FEDE8E", "#F57245", "#A70226"]
     hist_kwargs = dict(bins=25, histtype="step", lw=3)
     vline_kwargs = dict(lw=5)
+    scatter_kwargs = dict(s=100, lw=2)
 
     layout = """
     .b
     .B
+    .d
     ..
-    cd
     CD
-    ..
     ef
     EF
     """
 
     # subplot setup
-    fig, axs = plt.subplot_mosaic(layout, figsize=(24, 18), layout="constrained")
+    fig, axs = plt.subplot_mosaic(layout, figsize=(24, 15), layout="constrained")
+    axs_inset = {k: v.inset_axes([1.1, 0, 0.3, 0.99]) for k, v in axs.items()}
 
     # tick formatting
     for ax in axs.values():
@@ -105,94 +121,121 @@ def plot_simulation(lls_, nls_, lls_params, nls_params):
         ax.ticklabel_format(style="sci", axis="y", scilimits=(0, 1))
         ax.yaxis.get_offset_text().set_fontsize(15)
 
-    # share x-axis pairs
-    axs["b"].sharex(axs["B"])
+    for k, ax in axs_inset.items():
+        ax.yaxis.set_major_formatter(mt.FormatStrFormatter("%.1f"))
+        ax.set_xticklabels("")
+        if k in ["b", "B", "d"]:
+            ax.axhline(y=0.1, c="k", ls="--")
+        else:
+            ax.axhline(y=0.2, c="k", ls="--")
 
-    axs["c"].sharex(axs["d"])
-    axs["d"].sharex(axs["C"])
-    axs["C"].sharex(axs["D"])
+    # share axis pairs
+    share_pairs = [("b", "B"), ("B", "d"), ("C", "D"), ("D", "e"), ("e", "f"), ("f", "E"), ("E", "F")]
+    for pair in share_pairs:
+        axs[pair[0]].sharex(axs[pair[1]])
+        axs_inset[pair[0]].sharey(axs_inset[pair[1]])
 
-    axs["e"].sharex(axs["E"])
-    axs["f"].sharex(axs["F"])
-
-    for idx, phi in enumerate(lls_.keys()):
-        lls_nr_, lls_nw_ = lls_[phi]
-        nls_nr_, nls_nw_ = nls_[phi]
-
+    for idx, result in results.items():
         # --- row 0 --- #
 
         # lls: tau
+        true, estimates_ = lls_taus[idx], result["lls_nr"]["tau"]
         axs["b"].set_ylabel("LLS")
         axs["b"].set_xlabel(r"$\hat\tau_\text{LLS}$")
-        axs["b"].hist(lls_nr_["tau"], color=colors[idx], **hist_kwargs)
-        axs["b"].axvline(lls_params[idx], color=colors[idx], **vline_kwargs)
+        axs["b"].hist(estimates_, color=colors[idx], **hist_kwargs)
+        axs["b"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["b"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["b"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{LLS})$")
 
         # --- row 1 --- #
 
-        # nls: tau
+        # nls TT/TA: tau
+        true, estimates_ = nls_taus[idx], result["nls_tt_nr"]["tau"]
         axs["B"].set_ylabel("NLS")
         axs["B"].set_xlabel(r"$\hat\tau_\text{NLS}$")
-        axs["B"].hist(nls_nr_["tau"], color=colors[idx], **hist_kwargs)
-        axs["B"].axvline(nls_params[idx], color=colors[idx], **vline_kwargs)
+        axs["B"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
+        axs["B"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["B"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["B"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{NLS})$")
 
         # --- row 2 --- #
 
-        ## lls: naive se(tau)
-        axs["c"].set_ylabel("LLS")
-        axs["c"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{LLS})$")
-        axs["c"].hist(lls_nr_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs["c"].axvline(lls_nr_["tau"].std(), color=colors[idx], **vline_kwargs)
-
-        ## lls: newey-west se(tau)
-        axs["d"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{LLS})$")
-        axs["d"].hist(lls_nw_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs["d"].axvline(lls_nw_["tau"].std(), color=colors[idx], **vline_kwargs)
+        # nls AA: tau
+        true, estimates_ = nls_taus[idx], result["nls_aa_nr"]["tau"]
+        axs["d"].set_ylabel("NLS")
+        axs["d"].set_xlabel(r"$\hat\tau_\text{NLS}$")
+        axs["d"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
+        axs["d"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["d"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["d"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{NLS})$")
 
         # --- row 3 --- #
 
-        # nls: naive se(tau)
-        axs["C"].set_ylabel("NLS")
-        axs["C"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{NLS})$")
-        axs["C"].hist(nls_nr_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs["C"].axvline(nls_nr_["tau"].std(), color=colors[idx], **vline_kwargs)
+        ## lls: naive se(tau)
+        true, estimates_ = result["lls_nr"]["tau"].std(), result["lls_nr"]["se(tau)"]
+        axs["C"].set_ylabel("LLS")
+        axs["C"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{LLS})$")
+        axs["C"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
+        axs["C"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["C"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["C"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{Naive})$")
 
-        # nls: newey-west se(tau)
-        axs["D"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{NLS})$")
-        axs["D"].hist(nls_nw_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs["D"].axvline(nls_nw_["tau"].std(), color=colors[idx], **vline_kwargs)
+        ## lls: newey-west se(tau)
+        true, estimates_ = result["lls_nw"]["tau"].std(), result["lls_nw"]["se(tau)"]
+        axs["D"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{LLS})$")
+        axs["D"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
+        axs["D"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["D"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["D"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{NW})$")
 
         # --- row 4 --- #
 
-        ## lls:  tau / newey-west se(tau)
-        axs["e"].set_ylabel("LLS")
-        axs["e"].set_xlabel(
-            r"$\hat\tau_\text{LLS} \;/\; \widehat{se}_\text{NW}(\hat\tau_\text{LLS})$"
-        )
-        axs["e"].hist(lls_nw_["tau"] / lls_nw_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs["e"].axvline(lls_params[idx] / lls_nw_["tau"].std(), color=colors[idx], **vline_kwargs)
+        # nls var_domain="autocorrelation": naive se(tau)
+        true, estimates_ = result["nls_tt_nr"]["tau"].std(), result["nls_tt_nr"]["se(tau)"]
+        axs["e"].set_ylabel("NLS")
+        axs["e"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{NLS})$")
+        axs["e"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
+        axs["e"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["e"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["e"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{Naive})$")
 
-        ## lls: newey-west se(tau) / tau
-        axs["f"].set_xlabel(
-            r"$\widehat{se}_\text{NW}(\hat\tau_\text{LLS}) \;/\; \hat\tau_\text{LLS}$"
+        true, estimates_ = result["nls_ta_nr"]["tau"].std(), result["nls_ta_nr"]["se(tau)"]
+        axs["e"].hist(estimates_, color=colors[idx], alpha=0.75, ls="--", **hist_kwargs)
+        axs_inset["e"].scatter(
+            idx, rrmse(true, estimates_), color=colors[idx], ls="--", facecolors="none", **scatter_kwargs
         )
-        axs["f"].hist(lls_nw_["se(tau)"] / lls_nw_["tau"], color=colors[idx], **hist_kwargs)
-        axs["f"].axvline(lls_nw_["tau"].std() / lls_params[idx], color=colors[idx], **vline_kwargs)
+
+        # nls var_domain="autocorrelation": newey-west se(tau)
+        true, estimates_ = result["nls_tt_nw"]["tau"].std(), result["nls_tt_nw"]["se(tau)"]
+        axs["f"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{NLS})$")
+        axs["f"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
+        axs["f"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["f"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["f"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{NW})$")
+
+        true, estimates_ = result["nls_ta_nw"]["tau"].std(), result["nls_ta_nw"]["se(tau)"]
+        axs["f"].hist(estimates_, color=colors[idx], alpha=0.75, ls="--", range=hist_range(estimates_), **hist_kwargs)
+        axs_inset["f"].scatter(
+            idx, rrmse(true, estimates_), color=colors[idx], ls="--", facecolors="none", **scatter_kwargs
+        )
 
         # --- row 5 --- #
 
-        ## nls:  tau / newey-west se(tau)
+        # nls var_domain="time": naive se(tau)
+        true, estimates_ = result["nls_aa_nr"]["tau"].std(), result["nls_aa_nr"]["se(tau)"]
         axs["E"].set_ylabel("NLS")
-        axs["E"].set_xlabel(
-            r"$\hat\tau_\text{NLS} \;/\; \widehat{se}_\text{NW}(\hat\tau_\text{NLS})$"
-        )
-        axs["E"].hist(nls_nw_["tau"] / nls_nw_["se(tau)"], color=colors[idx], **hist_kwargs)
-        axs["E"].axvline(nls_params[idx] / nls_nw_["tau"].std(), color=colors[idx], **vline_kwargs)
+        axs["E"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{NLS})$")
+        axs["E"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
+        axs["E"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["E"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["E"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{Naive})$")
 
-        ## nls: newey-west se / tau
-        axs["F"].set_xlabel(
-            r"$\widehat{se}_\text{NW}(\hat\tau_\text{NLS}) \;/\; \hat\tau_\text{NLS}$"
-        )
-        axs["F"].hist(nls_nw_["se(tau)"] / nls_nw_["tau"], color=colors[idx], **hist_kwargs)
-        axs["F"].axvline(nls_nw_["tau"].std() / nls_params[idx], color=colors[idx], **vline_kwargs)
+        # nls var_domain="time": newey-west se(tau)
+        true, estimates_ = result["nls_aa_nw"]["tau"].std(), result["nls_aa_nw"]["se(tau)"]
+        axs["F"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{NLS})$")
+        axs["F"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
+        axs["F"].axvline(true, color=colors[idx], **vline_kwargs)
+        axs_inset["F"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
+        axs_inset["F"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{NW})$")
 
     return fig
