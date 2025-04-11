@@ -35,9 +35,6 @@ def smooth_signal(X_wn, std):
     return X_smoothed * std_scaling_factor
 
 
-"""https://nbviewer.org/github/neurohackademy/nh2020-curriculum/blob/master/we-nibabel-markiewicz/NiBabel.ipynb"""
-
-
 def cifti_to_volume(data, axis):
     """Convert CIFTI subcortex data to NIFTI"""
     assert isinstance(axis, nb.cifti2.BrainModelAxis)

@@ -83,9 +83,7 @@ def test_sim_ar():
 def test_sim_ar_vs_statsmodels():
 
     ar1_coeffs = np.linspace(0.1, 0.8, 5)
-    ar2_coeffs = np.array(
-        [[0.091, 0.09], [0.229, 0.182], [0.347, 0.229], [0.471, 0.24], [0.646, 0.193]]
-    )
+    ar2_coeffs = np.array([[0.091, 0.09], [0.229, 0.182], [0.347, 0.229], [0.471, 0.24], [0.646, 0.193]])
     for ar1_coeff in ar1_coeffs:
         random_seed = 0
         random_state = np.random.default_rng(seed=random_seed)

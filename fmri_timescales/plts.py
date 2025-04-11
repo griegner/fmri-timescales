@@ -25,9 +25,7 @@ def plot_stationarity_triangle(ax, fill_alpha=0.25, annotate=True):
     # plot AR(2) stationarity triangle
     phi1 = np.linspace(-2, 2, 100)
     lwr, upr1, upr2 = -1, 1 + phi1, 1 - phi1
-    ax.fill_between(
-        phi1, np.maximum(lwr, np.minimum(upr1, upr2)), lwr, color="gray", alpha=fill_alpha
-    )
+    ax.fill_between(phi1, np.maximum(lwr, np.minimum(upr1, upr2)), lwr, color="gray", alpha=fill_alpha)
     ax.plot(phi1, (-0.25 * phi1**2), c="k", ls="--", lw=0.5)
 
     # add annotations

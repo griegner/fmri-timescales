@@ -6,9 +6,7 @@ from scipy.signal import lfilter
 from fmri_timescales import acf_utils
 
 
-def sim_fmri(
-    xcm: np.ndarray, acm: np.ndarray, n_regions: int, n_timepoints: int, random_seed: int = 0
-) -> np.ndarray:
+def sim_fmri(xcm: np.ndarray, acm: np.ndarray, n_regions: int, n_timepoints: int, random_seed: int = 0) -> np.ndarray:
     """Sample cross-correlated and auto-correlated timeseries from the multivariate normal distribution.
 
     Parameters

@@ -46,7 +46,7 @@ def run_simulation(phis, n_timepoints, n_lags, estimators, acm=None, n_repeats=1
     sfreq = 10
     ks, ks_interp = np.arange(n_lags), np.linspace(0, n_lags - 1, (n_lags * sfreq))
     ar1_phis = np.linspace(0.1, 0.8, 5)
-    scales = np.sqrt((1 / (1 - ar1_phis**2))) * (1 / sfreq)  # match var of AR1 w sigma^2=1
+    scales = np.sqrt(1 / (1 - ar1_phis**2)) * (1 / sfreq)  # match var of AR1 w sigma^2=1
 
     # generate X in time domain, X_acf in autocorrelation domain
     results = {}

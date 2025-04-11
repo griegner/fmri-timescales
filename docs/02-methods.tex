@@ -6,7 +6,7 @@
 \subsection{Assumptions} \label{sec:assumptions}
 
 Let $\{X_t, t\in \mathbb{Z}\}$ be a discrete-time stochastic process that is \textit{weakly stationary} and \textit{ergodic}, and let $x_t = \{x_1, x_2, \ldots, x_T\}$ be an observed sample of $X_t$. For simplicity, assume $X_t$ and $x_t$ have mean zero. Stationarity implies a constant mean and variance (independent of time index $t$), and an autocovariance function that only depends on time lag $k$:
-\begin{align} 
+\begin{align}
     \gamma_k = \text{cov}[X_t, X_{t-k}] = \mathbb{E}[X_t X_{t-k}].
 \end{align}
 
@@ -165,7 +165,7 @@ The sample standard error estimator takes the form:
 \noindent This estimator calculates a weighted sum of the regression scores $x_{t-1} \cdot \hat e_t$, where $\hat e_t = x_t - \hat\phi^*_{\scriptscriptstyle\text{LLS}} \cdot x_{t-1}$. The true $\omega$ is approximated by $\hat \omega$ by taking a finite sum of the regression score covariances up to lag $M$, where $M$ is the lag-truncation (or bandwidth). The weights used in the sum decrease linearly with lag $\ell$, following a Bartlett kernel \citep{newey_simple_1987}. This kernel not only ensures the standard errors remain non-negative but also regularizes $\hat \omega$ to change smoothly with $M$ \citep[Chapter~14.35]{hansen_econometrics_2022}.\\
 
 \noindent For comparison we also include the naive estimator which simplifies under correct specification:
-\begin{align} 
+\begin{align}
     \widehat{\text{se}}_\text{Naive}(\hat\phi_{\scriptscriptstyle\text{LLS}}) &= \sqrt{\hat\sigma^2 \hat q^{-1}}\\
     \widehat{\text{se}}_\text{Naive}(\hat\tau_{\scriptscriptstyle\text{LLS}}) &\approx \widehat{\text{se}}_{\text{Naive}}(\hat\phi_{\scriptscriptstyle\text{LLS}}) \frac{d}{d\phi} g(\hat\phi_{\scriptscriptstyle\text{LLS}})
 \end{align}
@@ -188,7 +188,7 @@ The sample standard error estimator takes the form:
 \noindent This estimator calculates a weighted sum of the linearized regression scores $\hat m_{\phi, k} \cdot \hat e_k$, where $\hat e_k = \hat\rho_k - (\hat\phi^*_{\scriptscriptstyle\text{NLS}})^k$. The estimate of $\hat\omega$ takes a finite sum of these scores up to lag $M$, weighted by a Bartlett kernel, so that $\hat\omega$ changes smoothly with $M$.\\
 
 \noindent In the case of correct specification the equation simplifies to:
-\begin{align} 
+\begin{align}
     \widehat{\text{se}}_\text{Naive}(\hat\phi^*_{\scriptscriptstyle\text{NLS}}) &= \sqrt{\hat\sigma^2 \hat q^{-1}}\\
     \widehat{\text{se}}_\text{Naive}(\hat\tau^*_{\scriptscriptstyle\text{NLS}}) &\approx \widehat{\text{se}}_{\text{Naive}}(\hat\phi^*_{\scriptscriptstyle\text{NLS}}) \frac{d}{d\phi} g(\hat\phi^*_{\scriptscriptstyle\text{NLS}})
 \end{align}

@@ -81,7 +81,7 @@ class LLS(BaseEstimator):
         T = len(x) - 1
         lag = int(self.X_sfreq)
         # x_t = X[1:], x_{t-1} = x[:-1] (Hz=1)
-        phi_ = np.sum((x[lag:] * x[:-lag])) / np.sum(x[:-lag] ** 2)
+        phi_ = np.sum(x[lag:] * x[:-lag]) / np.sum(x[:-lag] ** 2)
 
         # variance estimators
         def non_robust():

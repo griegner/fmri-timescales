@@ -28,19 +28,19 @@
     ├── ...                         <- latex files
     ├── main.pdf                    <- manuscript
     ├── slides.pdf                  <- presentation slides
-    └── zotero.bib                  <- references 
+    └── zotero.bib                  <- references
 
 ├── LICENSE                         <- MIT license
 ├── README.md                       <- this README file
 └── pyproject.toml                  <- python configuration and dependencies
 ```
 
-**Data Availability**  
+**Data Availability**
 The `notebooks/data/*{tau,se}.npy` files contain the LLS and NLS timescale estimates at each grayordinate (180 subjects, 91282 regions), from which the `figures/` can be reproduced. Access to the ~380GB of resting fMRI data from the Human Connectome Project 2018 release can by downloaded at [ConnetomeDB](https://db.humanconnectome.org/app/template/Login.vm):
 
 <img src="./figures/hcp-dataset.png" width="800"/>
 
-**Code Installation**  
+**Code Installation**
 
 Clone this repository:
 ```
@@ -52,7 +52,7 @@ Create virtual environment using `pip` or `conda`:
 ```
 # pip
 python3 -m venv .fmri-timescales
-source .fmri-timescales/bin/activate 
+source .fmri-timescales/bin/activate
 ```
 
 ```
@@ -76,9 +76,9 @@ Time Domain Linear Model, Fit by Linear Least Squares (LLS):
     >>> lls = timescale_utils.LLS(var_estimator="newey-west", var_n_lags=10)
     >>> lls.fit(X=X, n_timepoints=1000).estimates_
     {
-        'phi': array([0.79789847]), 
-        'se(phi)': array([0.02045074]), 
-        'tau': array([4.42920958]), 
+        'phi': array([0.79789847]),
+        'se(phi)': array([0.02045074]),
+        'tau': array([4.42920958]),
         'se(tau)': array([0.50282146])
     }
 ```
@@ -90,9 +90,9 @@ Autocorrelation Domain Nonlinear Model, Fit by Nonlinear Least Squares (NLS):
     >>> nls = timescale_utils.NLS(var_domain="time", var_estimator="newey-west", var_n_lags=10)
     >>> nls.fit(X=X, n_timepoints=1000).estimates_
     {
-        'phi': array([0.7802222]), 
-        'se(phi)': array([0.03207284]), 
-        'tau': array([4.02938991]), 
+        'phi': array([0.7802222]),
+        'se(phi)': array([0.03207284]),
+        'tau': array([4.02938991]),
         'se(tau)': array([0.66741761])
     }
 ```
