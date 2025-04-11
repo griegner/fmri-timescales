@@ -24,7 +24,7 @@
     ├── fig04to05.py                <- supporting function
     └── ...                         <- supplementary notebooks (not in manuscript)
 ├── figures/                        <- figures derived from notebooks/
-├── latex/
+├── docs/
     ├── ...                         <- latex files
     ├── main.pdf                    <- manuscript
     ├── slides.pdf                  <- presentation slides
@@ -73,13 +73,13 @@ Time Domain Linear Model, Fit by Linear Least Squares (LLS):
 ```python
     >>> from fmri_timescales import sim, timescale_utils
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
-    >>> lls = timescale_utils.LLS(var_estimator="newey-west")
-    >>> lls.fit(X=X, n_timepoints=1000)
+    >>> lls = timescale_utils.LLS(var_estimator="newey-west", var_n_lags=10)
+    >>> lls.fit(X=X, n_timepoints=1000).estimates_
     {
         'phi': array([0.79789847]), 
-        'se(phi)': array([0.02028763]), 
+        'se(phi)': array([0.02045074]), 
         'tau': array([4.42920958]), 
-        'se(tau)': array([0.49881125])
+        'se(tau)': array([0.50282146])
     }
 ```
 
@@ -87,12 +87,12 @@ Autocorrelation Domain Nonlinear Model, Fit by Nonlinear Least Squares (NLS):
 ```python
     >>> from fmri_timescales import sim, timescale_utils
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
-    >>> nls = timescale_utils.NLS(var_estimator="newey-west")
-    >>> nls.fit(X=X, n_timepoints=1000)
+    >>> nls = timescale_utils.NLS(var_domain="time", var_estimator="newey-west", var_n_lags=10)
+    >>> nls.fit(X=X, n_timepoints=1000).estimates_
     {
-        'phi': array([0.78021159]), 
-        'se(phi)': array([0.01071285]), 
-        'tau': array([4.02916908]), 
-        'se(tau)': array([0.22290691])
+        'phi': array([0.7802222]), 
+        'se(phi)': array([0.03207284]), 
+        'tau': array([4.02938991]), 
+        'se(tau)': array([0.66741761])
     }
 ```
