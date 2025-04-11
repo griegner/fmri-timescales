@@ -39,7 +39,7 @@ Division of Biostatistics, University of California San Diego\\
 \maketitle
 
 \section*{Abstract}
-Brain activity unfolds over hierarchical timescales that reflect how brain regions integrate and process information, linking functional and structural organization. While timescale studies are prevalent, existing estimation methods rely on the restrictive assumption of exponentially decaying autocorrelation and only provide point estimates without standard errors, limiting statistical inference. In this paper, we formalize and evaluate two methods for mapping timescales: a time-domain fit of an autoregressive (AR1) model and an autocorrelation-domain fit of an exponential decay model. The assumptions are generalized to include all stationary and ergodic processes by incorporating robust standard errors that account for non-exponential autocorrelation decay. We introduce theoretical properties of timescale estimators and show parameter recovery in realistic simulations, as well as applications to resting-state fMRI from the Human Connectome Project. Comparatively, the time-domain method produces more accurate estimates under model misspecification, remains computationally efficient for high-dimensional fMRI data, and yields maps aligned with known functional brain organization. In this work we show valid statistical inference on fMRI timescale maps, and provide python implementations of all methods.
+Brain activity unfolds over hierarchical timescales that reflect how brain regions integrate and process information, linking functional and structural organization. While timescale studies are prevalent, existing estimation methods rely on the restrictive assumption of exponentially decaying autocorrelation and only provide point estimates without standard errors, limiting statistical inference. In this paper, we formalize and evaluate two methods for mapping timescales in resting-state fMRI: a time-domain fit of an autoregressive (AR1) model and an autocorrelation-domain fit of an exponential decay model. Rather than assuming exponential autocorrelation decay, we define timescales by projecting these approximating models onto fMRI time series, requiring only stationarity and ergodicity while incorporating robust standard errors to account for model misspecification. We introduce theoretical properties of timescale estimators and show parameter recovery in realistic simulations, as well as applications to fMRI from the Human Connectome Project. Comparatively, the time-domain method produces more accurate estimates under model misspecification, remains computationally efficient for high-dimensional fMRI data, and yields maps aligned with known functional brain organization. In this work we show valid statistical inference on fMRI timescale maps, and provide python implementations of all methods.
 
 \thispagestyle{empty}
 \newpage
@@ -53,6 +53,12 @@ Brain activity unfolds over hierarchical timescales that reflect how brain regio
 
 \section*{Code and Data Availability}
 All simulation results and fMRI timescale maps, inclusive of the code by which they were derived, can be accessed on \href{https://github.com/griegner/fmri-timescales}{github.com/griegner/fmri-timescales}. The code is under the open source MIT license, allowing access and reuse with attribution. The Human Connectome Project young adult dataset (ages 22-35; 2018 release) used in this study is publicly accessible under a \href{https://www.humanconnectome.org/storage/app/media/data_use_terms/DataUseTerms-HCP-Open-Access-26Apr2013.pdf}{data usage agreement}, which describes specific terms for data use and sharing.
+
+\section*{Author Contributions}
+\textbf{Gabriel Riegner}: Conceptualization, Methodology, Software, Validation, Formal Analysis, Writing - Original Draft
+\textbf{Samuel Davenport}: Conceptualization, Methodology, Formal Analysis, Writing - Review \& Editing, Supervision
+\textbf{Bradley Voytek}: Conceptualization, Writing - Review \& Editing, Supervision
+\textbf{Armin Schwartzman}: Conceptualization, Methodology, Formal Analysis, Writing - Review \& Editing, Supervision, Project Administration, Funding Acquisition.
 
 \section*{Disclosure Statement}
 The authors declare no conflicts of interest.

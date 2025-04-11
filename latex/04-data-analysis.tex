@@ -13,24 +13,24 @@ The \textit{methods development subset} included 10 subjects  (\#100004 - \#1014
 Group-level maps combined individual timescales and standard errors, accounting for within- and between-subject variability. While remaining within the mass-univariate framework, for simplicity, we express the group timescale for the $N=180$ individual subjects at a single cortical vertex:
 \begin{align}
     \hat\tau_n \; &\text{for} \; n\in\{1, 2, ..., N\}\\
-    \hat\tau_N &= \frac{1}{N} \sum_{n=1}^N \hat\tau_n.
+    \bar\tau &= \frac{1}{N} \sum_{n=1}^N \hat\tau_n.
 \end{align}
 
 \noindent The group-level standard error for the timescale is given by the law of total variance:
 \begin{align}
-    \widehat{\text{se}}(\hat\tau_N) = \sqrt{\frac{1}{N} \sum_{n=1}^N \widehat{\text{se}}(\hat\tau_n)^2 + \frac{1}{N} \sum_{n=1}^N (\hat\tau_n - \hat\tau_N)^2}.
+    \widehat{\text{se}}(\bar\tau) = \sqrt{\frac{1}{N} \sum_{n=1}^N \widehat{\text{se}}(\hat\tau_n)^2 + \frac{1}{N} \sum_{n=1}^N (\hat\tau_n - \bar\tau)^2}.
 \end{align}
 
 \noindent Here, the first term under the square root is the within-individual variance and the second term is the between-individual variance.\\
 
 For visualization, brain-wide t-statistic maps tested whether timescales exceeded 0.5 seconds ($H_0: \tau \leq 0.5$) by the ratio:
 \begin{align}\label{eq:t-ratio}
-    t_N = \frac{\hat\tau_N-0.5}{\widehat{\text{se}}(\hat\tau_N)}.
+    t(\bar\tau) = \frac{\bar\tau-0.5}{\widehat{\text{se}}(\bar\tau)}.
 \end{align}
 
 \noindent Additionally, relative standard error (RSE) maps are presented to visualized the spatial precision of timescale estimates by the ratio:
 \begin{align}
-    \text{rse}(\hat\tau_N) = \frac{\widehat{\text{se}}(\hat\tau_N)}{\hat\tau_N}
+    \text{rse}(\bar\tau) = \frac{\widehat{\text{se}}(\bar\tau)}{\bar\tau}
 \end{align}
 
 \subsection{Data Analysis Results}
