@@ -1,0 +1,29 @@
+\documentclass[docs/main.tex]{subfiles}
+
+
+\begin{document}
+\setlength{\parindent}{0pt}
+\thispagestyle{empty}
+\vspace*{\fill}
+
+\hfill April 22, 2025\\
+
+\noindent Dear Editors of Imaging Neuroscience,\\
+
+On behalf of my co-authors Samuel Davenport, Bradley Voytek, and Armin Schwartzman, I am pleased to submit our manuscript, ``Estimating fMRI Timescale Maps,'' for your consideration.\\
+
+In this paper, we formalize and evaluate two statistical methods for mapping timescales in resting-state fMRI: a time-domain fit of an autoregressive (AR1) model and an autocorrelation-domain fit of an exponential decay model. Current methods for estimating these timescales often use restrictive assumptions and lack uncertainty quantification, limiting statistical inference and hypothesis testing. Our novel approach advances current practice by providing formal definitions and robust standard errors under minimal assumptions, thereby enabling valid statistical inference beyond point estimates. We demonstrate these advances through theoretical analysis, simulations, and application to fMRI from the Human Connectome Project, showing that our methods yield accurate timescale maps that are consistent with known functional brain organization. This work lays the methodological foundation for future research on neural timescales, and given the growing interest within the neuroimaging community on the role of timescales in brain structure and function, we believe it is an excellent fit for Imaging Neuroscience.\\
+
+To support reproducibility, we provide Python implementations of all methods (MIT license), following best practices in documentation and testing: \href{https://github.com/griegner/fmri-timescales}{https://github.com/griegner/fmri-timescales}. Jupyter notebooks detailing all simulation and analysis results are included.\\
+
+Thank you for your consideration.\\
+
+Sincerely,\\[4ex]
+
+Gabriel Riegner\\
+Halicio\u{g}lu Data Science Institute,\\
+University of California San Diego\\
+gariegner@ucsd.edu
+
+\vspace*{\fill}
+\end{document}
