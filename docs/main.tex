@@ -1,0 +1,66 @@
+\documentclass[9pt]{article}
+
+\usepackage{subfiles} % include subfiles
+\usepackage{fullpage} % 1-in margins
+\usepackage{amsmath, amsfonts, amssymb} % equations
+\usepackage{graphicx} % figures
+\usepackage{subcaption} % subcaptions
+\usepackage{float} % figures
+\usepackage{xcolor} % links
+\usepackage[colorlinks=true, linkcolor=gray, citecolor=gray, urlcolor=gray]{hyperref} % links
+\usepackage[round]{natbib} % citations + references
+\bibliographystyle{apalike} % citations + references
+\usepackage{fontspec} % font
+\usepackage[defaultsans]{opensans} % font
+\setmainfont[BoldFont={Open Sans Semibold}]{Open Sans} % bold font
+\usepackage{titlesec} % sections/subsections/subsubsections
+\titleformat{\section}{\bfseries\Large}{\thesection}{1em}{}
+\titleformat{\subsection}{\bfseries\itshape\large}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\itshape\normalsize}{\thesubsubsection}{1em}{}
+
+\title{Estimating fMRI Timescale Maps}
+\author{Gabriel Riegner $^{1\ast}$, Samuel Davenport $^{2}$, Bradley Voytek $^{1,3,4}$, Armin Schwartzman $^{1,2}$\\
+{\small $^{1}$Halicio\u{g}lu Data Science Institute, University of California San Diego}\\
+{\small $^{2}$Division of Biostatistics, University of California San Diego}\\
+{\small $^{3}$Department of Cognitive Science, University of California San Diego}\\
+{\small $^{4}$Neurosciences Graduate Program, University of California San Diego}\\
+{\small $^\ast$Correspondence:  gariegner@ucsd.edu}
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Abstract}
+Brain activity unfolds over hierarchical timescales that reflect how brain regions integrate and process information, linking functional and structural organization. While timescale studies are prevalent, existing estimation methods rely on the restrictive assumption of exponentially decaying autocorrelation and only provide point estimates without standard errors, limiting statistical inference. In this paper, we formalize and evaluate two methods for mapping timescales in resting-state fMRI: a time-domain fit of an autoregressive (AR1) model and an autocorrelation-domain fit of an exponential decay model. Rather than assuming exponential autocorrelation decay, we define timescales by projecting the fMRI time series onto these approximating models, requiring only stationarity and mixing conditions while incorporating robust standard errors to account for model misspecification. We introduce theoretical properties of timescale estimators and show parameter recovery in realistic simulations, as well as applications to fMRI from the Human Connectome Project. Comparatively, the time-domain method produces more accurate estimates under model misspecification, remains computationally efficient for high-dimensional fMRI data, and yields maps aligned with known functional brain organization. In this work we show valid statistical inference on fMRI timescale maps, and provide Python implementations of all methods.
+
+\vfill
+\noindent\textit{Keywords:} time-domain linear model, autocorrelation-domain nonlinear model, uncertainty quantification, statistical inference, human connectome project, functional brain organization
+\thispagestyle{empty}
+\newpage
+\setcounter{page}{1}
+
+\subfile{docs/01-introduction}
+\subfile{docs/02-methods}
+\subfile{docs/03-simulations}
+\subfile{docs/04-data-analysis}
+\subfile{docs/05-conclusions}
+
+\section*{Code and Data Availability}
+All simulation results and fMRI timescale maps, inclusive of the code by which they were derived, can be accessed on \href{https://github.com/griegner/fmri-timescales}{github.com/griegner/fmri-timescales}. The code is under the open source MIT license, allowing access and reuse with attribution. The Human Connectome Project young adult dataset (ages 22-35; 2018 release) used in this study is publicly accessible under a \href{https://www.humanconnectome.org/storage/app/media/data_use_terms/DataUseTerms-HCP-Open-Access-26Apr2013.pdf}{data usage agreement}, which describes specific terms for data use and sharing.
+
+\section*{Author Contributions}
+\textbf{Gabriel Riegner}: Conceptualization, Methodology, Software, Validation, Formal Analysis, Writing - Original Draft
+\textbf{Samuel Davenport}: Conceptualization, Methodology, Formal Analysis, Writing - Review \& Editing, Supervision
+\textbf{Bradley Voytek}: Conceptualization, Writing - Review \& Editing, Supervision
+\textbf{Armin Schwartzman}: Conceptualization, Methodology, Formal Analysis, Writing - Review \& Editing, Supervision, Project Administration, Funding Acquisition.
+
+\section*{Disclosure Statement}
+The authors declare no conflicts of interest.
+
+% references
+\bigskip
+\bibliography{docs/zotero}
+
+
+\end{document}

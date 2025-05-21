@@ -1,0 +1,92 @@
+\documentclass[docs/main.tex]{subfiles}
+
+\begin{document}
+
+\subsection*{AR1}
+
+\begin{align}
+    X_t = \phi X_{t-1} + e_t \label{eq:ar1-1}
+\end{align}
+
+where $\mathbb{E}[e_t] = 0$, $\mathbb{E}[e_t^2] = \sigma^2$, $\mathbb{C}[e_t, e_{t-k}]) = 0\text{ for }k\ne0$.\\
+
+
+\textbf{mean}:
+\begin{align}
+    \mathbb{E}[X_t] &= \phi \mathbb{E}[X_{t-1}] + \mathbb{E}[e_t] \quad\text{(since $X_{t-1}$ and $e_t$ are independent)}\\
+    \mu &= \phi \mu + 0 \quad\text{(by stationarity $\mathbb{E}[X_t] = \mathbb{E}[X_{t-1}] = \mu$)}\\
+    &= 0
+\end{align}
+
+
+\textbf{variance}:
+\begin{align}
+    \mathbb{V}[X_t] &= \mathbb{V}[\phi X_{t-1} + e_t]\\
+    &= \phi^2 \mathbb{V}[X_{t-1}] + \mathbb{V}[e_t] \quad \text{(since $X_{t-1}$ and $e_t$ are independent)}\\
+    &= \phi^2 \mathbb{V}[X_{t-1}] + \sigma^2 \quad \text{(by the definition of $e_t$)}\\
+    \gamma_0 &= \phi^2 \gamma_0 + \sigma^2 \quad \text{(by stationarity $\mathbb{V}[X_t] = \mathbb{V}[X_{t-1}] = \gamma_0$)}\\
+    &= \frac{\sigma^2}{(1 - \phi^2)}
+\end{align}
+
+\textbf{autocovariance}:
+\begin{align}
+    \mathbb{C}[X_t,X_{t-k}] &= \mathbb{E}[(\phi X_{t-1} + e_t) X_{t-k}]\\
+    &= \phi \mathbb{E}[X_{t-1}X_{t-k}] + \mathbb{E}[e_t X_{t-k}]\\
+    &= \phi \mathbb{E}[X_{t-1} X_{t-k}] + 0 \quad \text{($\mathbb{E}[e_t X_{t-k}] = 0$ for $k>0$)}\\
+    \gamma_k &= \phi \gamma_{k-1} \quad \text{(by stationarity, $\mathbb{E}[X_{t-1}X_{t-k}] = \gamma_{k-1}$)}
+\end{align}
+
+By recursion we obtain the Yule-Walker equation for an AR(1)
+\begin{align}
+    \gamma_1 &= \phi \gamma_0 \quad \text{(where $\gamma_0 = \mathbb{V}[X_t]$)}\\
+    \gamma_2 &= \phi\gamma_1 = \phi(\phi\gamma_0) = \phi^2\gamma_0\\
+    \gamma_3 &= \phi\gamma_2 = \phi(\phi^2\gamma_0) = \phi^3\gamma_0\\
+    &...\\
+    \gamma_k &= \phi^k\gamma_0\\
+    \rho_k &= \phi^k \quad \text{(since $\rho_k = \gamma_k / \gamma_0$)}
+\end{align}
+
+Thus, stationary AR1 processes have autocorrelations which decay exponentially to zero as $k$ increases.
+
+
+\subsection*{AR2}
+
+\begin{align}
+    X_t = \phi_1 X_{t-1} + \phi_2 X_{t-2} + e_t \label{eq:ar2-1}
+\end{align}
+
+where $\mathbb{E}[e_t] = 0$, $\mathbb{E}[e_t^2] = \sigma^2$, $\mathbb{C}[e_t, e_{t-k}] = 0\text{ for }k\ne0$.\\
+
+\textbf{mean}:
+\begin{align}
+    \mathbb{E}[X_t] &= \phi_1\mathbb{E}[X_{t-1}] + \phi_2\mathbb{E}[X_{t-2}] + \mathbb{E}[e_t] \quad\text{(since $e_t$ is independent of past values)}\\
+    \mu &= \phi_1 \mu + \phi_2 \mu + 0 \quad\text{(by stationarity $\mathbb{E}[X_t]=\mathbb{E}[X_{t-1}]
+    =\mathbb{E}[X_{t-2}]=\mu$)}\\
+    &= 0 \quad\text{(if $\phi_1+\phi_2\neq 1$)}
+\end{align}
+
+\textbf{variance}:
+\begin{align}
+    \mathbb{V}[X_t] &= \mathbb{E}[X_t^2] = \gamma_0\\
+    \mathbb{E}[X_t^2] &= \phi_1 \mathbb{E}[X_{t-1}X_t] + \phi_2 \mathbb{E}[X_{t-2}X_t] + \mathbb{E}[e_tX_t]\\
+    &= \phi_1 \gamma_1 + \phi_2 \gamma_2 + \sigma^2 \quad\text{(since $\mathbb{E}[e_tX_t]=\sigma^2$)}\\
+    \gamma_0 &= \phi_1\gamma_1 + \phi_2\gamma_2 + \sigma^2
+\end{align}
+
+\textbf{autocovariance}:
+\begin{align}
+    \mathbb{C}[X_t, X_{t-k}] &= \mathbb{E}\Big[(\phi_1 X_{t-1} + \phi_2 X_{t-2} + e_t) X_{t-k}\Big] \\
+    &= \phi_1\,\mathbb{E}[X_{t-1}X_{t-k}] + \phi_2\,\mathbb{E}[X_{t-2}X_{t-k}] + \mathbb{E}[e_tX_{t-k}]\\
+    &= \phi_1\,\gamma_{k-1} + \phi_2\,\gamma_{k-2} + 0 \quad \text{(since $\mathbb{E}[e_tX_{t-k}] = 0$ for $k>0$)}\\
+    \gamma_k &= \phi_1\,\gamma_{k-1} + \phi_2\,\gamma_{k-2} \quad \text{(by stationarity)}
+\end{align}
+
+By recursion we obtain:
+\begin{align}
+    \gamma_1 &= \phi_1\,\gamma_0 + \phi_2\,\gamma_{-1} = \phi_1\,\gamma_0 + \phi_2\,\gamma_1,\\[1em]
+    \gamma_2 &= \phi_1\,\gamma_1 + \phi_2\,\gamma_0,\\[1em]
+    \gamma_k &= \phi_1\,\gamma_{k-1} + \phi_2\,\gamma_{k-2} \quad \text{for } k\geq 3\\
+    \rho_k &= \phi_1 \rho_{k-1} + \phi_2 \rho_{k-2} \quad \text{(since $\rho_k = \gamma_k / \gamma_0$)}
+\end{align}
+
+\end{document}

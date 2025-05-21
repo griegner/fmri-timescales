@@ -1,0 +1,8 @@
+tmp*
+__pycache__
+*_cache
+.vscode
+.DS_Store
+.venv
+*.egg-info
+notebooks/data/hcp7T.dtseries.nii
