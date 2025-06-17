@@ -14,7 +14,7 @@
 \usepackage{mathrsfs} % equations
 \usepackage{graphicx} % images
 \usepackage[]{natbib} % citations + references
-\bibliographystyle{unsrtnat} % citations + references
+\bibliographystyle{abbrvnat} % citations + references
 
 \title{Estimating fMRI Timescale Maps}
 \author[]{Gabriel Riegner}
@@ -23,23 +23,23 @@
 \begin{document}
 
 % slide %
-\begin{frame}{\large Estimating fMRI Timescale Maps}
+\begin{frame}{\centerline{\Large Estimating fMRI Timescale Maps}}
+\centering{\textbf{Gabriel Riegner} (co-authors Samuel Davenport, Bradley Voytek, Armin Schwartzman)}\\
+\vfill
+
 \begin{columns}
-\column{0.25\textwidth}
+\column{0.5\textwidth}
 \tableofcontents[hideallsubsections]
-\column{0.75\textwidth}
-\includegraphics[width=1\textwidth]{docs/wnar/toc.pdf}
+\column{0.5\textwidth}
+\includegraphics[width=0.8\textwidth]{docs/wnar/hdsi.png}
 \end{columns}
 
 \vfill
-\centering
-Gabriel Riegner (work with Samuel Davenport, Bradley Voytek, Armin Schwartzman)\\
-UC San Diego, May 2025
-
+\includegraphics[width=0.5\textwidth]{docs/wnar/toc.pdf}
 \end{frame}
 
 % section %
-\section{Introduction}
+\section{1. Introduction}
 
 % slide %
 \begin{frame}{\textcolor{gray}{Estimating fMRI} Timescale Maps}
@@ -50,7 +50,7 @@ UC San Diego, May 2025
         \begin{itemize}
         \item neural time series exhibit time-lagged correlations that decay, reflecting how brain regions integrate information over time
         \item timescale parameters quantify the rate of this decay
-        \item timescale maps reveal a hierarchical organization across the cortex, fast in sensory areas, slow in associative areas
+        \item timescale maps reveal a hierarchical organization across the cortex: fast autocorrelation decay in sensory areas, slow in associative areas
     \end{itemize}
     \column{0.2\textwidth}
     \includegraphics[width=0.85\textwidth]{docs/wnar/timescale-brain.pdf}
@@ -62,7 +62,7 @@ UC San Diego, May 2025
      \centering\includegraphics[width=0.95\textwidth]{docs/wnar/fmri.pdf}
      \vfill
      \begin{itemize}
-         \item functional magnetic resonances imaging (fMRI), resting-state fMRI (rfMRI)
+         \item functional magnetic resonance imaging (fMRI), resting-state fMRI (rfMRI)
          \item rfMRI provides whole-brain noninvasive recording of spontaneous brain activity 
          \item reflects hemodynamic changes of the underlying electrical activity of neurons
      \end{itemize}
@@ -70,7 +70,8 @@ UC San Diego, May 2025
 
 % slide %
 \begin{frame}{\textcolor{gray}{Estimating} fMRI Timescale Maps}
-    \centering\includegraphics[width=0.85\textwidth]{docs/wnar/maps.pdf}
+    \vspace{5mm}
+    \centering\includegraphics[width=1\textwidth]{docs/wnar/maps.pdf}
 \end{frame}
 
 % slide %
@@ -80,7 +81,7 @@ Existing Methods:
 \begin{itemize}
     \item time-domain linear model (6/25 papers)
     \item autocorrelation-domain nonlinear model (18/25 papers)
-    \item \textcolor{gray}{frequency-domain nonlinear model (3/25 papers)}
+    \item \text{[}\textcolor{gray}{frequency-domain nonlinear model (3/25 papers)}\text{]}
 \end{itemize}
 
 \vfill
@@ -104,7 +105,7 @@ Paper Contributions:
 
 
 % section %
-\section{Methods}
+\section{2. Methods}
 
 % slide %
 \begin{frame}{Assumptions}
@@ -122,7 +123,7 @@ Mixing Implies:
     \item autocorrelations \eqref{acf} decay sufficiently fast for the central limit theorem for correlated observations to apply
 \end{itemize}
 \vfill
-\citep{hansen_econometrics_2022, white_nonlinear_1984, newey_simple_1987}\\
+\citet{hansen_econometrics_2022, white_nonlinear_1984, newey_simple_1987}\\
 \end{frame}
 
 % slide %
@@ -136,21 +137,21 @@ Autoregressive Model (AR1) Definition:
 \onslide<2->
 Squared Error Minimization:
 \begin{align}
-    S(\phi) = \mathbb{E}[(X_t - \phi X_{t-1})^2],\quad \phi^* = \underset{\phi}{\text{argmin}} \; S(\phi).
+    S(\phi) = \mathbb{E}[(X_t - \phi X_{t-1})^2],\quad \phi^* = \underset{\phi}{\text{argmin}} \; S(\phi)
 \end{align}
 
 \onslide<3->
 Timescale Definition:
 \begin{align}
-    \phi^* &= (\mathbb{E}[X_{t-1}^2])^{-1}(\mathbb{E}[X_t X_{t-1}]),\\
-    \tau^* &= g(\phi^*) = -\frac{1}{\text{log}(|\phi^*|)}.
+    \phi^* &= (\mathbb{E}[X_{t-1}^2])^{-1}(\mathbb{E}[X_t X_{t-1}])\\
+    \tau^* &= g(\phi^*) = -\frac{1}{\text{log}(|\phi^*|)}
 \end{align}
 
 \onslide<4->
 Linear Least Squares (LLS) Estimation:
 \begin{align}
-    \hat\phi^*_{\scriptscriptstyle\text{LLS}} &= \left(\sum_{t=2}^T x_{t-1}^2\right)^{-1} \left(\sum_{t=2}^T x_t x_{t-1}\right),\\
-    \hat\tau^*_{\scriptscriptstyle\text{LLS}} &= g(\hat\phi_{\scriptscriptstyle\text{LLS}}) = -\frac{1}{\text{log}(|\hat\phi_{\scriptscriptstyle\text{LLS}}|)},
+    \hat\phi^*_{\scriptscriptstyle\text{LLS}} &= \left(\sum_{t=2}^T x_{t-1}^2\right)^{-1} \left(\sum_{t=2}^T x_t x_{t-1}\right)\\
+    \hat\tau^*_{\scriptscriptstyle\text{LLS}} &= g(\hat\phi_{\scriptscriptstyle\text{LLS}}) = -\frac{1}{\text{log}(|\hat\phi_{\scriptscriptstyle\text{LLS}}|)}
 \end{align}
 
 \end{frame}
@@ -161,26 +162,26 @@ Linear Least Squares (LLS) Estimation:
 \vfill
 Exponential Decay Model Definition:
 \begin{align}\label{eq:nlm}
-    \rho_k = \phi^k + e_k, \; \text{for}\; k \in \{0, 1, \ldots, K\},
+    \rho_k = \phi^k + e_k, \; \text{for}\; k \in \{0, 1, \ldots, K\}
 \end{align}
 
 \onslide<2->
 Squared Error Minimization:
 \begin{align}\label{eq:nlm_loss}
-    S(\phi) = \mathbb{E}[(\rho_k - \phi^k)^2], \quad \phi^* = \underset{\phi}{\text{argmin}} \; S(\phi).
+    S(\phi) = \mathbb{E}[(\rho_k - \phi^k)^2], \quad \phi^* = \underset{\phi}{\text{argmin}} \; S(\phi)
 \end{align}
 
 \onslide<3->
 Timescale Definition:
 \begin{align}
-    \tau^* &= g(\phi^*) = -\frac{1}{\text{log}(|\phi^*|)}. \label{eq:nlm-tau}
+    \tau^* &= g(\phi^*) = -\frac{1}{\text{log}(|\phi^*|)} \label{eq:nlm-tau}
 \end{align}
 
 \onslide<4->
 Nonlinear Least Squares (NLS) Estimation:
 \begin{align}
-    \hat \phi^*_{\scriptscriptstyle\text{NLS}} &= \underset{\phi}{\text{argmin}} \; \widehat{S}(\phi), \label{eq:nls_phi_}\\
-    \hat \tau^*_{\scriptscriptstyle\text{NLS}} &= g(\hat \phi^*_{\scriptscriptstyle\text{NLS}}) = -\frac{1}{\text{log}(|\hat\phi_{\scriptscriptstyle\text{NLS}}|)}.
+    \hat \phi^*_{\scriptscriptstyle\text{NLS}} &= \underset{\phi}{\text{argmin}} \; \widehat{S}(\phi) \label{eq:nls_phi_}\\
+    \hat \tau^*_{\scriptscriptstyle\text{NLS}} &= g(\hat \phi^*_{\scriptscriptstyle\text{NLS}}) = -\frac{1}{\text{log}(|\hat\phi_{\scriptscriptstyle\text{NLS}}|)}
 \end{align}
 
 \end{frame}
@@ -196,14 +197,14 @@ Time-Domain Method:
 
 \begin{align}\label{eq:lls_q_omega_}
     \hat q = \frac{1}{T} \sum_{t=2}^T x_{t-1}^2, \quad
-    \hat \omega = \sum_{\ell=-M}^M \left(1 - \frac{|\ell|}{M+1}\right) \; \frac{1}{T} \sum_{1\le t - \ell \le T} (x_{t-1} \cdot \hat e_t)(x_{t-1-\ell} \cdot \hat e_{t-\ell}).
+    \hat \omega = \sum_{\ell=-M}^M \left(1 - \frac{|\ell|}{M+1}\right) \; \frac{1}{T} \sum_{1\le t - \ell \le T} (x_{t-1} \cdot \hat e_t)(x_{t-1-\ell} \cdot \hat e_{t-\ell})
 \end{align}
 
 \onslide<2->
 Autocorrelation-Domain Method:
 \begin{align}\label{eq:stderr-autocorrelation-domain_}
 \widehat{\text{se}}_{\text{NW}}(\hat\phi^*_{\scriptscriptstyle\text{NLS}}) = \sqrt{\hat q^{-1}\;\hat\omega\; \hat q^{-1}}, \quad
-\widehat{\text{se}}_{\text{NW}}(\hat\tau^*_{\scriptscriptstyle\text{NLS}}) \approx \widehat{\text{se}}_{\text{NW}}(\hat\phi^*_{\scriptscriptstyle\text{NLS}}) \cdot \frac{d}{d\phi} g(\hat\phi^*_{\scriptscriptstyle\text{NLS}}),
+\widehat{\text{se}}_{\text{NW}}(\hat\tau^*_{\scriptscriptstyle\text{NLS}}) \approx \widehat{\text{se}}_{\text{NW}}(\hat\phi^*_{\scriptscriptstyle\text{NLS}}) \cdot \frac{d}{d\phi} g(\hat\phi^*_{\scriptscriptstyle\text{NLS}})
 \end{align}
 
 \begin{align}
@@ -220,66 +221,96 @@ Autocorrelation/Time-Domain Method, equation \eqref{eq:stderr-time-domain_} exce
 
 
 % section %
-\section{Simulations}
+\section{3. Simulations}
 
 % slide %
 \begin{frame}{AR1 Simulations}
-$N=10000$ repeats, $T = 4800$ timepoints \hfill $x_t = \phi x_{t-1} + e_t, \; e_t \sim \mathcal{N}(0, 1)$, \;\textcolor{gray}{$\rho_k = \phi^k + e_k,\; e_k \sim \mathcal{N}(0, 1)$}
-\vfill
+\vspace{1.5mm}
+$N=10,000$ repeats, $T = 4,800$ timepoints \\ 
+$x_t = \phi x_{t-1} + e_t, \; e_t \sim \mathcal{N}(0, 1)$ \quad \textcolor{gray}{$\rho_k = \phi^k + e_k,\; e_k \sim \mathcal{N}(0, 1)$}
+\vspace{1.5mm}
+
 \centering
-\only<1>{\includegraphics[width=0.8\textwidth]{docs/wnar/ar1-results-1.pdf}}
-\only<2>{\includegraphics[width=0.8\textwidth]{docs/wnar/ar1-results-2.pdf}}
-\only<3>{\includegraphics[width=0.8\textwidth]{docs/wnar/ar1-results-3.pdf}}
+\only<1>{\includegraphics[width=0.85\textwidth]{docs/wnar/ar1-results-1.pdf}}
+\only<2>{\includegraphics[width=0.85\textwidth]{docs/wnar/ar1-results-2.pdf}}
+\only<3>{\includegraphics[width=0.85\textwidth]{docs/wnar/ar1-results-3.pdf}}
 \end{frame}
 
 % slide %
-\begin{frame}{Realistic rfMRI Simulations}
-$N=10000$ repeats, $T = 4800$ timepoints \hfill $x_t \sim \mathcal{N}(0, \hat\Sigma)$, \;\textcolor{gray}{$\rho_k = \hat\rho_k + e_k,\; e_k \sim \mathcal{N}(0, 1)$}
-\vfill
+\begin{frame}{AR2 Simulations}
+\vspace{1.5mm}
+$N=10,000$ repeats, $T = 4,800$ timepoints \\ 
+$x_t = \phi_1 x_{t-1} + \phi_2 x_{t-2} +e_t, \; e_t \sim \mathcal{N}(0, 1)$ \quad \textcolor{gray}{$\rho_k = \phi_1\rho_{k-1} + \phi_2\rho_{k-2} + e_k,\; e_k \sim \mathcal{N}(0, 1)$}
+\vspace{1.5mm}
+
 \centering
-\only<1>{\includegraphics[width=0.8\textwidth]{docs/wnar/hcp-results-1.pdf}}
-\only<2>{\includegraphics[width=0.8\textwidth]{docs/wnar/hcp-results-2.pdf}}
-\only<3>{\includegraphics[width=0.8\textwidth]{docs/wnar/hcp-results-3.pdf}}
+\only<1>{\includegraphics[width=0.85\textwidth]{docs/wnar/ar2-results-1.pdf}}
+\only<2>{\includegraphics[width=0.85\textwidth]{docs/wnar/ar2-results-2.pdf}}
+\only<3>{\includegraphics[width=0.85\textwidth]{docs/wnar/ar2-results-3.pdf}}
+\end{frame}
+
+
+% slide %
+\begin{frame}{Realistic rfMRI Simulations}
+\vspace{1.5mm}
+$N=10,000$ repeats, $T = 4,800$ timepoints \\ 
+$x_t \sim \mathcal{N}(0, \hat\Sigma)$ \quad \textcolor{gray}{$\rho_k = \hat\rho_k + e_k,\; e_k \sim \mathcal{N}(0, 1)$}
+\vspace{1.5mm}
+
+\centering
+\only<1>{\includegraphics[width=0.85\textwidth]{docs/wnar/hcp-results-1.pdf}}
+\only<2>{\includegraphics[width=0.85\textwidth]{docs/wnar/hcp-results-2.pdf}}
+\only<3>{\includegraphics[width=0.85\textwidth]{docs/wnar/hcp-results-3.pdf}}
 \end{frame}
 
 % section %
-\section{Data Analysis}
+\section{4. Data Analysis}
 
 
 % slide %
 \begin{frame}{Subject-Level Results}
-$N = 1$ subject, \;$T = 4800$ timepoints,\; $V = 64984$ vertices \hfill Human Connectome Project (HCP)
+$N = 1$ subject, \;$T = 4,800$ timepoints,\; $V = 64,984$ vertices \hfill Human Connectome Project (HCP)
 \vfill
 \centering
-\includegraphics[width=0.85\textwidth]{docs/wnar/hcp1-results.pdf}
+\includegraphics[width=0.9\textwidth]{docs/wnar/hcp1-results.pdf}
 \end{frame}
 
 % slide %
 \begin{frame}{Group-Level Results}
-$N = 180$ subjects, \;$T = 4800$ timepoints,\; $V = 64984$ vertices \hfill  Human Connectome Project (HCP)
+$N = 180$ subjects, \;$T = 4,800$ timepoints,\; $V = 64,984$ vertices \hfill  Human Connectome Project (HCP)
 \vfill
 \centering
-\includegraphics[width=0.85\textwidth]{docs/wnar/hcp180-results.pdf}
+\includegraphics[width=0.9\textwidth]{docs/wnar/hcp180-results.pdf}
 \end{frame}
 
 % section %
-\section{Conclusions}
+\section{5. Conclusions}
 
 % slide %
 \begin{frame}{Conclusions}
-\begin{itemize}
-    \item formalized and compared time- and autocorrelation-domain methods for fMRI timescale mapping; both consistent under broad (stationary, mixing) conditions but estimate different timescales
-    \item robust standard errors enable valid inference, addressing a key limitation of prior work
-    \item time-domain method produces more accurate estimates under model misspecification and remains computationally efficient for high-dimensional fMRI data
-    \item both methods yields maps aligned with known functional brain organization
-    \item provides methodological foundation for future research on the role of timescales in brain structure and function
-\end{itemize}
+\begin{enumerate}
+    \item We formalized and compared time- and autocorrelation-domain methods for fMRI timescale mapping.
+    \vspace{2mm}
+    \item These methods are consistent under broad conditions (stationary, mixing) but estimate different timescale values.
+    \vspace{2mm}
+    \item In addition, we show that robust standard errors enable valid inference, addressing a key limitation of prior work.
+    \vspace{2mm}
+    \item Comparatively, the time-domain method produces more accurate estimates under model misspecification and remains computationally efficient for high-dimensional fMRI data.
+    \vspace{2mm}
+    \item We demonstrate that both time- and autocorrelation-domain methods yield maps aligned with known functional brain organization.
+    \vspace{2mm}
+    \item Our methods can provide a foundation for future research on the role of timescales in brain structure and function.
+\end{enumerate}
 \end{frame}
 
 % section/slide %
 \begin{frame}{References}
 \bibliography{docs/zotero}
-\vfill
+
+\vspace{5mm}
+\centering{\Large Thank you!}
+\vspace{1cm}
+
 \begin{columns}
 \column{0.5\textwidth}
 \centering
