@@ -23,19 +23,26 @@
 \begin{document}
 
 % slide %
-\begin{frame}{\centerline{\Large Estimating fMRI Timescale Maps}}
+\begin{frame}{
+\begin{columns}
+\column{0.65\textwidth}
+\hspace{1.4cm} \LARGE Estimating fMRI Timescale Maps 
+\column{0.35\textwidth}
+\includegraphics[width=0.85\textwidth]{docs/wnar/hdsi.png}
+\end{columns}}
+
 \centering{\textbf{Gabriel Riegner} (co-authors Samuel Davenport, Bradley Voytek, Armin Schwartzman)}\\
+\vfill
+\textit{Western North American Region of the International Biometric Society 2025}
 \vfill
 
 \begin{columns}
-\column{0.5\textwidth}
+\column{0.4\textwidth}
 \tableofcontents[hideallsubsections]
-\column{0.5\textwidth}
-\includegraphics[width=0.8\textwidth]{docs/wnar/toc.png}
+\column{0.6\textwidth}
+\includegraphics[width=0.9\textwidth]{docs/wnar/toc.pdf}
 \end{columns}
 
-\vfill
-\includegraphics[width=0.5\textwidth]{docs/wnar/toc.pdf}
 \end{frame}
 
 % section %
@@ -48,9 +55,9 @@
     \begin{columns}
     \column{0.8\textwidth}
         \begin{itemize}
-        \item neural time series exhibit time-lagged correlations that decay, reflecting how brain regions integrate information over time
-        \item timescale parameters quantify the rate of this decay
-        \item timescale maps reveal a hierarchical organization across the cortex: fast autocorrelation decay in sensory areas, slow in associative areas
+        \item Neural time series exhibit time-lagged correlations that decay, reflecting how brain regions integrate information over time.
+        \item The timescale parameter quantifies the rate of decay.
+        \item Timescale maps follow a hierarchical organization across the cortex: fast autocorrelation decay in sensory areas, slow in associative areas.
     \end{itemize}
     \column{0.2\textwidth}
     \includegraphics[width=0.85\textwidth]{docs/wnar/timescale-brain.pdf}
@@ -62,9 +69,8 @@
      \centering\includegraphics[width=0.95\textwidth]{docs/wnar/fmri.pdf}
      \vfill
      \begin{itemize}
-         \item functional magnetic resonance imaging (fMRI), resting-state fMRI (rfMRI)
-         \item rfMRI provides whole-brain noninvasive recording of spontaneous brain activity 
-         \item reflects hemodynamic changes of the underlying electrical activity of neurons
+         \item Resting-state functional magnetic resonance imaging (fMRI) provides whole-brain noninvasive recording of spontaneous brain activity.
+         \item An fMRI time series reflects hemodynamic changes of the underlying electrical activity of neurons.
      \end{itemize}
 \end{frame}
 
@@ -77,28 +83,28 @@
 % slide %
 \begin{frame}{Estimating \textcolor{gray}{fMRI Timescale Maps}}
 
-Existing Methods:
+Existing Methods
 \begin{itemize}
-    \item time-domain linear model (6/25 papers)
-    \item autocorrelation-domain nonlinear model (18/25 papers)
-    \item \text{[}\textcolor{gray}{frequency-domain nonlinear model (3/25 papers)}\text{]}
+    \item Time-Domain Linear Model [6/25 papers]
+    \item Autocorrelation-Domain Nonlinear Model [18/25 papers]
+    \item (Frequency-Domain Nonlinear Model [3/25 papers])
 \end{itemize}
 
 \vfill
-Limitations of Existing Methods:
+Limitations of Existing Methods
 \begin{itemize}
-    \item assumption of exponentially decaying autocorrelation, which may not hold
-    \item point estimates without standard errors, limiting statistical inference
+    \item Assume exponentially decaying autocorrelation, which may not hold.
+    \item Provide only point estimates without standard errors, limiting statistical inference.
 \end{itemize}
 
 \vfill
-Paper Contributions:
+Contributions
 \begin{itemize}
-    \item generalize assumptions to include all stationary and mixing processes
-    \item introduce standard errors that account for misspecification
-    \item show statistical properties (consistency and asymptotic normality) of time- and autocorrelation-domain methods
-    \item show parameter recovery in realistic simulations
-    \item apply methods to rfMRI from the Human Connectome Project (HCP)
+    \item Generalize assumptions to include all stationary and mixing processes.
+    \item Introduce standard errors that account for misspecified autocorrelation decay.
+    \item Establish statistical properties: consistency and asymptotic normality.
+    \item Demonstrate parameter recovery in realistic simulations.
+    \item Apply methods to fMRI data from the Human Connectome Project (HCP).
 \end{itemize}
 
 \end{frame}
@@ -109,18 +115,18 @@ Paper Contributions:
 
 % slide %
 \begin{frame}{Assumptions}
-Let $\{X_t, t\in \mathbb{Z}\}$ be a discrete-time stochastic process that is \textbf{stationary} and \textbf{strong mixing}, and $x_t = \{x_1, x_2, ..., x_T\}$ be an observed sample of $X_t$. Assume $X_t$ and $x_t$ have mean zero.\\
+Let $\{X_t, t\in \mathbb{Z}\}$ be a discrete-time stochastic process that is \textbf{stationary} and \textbf{strong mixing}, and $x_t = \{x_1, x_2, ..., x_T\}$ be an observed sample of $X_t$. Assume $X_t$ and $x_t$ are demeaned.\\
 \vfill
-Stationarity Implies:
+Stationarity Implies
 \begin{align}
-    \gamma_k &= \text{cov}[X_t, X_{t-k}] = \mathbb{E}[X_t X_{t-k}]\\
-    \rho_k &= \text{corr}[X_t, X_{t-k}] = \gamma_0^{-1}\gamma_k\label{acf}
+    \gamma_k &= \text{cov}[X_t, X_{t-k}] = \mathbb{E}[X_t X_{t-k}],\\
+    \rho_k &= \text{corr}[X_t, X_{t-k}] = \gamma_0^{-1}\gamma_k\label{acf}.
 \end{align}
 
-Mixing Implies:
+Mixing Implies
 \begin{itemize}
-    \item ergodicity, ensuring consistent estimation by the ergodic theorem
-    \item autocorrelations \eqref{acf} decay sufficiently fast for the central limit theorem for correlated observations to apply
+    \item Ergodicity, ensuring consistent estimation by the ergodic theorem.
+    \item Autocorrelations \eqref{acf} decay sufficiently fast to apply a central limit theorem for correlated observations.
 \end{itemize}
 \vfill
 \citet{hansen_econometrics_2022, white_nonlinear_1984, newey_simple_1987}\\
@@ -129,26 +135,26 @@ Mixing Implies:
 % slide %
 \begin{frame}{Time-Domain Linear Model}
 \vfill
-Autoregressive Model (AR1) Definition:
+Autoregressive Model (AR1) Definition
 \begin{align}
     X_t = \phi X_{t-1} + e_t
 \end{align}
 
 \onslide<2->
-Squared Error Minimization:
+Squared Error Minimization
 \begin{align}
     S(\phi) = \mathbb{E}[(X_t - \phi X_{t-1})^2],\quad \phi^* = \underset{\phi}{\text{argmin}} \; S(\phi)
 \end{align}
 
 \onslide<3->
-Timescale Definition:
+Timescale Definition
 \begin{align}
     \phi^* &= (\mathbb{E}[X_{t-1}^2])^{-1}(\mathbb{E}[X_t X_{t-1}])\\
     \tau^* &= g(\phi^*) = -\frac{1}{\text{log}(|\phi^*|)}
 \end{align}
 
 \onslide<4->
-Linear Least Squares (LLS) Estimation:
+Linear Least Squares (LLS) Estimation
 \begin{align}
     \hat\phi^*_{\scriptscriptstyle\text{LLS}} &= \left(\sum_{t=2}^T x_{t-1}^2\right)^{-1} \left(\sum_{t=2}^T x_t x_{t-1}\right)\\
     \hat\tau^*_{\scriptscriptstyle\text{LLS}} &= g(\hat\phi_{\scriptscriptstyle\text{LLS}}) = -\frac{1}{\text{log}(|\hat\phi_{\scriptscriptstyle\text{LLS}}|)}
@@ -160,25 +166,25 @@ Linear Least Squares (LLS) Estimation:
 % slide %
 \begin{frame}{Autocorrelation-Domain Nonlinear Model}
 \vfill
-Exponential Decay Model Definition:
+Exponential Decay Model Definition
 \begin{align}\label{eq:nlm}
     \rho_k = \phi^k + e_k, \; \text{for}\; k \in \{0, 1, \ldots, K\}
 \end{align}
 
 \onslide<2->
-Squared Error Minimization:
+Squared Error Minimization
 \begin{align}\label{eq:nlm_loss}
     S(\phi) = \mathbb{E}[(\rho_k - \phi^k)^2], \quad \phi^* = \underset{\phi}{\text{argmin}} \; S(\phi)
 \end{align}
 
 \onslide<3->
-Timescale Definition:
+Timescale Definition
 \begin{align}
     \tau^* &= g(\phi^*) = -\frac{1}{\text{log}(|\phi^*|)} \label{eq:nlm-tau}
 \end{align}
 
 \onslide<4->
-Nonlinear Least Squares (NLS) Estimation:
+Nonlinear Least Squares (NLS) Estimation
 \begin{align}
     \hat \phi^*_{\scriptscriptstyle\text{NLS}} &= \underset{\phi}{\text{argmin}} \; \widehat{S}(\phi) \label{eq:nls_phi_}\\
     \hat \tau^*_{\scriptscriptstyle\text{NLS}} &= g(\hat \phi^*_{\scriptscriptstyle\text{NLS}}) = -\frac{1}{\text{log}(|\hat\phi_{\scriptscriptstyle\text{NLS}}|)}
@@ -189,7 +195,7 @@ Nonlinear Least Squares (NLS) Estimation:
 % slide %
 \begin{frame}{Standard Error Estimation}
 
-Time-Domain Method:
+1. Time-Domain Method
 \begin{align}\label{eq:stderr-time-domain_}
 \widehat{\text{se}}_{\text{NW}}(\hat\phi^*_{\scriptscriptstyle\text{LLS}}) = \sqrt{\hat q^{-1}\;\hat\omega\; \hat q^{-1}}, \quad
 \widehat{\text{se}}_{\text{NW}}(\hat\tau^*_{\scriptscriptstyle\text{LLS}}) \approx \widehat{\text{se}}_{\text{NW}}(\hat\phi^*_{\scriptscriptstyle\text{LLS}}) \cdot \frac{d}{d\phi} g(\hat\phi^*_{\scriptscriptstyle\text{LLS}})
@@ -201,7 +207,7 @@ Time-Domain Method:
 \end{align}
 
 \onslide<2->
-Autocorrelation-Domain Method:
+2. Autocorrelation-Domain Method
 \begin{align}\label{eq:stderr-autocorrelation-domain_}
 \widehat{\text{se}}_{\text{NW}}(\hat\phi^*_{\scriptscriptstyle\text{NLS}}) = \sqrt{\hat q^{-1}\;\hat\omega\; \hat q^{-1}}, \quad
 \widehat{\text{se}}_{\text{NW}}(\hat\tau^*_{\scriptscriptstyle\text{NLS}}) \approx \widehat{\text{se}}_{\text{NW}}(\hat\phi^*_{\scriptscriptstyle\text{NLS}}) \cdot \frac{d}{d\phi} g(\hat\phi^*_{\scriptscriptstyle\text{NLS}})
@@ -213,7 +219,7 @@ Autocorrelation-Domain Method:
 \end{align}
 
 \onslide<3->
-Autocorrelation/Time-Domain Method, equation \eqref{eq:stderr-time-domain_} except for:
+3. Autocorrelation/Time-Domain Method, equation \eqref{eq:stderr-time-domain_} except for:
 \begin{align}
     \hat e_t = x_t - \hat\phi^*_{\scriptscriptstyle\text{NLS}} \cdot x_{t-1}
 \end{align}
@@ -291,15 +297,15 @@ $N = 180$ subjects, \;$T = 4,800$ timepoints,\; $V = 64,984$ vertices \hfill  Hu
 \begin{enumerate}
     \item We formalized and compared time- and autocorrelation-domain methods for fMRI timescale mapping.
     \vspace{2mm}
-    \item These methods are consistent under broad conditions (stationary, mixing) but estimate different timescale values.
+    \item Both methods are consistent under broad conditions (stationary, mixing), though they estimate distinct timescale values.
     \vspace{2mm}
-    \item In addition, we show that robust standard errors enable valid inference, addressing a key limitation of prior work.
+    \item We introduced robust standard errors to enable valid statistical inference, addressing a key limitation of prior work.
     \vspace{2mm}
-    \item Comparatively, the time-domain method produces more accurate estimates under model misspecification and remains computationally efficient for high-dimensional fMRI data.
+    \item Comparatively, the time-domain method is more accurate under model misspecification and is more computationally efficient for high-dimensional fMRI data.
     \vspace{2mm}
-    \item We demonstrate that both time- and autocorrelation-domain methods yield maps aligned with known functional brain organization.
+    \item Both methods produce timescale maps that align with known functional brain organization.
     \vspace{2mm}
-    \item Our methods can provide a foundation for future research on the role of timescales in brain structure and function.
+    \item Our work provides a foundation for future research on the role of timescales in brain structure and function.
 \end{enumerate}
 \end{frame}
 
@@ -308,7 +314,7 @@ $N = 180$ subjects, \;$T = 4,800$ timepoints,\; $V = 64,984$ vertices \hfill  Hu
 \bibliography{docs/zotero}
 
 \vspace{5mm}
-\centering{\Large Thank you!}
+\centering{\Large\textbf{Thank you!}}
 \vspace{1cm}
 
 \begin{columns}
