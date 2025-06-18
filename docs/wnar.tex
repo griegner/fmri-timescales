@@ -135,7 +135,7 @@ Mixing Implies
 % slide %
 \begin{frame}{Time-Domain Linear Model}
 \vfill
-Autoregressive Model (AR1) Definition
+Autoregressive Model (AR1) Projection
 \begin{align}
     X_t = \phi X_{t-1} + e_t
 \end{align}
@@ -166,7 +166,7 @@ Linear Least Squares (LLS) Estimation
 % slide %
 \begin{frame}{Autocorrelation-Domain Nonlinear Model}
 \vfill
-Exponential Decay Model Definition
+Exponential Decay Model Projection
 \begin{align}\label{eq:nlm}
     \rho_k = \phi^k + e_k, \; \text{for}\; k \in \{0, 1, \ldots, K\}
 \end{align}
@@ -214,7 +214,7 @@ Nonlinear Least Squares (NLS) Estimation
 \end{align}
 
 \begin{align}
-    \hat q &= \frac{1}{K} \sum_{k=0}^K (\hat m_{\phi,k})^2 = \frac{1}{K} \sum_{k=0}^K (k \hat\phi_{\scriptscriptstyle\text{NLS}}^{*k-1})^2, \quad
+    \hat m_{\phi,k} = k \hat\phi_{\scriptscriptstyle\text{NLS}}^{*k-1}, \quad \hat q &= \frac{1}{K} \sum_{k=0}^K (\hat m_{\phi,k})^2, \quad
     \hat \omega = \sum_{\ell=-M}^M \left(1 - \frac{|\ell|}{M+1}\right) \; \frac{1}{K} \sum_{1 \le k - \ell \le K} (\hat m_{\phi, k} \cdot \hat e_k) (\hat m_{\phi, k-\ell} \cdot \hat e_{k-\ell})
 \end{align}
 
@@ -283,7 +283,12 @@ $N = 1$ subject, \;$T = 4,800$ timepoints,\; $V = 64,984$ vertices \hfill Human 
 
 % slide %
 \begin{frame}{Group-Level Results}
+\vfill
 $N = 180$ subjects, \;$T = 4,800$ timepoints,\; $V = 64,984$ vertices \hfill  Human Connectome Project (HCP)
+\begin{align*}
+    \textstyle
+    \bar\tau = \frac{1}{N} \sum_{n=1}^N \hat\tau_n, \hspace{3.5cm} \widehat{\text{se}}(\bar\tau) = \sqrt{\frac{1}{N} \sum_{n=1}^N \widehat{\text{se}}(\hat\tau_n)^2 + \frac{1}{N} \sum_{n=1}^N (\hat\tau_n - \bar\tau)^2}
+\end{align*}
 \vfill
 \centering
 \includegraphics[width=0.9\textwidth]{docs/wnar/hcp180-results.pdf}
