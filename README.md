@@ -3,7 +3,7 @@
 
 <img src="./figures/hcp-tstats.png" width="400"/>
 
-[![slides](https://img.shields.io/badge/slides-PDF-red?style=flat&logo=google-slides&logoColor=white)](https://griegner.github.io/fmri-timescales/slides.pdf)
+[![slides](https://img.shields.io/badge/slides-PDF-red?style=flat&logo=google-slides&logoColor=white)](https://griegner.github.io/fmri-timescales/wnar.pdf)
 [![manuscript](https://img.shields.io/badge/manuscript-PDF-red?style=flat&logo=google-docs&logoColor=white)](https://griegner.github.io/fmri-timescales/main.pdf)
 
 **Project Organization**
