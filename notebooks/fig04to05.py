@@ -68,7 +68,7 @@ def fit_timescale_models(input_path, output_path, lls, nls):
     for sub_path in input_path.glob("sub-*"):
         print("...", sub_path)
         sub = sub_path.stem[4:]
-        dtseries_paths = sorted(sub_path.glob("*.dtseries.nii"))
+        dtseries_paths = sorted(sub_path.glob("*desc-lfofilterCleaned_bold.dtseries.nii"))
         X = np.vstack(list(get_X(dtseries_paths)))
 
         lls_ = lls.fit(X, n_timepoints=len(X)).estimates_
