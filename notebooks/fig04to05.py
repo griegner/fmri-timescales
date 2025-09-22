@@ -36,8 +36,12 @@ def se_decomposition(stderrs, taus):
 
 def get_maps(estimator):
     """get maps for LLS or NLS estimator"""
-    taus = np.load(f"data/nsubjects-180_nregions-91282_estimator-{estimator}_tau.npy").astype(np.float32)
-    stderrs = np.load(f"data/nsubjects-180_nregions-91282_estimator-{estimator}_se.npy").astype(np.float32)
+    taus = np.load(f"data/nsubjects-180_nregions-91282_preproc-rapidtide_estimator-{estimator}_tau.npy").astype(
+        np.float32
+    )
+    stderrs = np.load(f"data/nsubjects-180_nregions-91282_preproc-rapidtide_estimator-{estimator}_se.npy").astype(
+        np.float32
+    )
 
     maps = {  # subject #100610
         "tau": taus[0, :],
