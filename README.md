@@ -36,7 +36,7 @@
 ```
 
 **Data Availability**
-The `notebooks/data/*{tau,se}.npy` files contain the LLS and NLS timescale estimates at each grayordinate (180 subjects, 91282 regions), from which the `figures/` can be reproduced. Access to the ~380GB of resting fMRI data from the Human Connectome Project 2018 release can by downloaded at [ConnetomeDB](https://db.humanconnectome.org/app/template/Login.vm):
+The `notebooks/data/*{tau,se}.npy` files contain the TD and AD timescale estimates at each grayordinate (180 subjects, 91282 regions), from which the `figures/` can be reproduced. Access to the ~380GB of resting fMRI data from the Human Connectome Project 2018 release can by downloaded at [ConnetomeDB](https://db.humanconnectome.org/app/template/Login.vm):
 
 <img src="./figures/hcp-dataset.png" width="800"/>
 
@@ -69,12 +69,12 @@ pip install --editable ".[notebooks]"
 
 **Usage Examples**
 
-Time Domain Linear Model, Fit by Linear Least Squares (LLS):
+Time Domain (TD) Linear Model, Fit by Linear Least Squares:
 ```python
     >>> from fmri_timescales import sim, timescale_utils
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
-    >>> lls = timescale_utils.LLS(var_estimator="newey-west", var_n_lags=10)
-    >>> lls.fit(X=X, n_timepoints=1000).estimates_
+    >>> td = timescale_utils.TD(var_estimator="newey-west", var_n_lags=10)
+    >>> td.fit(X=X, n_timepoints=1000).estimates_
     {
         'phi': array([0.79789847]),
         'se(phi)': array([0.02045074]),
@@ -83,16 +83,16 @@ Time Domain Linear Model, Fit by Linear Least Squares (LLS):
     }
 ```
 
-Autocorrelation Domain Nonlinear Model, Fit by Nonlinear Least Squares (NLS):
+Autocorrelation Domain (AD) Nonlinear Model, Fit by Nonlinear Least Squares:
 ```python
     >>> from fmri_timescales import sim, timescale_utils
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
-    >>> nls = timescale_utils.NLS(var_domain="time", var_estimator="newey-west", var_n_lags=10)
-    >>> nls.fit(X=X, n_timepoints=1000).estimates_
+    >>> ad = timescale_utils.AD(var_domain="time", var_estimator="newey-west", var_n_lags=10)
+    >>> ad.fit(X=X, n_timepoints=1000).estimates_
     {
         'phi': array([0.7802222]),
-        'se(phi)': array([0.03207284]),
+        'se(phi)': array([0.02174618]),
         'tau': array([4.02938991]),
-        'se(tau)': array([0.66741761])
+        'se(tau)': array([0.45252581])
     }
 ```

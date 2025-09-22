@@ -35,7 +35,7 @@ def se_decomposition(stderrs, taus):
 
 
 def get_maps(estimator):
-    """get maps for LLS or NLS estimator"""
+    """get maps for TD or AD estimator"""
     taus = np.load(f"data/nsubjects-180_nregions-91282_preproc-rapidtide_estimator-{estimator}_tau.npy").astype(
         np.float32
     )
@@ -64,8 +64,8 @@ def get_vmax(arr1, arr2):
     return np.round((perc1 + perc2) / 2, 1)
 
 
-def fit_timescale_models(input_path, output_path, lls, nls):
-    """fit LLS and NLS to individual subject maps"""
+def fit_timescale_models(input_path, output_path, td, ad):
+    """fit TD and AD to individual subject maps"""
     assert isinstance(input_path, Path) and isinstance(output_path, Path), "must be pathlib objects"
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -75,10 +75,10 @@ def fit_timescale_models(input_path, output_path, lls, nls):
         dtseries_paths = sorted(sub_path.glob("*desc-lfofilterCleaned_bold.dtseries.nii"))
         X = np.vstack(list(get_X(dtseries_paths)))
 
-        lls_ = lls.fit(X, n_timepoints=len(X)).estimates_
-        np.save(output_path / f"sub-{sub}_task-rest_estimator-lls_tau.npy", lls_["tau"])
-        np.save(output_path / f"sub-{sub}_task-rest_estimator-lls_se.npy", lls_["se(tau)"])
+        td_ = td.fit(X, n_timepoints=len(X)).estimates_
+        np.save(output_path / f"sub-{sub}_task-rest_estimator-td_tau.npy", td_["tau"])
+        np.save(output_path / f"sub-{sub}_task-rest_estimator-td_se.npy", td_["se(tau)"])
 
-        nls_ = nls.fit(X, n_timepoints=len(X)).estimates_
-        np.save(output_path / f"sub-{sub}_task-rest_estimator-nls_tau.npy", nls_["tau"])
-        np.save(output_path / f"sub-{sub}_task-rest_estimator-nls_se.npy", nls_["se(tau)"])
+        ad_ = ad.fit(X, n_timepoints=len(X)).estimates_
+        np.save(output_path / f"sub-{sub}_task-rest_estimator-ad_tau.npy", ad_["tau"])
+        np.save(output_path / f"sub-{sub}_task-rest_estimator-ad_se.npy", ad_["se(tau)"])

@@ -27,8 +27,8 @@ def _phi_to_tau(phis: np.ndarray, se_phis: np.ndarray, lag: int = 1) -> tuple:
     return taus, se_taus
 
 
-class LLS(BaseEstimator):
-    """Time Domain Linear Model, Fit by Linear Least Squares (LLS).
+class TD(BaseEstimator):
+    """Time Domain (TD) Linear Model, Fit by Linear Least Squares.
 
     Parameters
     ----------
@@ -56,8 +56,8 @@ class LLS(BaseEstimator):
     --------
     >>> from fmri_timescales import sim, timescale_utils
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
-    >>> lls = timescale_utils.LLS(var_estimator="newey-west", var_n_lags=10)
-    >>> lls.fit(X=X, n_timepoints=1000).estimates_
+    >>> td = timescale_utils.TD(var_estimator="newey-west", var_n_lags=10)
+    >>> td.fit(X=X, n_timepoints=1000).estimates_
     {'phi': array([0.79789847]), 'se(phi)': array([0.02045074]), 'tau': array([4.42920958]), 'se(tau)': array([0.50282146])}
     """
 
@@ -76,7 +76,7 @@ class LLS(BaseEstimator):
         self.n_jobs = n_jobs
 
     @delayed
-    def _fit_lls(self, x: np.ndarray) -> tuple:
+    def _fit_td(self, x: np.ndarray) -> tuple:
         """fit model to a single timeseries x in X"""
         T = len(x) - 1
         lag = self.lag_interval
@@ -106,7 +106,7 @@ class LLS(BaseEstimator):
         return phi_, np.sqrt(var_)
 
     def fit(self, X: np.ndarray, n_timepoints: int):
-        """Fit the LLS model.
+        """Fit the TD model.
 
         Parameters
         ----------
@@ -127,16 +127,16 @@ class LLS(BaseEstimator):
         X = (X - X.mean(axis=0)) / X.std(axis=0)  # mean zero, variance 1
 
         with Parallel(n_jobs=self.n_jobs) as parallel:
-            lls_fits = parallel(self._fit_lls(X[:, idx]) for idx in range(X.shape[1]))
-            phis_, se_phis_ = map(np.array, zip(*lls_fits))
+            td_fits = parallel(self._fit_td(X[:, idx]) for idx in range(X.shape[1]))
+            phis_, se_phis_ = map(np.array, zip(*td_fits))
             taus_, se_taus_ = _phi_to_tau(phis_, se_phis_, self.lag_interval)
 
         self.estimates_ = {"phi": phis_, "se(phi)": se_phis_, "tau": taus_, "se(tau)": se_taus_}
         return self
 
 
-class NLS(BaseEstimator):
-    """Autocorrelation Domain Nonlinear Model, fit by Nonlinear Least Squares (NLS).
+class AD(BaseEstimator):
+    """Autocorrelation Domain (AD) Nonlinear Model, fit by Nonlinear Least Squares.
 
     Parameters
     ----------
@@ -169,9 +169,9 @@ class NLS(BaseEstimator):
     --------
     >>> from fmri_timescales import sim, timescale_utils
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
-    >>> nls = timescale_utils.NLS(var_domain="time", var_estimator="newey-west", var_n_lags=10)
-    >>> nls.fit(X=X, n_timepoints=1000).estimates_
-    {'phi': array([0.7802222]), 'se(phi)': array([0.03207284]), 'tau': array([4.02938991]), 'se(tau)': array([0.66741761])}
+    >>> ad = timescale_utils.AD(var_domain="time", var_estimator="newey-west", var_n_lags=10)
+    >>> ad.fit(X=X, n_timepoints=1000).estimates_
+    {'phi': array([0.7802222]), 'se(phi)': array([0.02174618]), 'tau': array([4.02938991]), 'se(tau)': array([0.45252581])}
     """
 
     def __init__(
@@ -195,7 +195,7 @@ class NLS(BaseEstimator):
         self.n_jobs = n_jobs
 
     @delayed
-    def _fit_nls(self, x: np.ndarray) -> tuple:
+    def _fit_ad(self, x: np.ndarray) -> tuple:
         """fit model to a single timeseries/autocorrelation function x in X"""
 
         if self.X_domain == "time":
@@ -266,7 +266,7 @@ class NLS(BaseEstimator):
         return phi_, np.sqrt(var_)
 
     def fit(self, X: np.ndarray, n_timepoints: int):
-        """Fit the NLS model.
+        """Fit the AD model.
 
         Parameters
         ----------
@@ -287,8 +287,8 @@ class NLS(BaseEstimator):
         X = (X - X.mean(axis=0)) / X.std(axis=0) if self.X_domain == "time" else X
 
         with Parallel(n_jobs=self.n_jobs) as parallel:
-            nls_fits = parallel(self._fit_nls(X[:, idx]) for idx in range(X.shape[1]))
-            phis_, se_phis_ = map(np.array, zip(*nls_fits))
+            ad_fits = parallel(self._fit_ad(X[:, idx]) for idx in range(X.shape[1]))
+            phis_, se_phis_ = map(np.array, zip(*ad_fits))
             taus_, se_taus_ = _phi_to_tau(phis_, se_phis_, self.lag_interval)
 
         self.estimates_ = {"phi": phis_, "se(phi)": se_phis_, "tau": taus_, "se(tau)": se_taus_}

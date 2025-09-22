@@ -8,8 +8,8 @@ from fmri_timescales import acf_utils, sim
 rrmse = lambda true, estimates_: np.sqrt(np.mean((estimates_ - true) ** 2)) / np.abs(true)
 
 
-def get_nls_params(coeffs, coeff_type, n_timepoints):
-    """theoretical nls phi parameters"""
+def get_ad_params(coeffs, coeff_type, n_timepoints):
+    """theoretical ad phi parameters"""
 
     if coeff_type == "ar_coeffs":
         coeffs = acf_utils.ar_to_acf(coeffs, n_lags=n_timepoints)
@@ -27,10 +27,10 @@ def gridsearch_n_lags(estimator, X, n_rows, var_n_lags=np.arange(1, 31)):
     best_n_lags = None
     best_rrmse = np.inf
     for n_lags in var_n_lags:
-        lls_nw = estimator.set_params(var_estimator="newey-west", var_n_lags=n_lags)
-        lls_nw.fit(X, n_rows)
-        se_true = lls_nw.estimates_["tau"].std()
-        se_estimates = lls_nw.estimates_["se(tau)"]
+        td_nw = estimator.set_params(var_estimator="newey-west", var_n_lags=n_lags)
+        td_nw.fit(X, n_rows)
+        se_true = td_nw.estimates_["tau"].std()
+        se_estimates = td_nw.estimates_["se(tau)"]
         rrmse_ = rrmse(se_true, se_estimates)
         if rrmse_ < best_rrmse:
             best_rrmse = rrmse_
@@ -88,7 +88,7 @@ def run_simulation(phis, n_timepoints, n_lags, estimators, acm=None, n_repeats=1
     return results
 
 
-def plot_simulation(results, lls_taus, nls_taus):
+def plot_simulation(results, td_taus, ad_taus):
     """compare true and estimated timescales + standard errors"""
 
     hist_range = lambda estimates_: (
@@ -138,51 +138,51 @@ def plot_simulation(results, lls_taus, nls_taus):
     for idx, result in results.items():
         # --- row 0 --- #
 
-        # lls: tau
-        true, estimates_ = lls_taus[idx], result["lls_nr"]["tau"]
-        axs["b"].set_ylabel("LLS")
-        axs["b"].set_xlabel(r"$\hat\tau_\text{LLS}$")
+        # td: tau
+        true, estimates_ = td_taus[idx], result["td_nr"]["tau"]
+        axs["b"].set_ylabel("TD")
+        axs["b"].set_xlabel(r"$\hat\tau_\text{TD}$")
         axs["b"].hist(estimates_, color=colors[idx], **hist_kwargs)
         axs["b"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["b"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
-        axs_inset["b"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{LLS})$")
+        axs_inset["b"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{TD})$")
 
         # --- row 1 --- #
 
-        # nls TT/TA: tau
-        true, estimates_ = nls_taus[idx], result["nls_tt_nr"]["tau"]
-        axs["B"].set_ylabel("NLS")
-        axs["B"].set_xlabel(r"$\hat\tau_\text{NLS}$")
+        # ad TT/TA: tau
+        true, estimates_ = ad_taus[idx], result["ad_tt_nr"]["tau"]
+        axs["B"].set_ylabel("AD")
+        axs["B"].set_xlabel(r"$\hat\tau_\text{AD}$")
         axs["B"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["B"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["B"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
-        axs_inset["B"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{NLS})$")
+        axs_inset["B"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{AD})$")
 
         # --- row 2 --- #
 
-        # nls AA: tau
-        true, estimates_ = nls_taus[idx], result["nls_aa_nr"]["tau"]
-        axs["d"].set_ylabel("NLS")
-        axs["d"].set_xlabel(r"$\hat\tau_\text{NLS}$")
+        # ad AA: tau
+        true, estimates_ = ad_taus[idx], result["ad_aa_nr"]["tau"]
+        axs["d"].set_ylabel("AD")
+        axs["d"].set_xlabel(r"$\hat\tau_\text{AD}$")
         axs["d"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["d"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["d"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
-        axs_inset["d"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{NLS})$")
+        axs_inset["d"].set_xlabel(r"$\text{rRMSE}(\hat\tau_\text{AD})$")
 
         # --- row 3 --- #
 
-        ## lls: naive se(tau)
-        true, estimates_ = result["lls_nr"]["tau"].std(), result["lls_nr"]["se(tau)"]
-        axs["C"].set_ylabel("LLS")
-        axs["C"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{LLS})$")
+        ## td: naive se(tau)
+        true, estimates_ = result["td_nr"]["tau"].std(), result["td_nr"]["se(tau)"]
+        axs["C"].set_ylabel("TD")
+        axs["C"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{TD})$")
         axs["C"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["C"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["C"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
         axs_inset["C"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{Naive})$")
 
-        ## lls: newey-west se(tau)
-        true, estimates_ = result["lls_nw"]["tau"].std(), result["lls_nw"]["se(tau)"]
-        axs["D"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{LLS})$")
+        ## td: newey-west se(tau)
+        true, estimates_ = result["td_nw"]["tau"].std(), result["td_nw"]["se(tau)"]
+        axs["D"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{TD})$")
         axs["D"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["D"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["D"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
@@ -190,30 +190,30 @@ def plot_simulation(results, lls_taus, nls_taus):
 
         # --- row 4 --- #
 
-        # nls var_domain="autocorrelation": naive se(tau)
-        true, estimates_ = result["nls_tt_nr"]["tau"].std(), result["nls_tt_nr"]["se(tau)"]
-        axs["e"].set_ylabel("NLS")
-        axs["e"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{NLS})$")
+        # ad var_domain="autocorrelation": naive se(tau)
+        true, estimates_ = result["ad_tt_nr"]["tau"].std(), result["ad_tt_nr"]["se(tau)"]
+        axs["e"].set_ylabel("AD")
+        axs["e"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{AD})$")
         axs["e"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["e"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["e"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
         axs_inset["e"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{Naive})$")
 
-        true, estimates_ = result["nls_ta_nr"]["tau"].std(), result["nls_ta_nr"]["se(tau)"]
+        true, estimates_ = result["ad_ta_nr"]["tau"].std(), result["ad_ta_nr"]["se(tau)"]
         axs["e"].hist(estimates_, color=colors[idx], alpha=0.75, ls="--", **hist_kwargs)
         axs_inset["e"].scatter(
             idx, rrmse(true, estimates_), color=colors[idx], ls="--", facecolors="none", **scatter_kwargs
         )
 
-        # nls var_domain="autocorrelation": newey-west se(tau)
-        true, estimates_ = result["nls_tt_nw"]["tau"].std(), result["nls_tt_nw"]["se(tau)"]
-        axs["f"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{NLS})$")
+        # ad var_domain="autocorrelation": newey-west se(tau)
+        true, estimates_ = result["ad_tt_nw"]["tau"].std(), result["ad_tt_nw"]["se(tau)"]
+        axs["f"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{AD})$")
         axs["f"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["f"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["f"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
         axs_inset["f"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{NW})$")
 
-        true, estimates_ = result["nls_ta_nw"]["tau"].std(), result["nls_ta_nw"]["se(tau)"]
+        true, estimates_ = result["ad_ta_nw"]["tau"].std(), result["ad_ta_nw"]["se(tau)"]
         axs["f"].hist(estimates_, color=colors[idx], alpha=0.75, ls="--", range=hist_range(estimates_), **hist_kwargs)
         axs_inset["f"].scatter(
             idx, rrmse(true, estimates_), color=colors[idx], ls="--", facecolors="none", **scatter_kwargs
@@ -221,18 +221,18 @@ def plot_simulation(results, lls_taus, nls_taus):
 
         # --- row 5 --- #
 
-        # nls var_domain="time": naive se(tau)
-        true, estimates_ = result["nls_aa_nr"]["tau"].std(), result["nls_aa_nr"]["se(tau)"]
-        axs["E"].set_ylabel("NLS")
-        axs["E"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{NLS})$")
+        # ad var_domain="time": naive se(tau)
+        true, estimates_ = result["ad_aa_nr"]["tau"].std(), result["ad_aa_nr"]["se(tau)"]
+        axs["E"].set_ylabel("AD")
+        axs["E"].set_xlabel(r"$\widehat{se}_\text{Naive}(\hat\tau_\text{AD})$")
         axs["E"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["E"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["E"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
         axs_inset["E"].set_xlabel(r"$\text{rRMSE}(\widehat{se}_\text{Naive})$")
 
-        # nls var_domain="time": newey-west se(tau)
-        true, estimates_ = result["nls_aa_nw"]["tau"].std(), result["nls_aa_nw"]["se(tau)"]
-        axs["F"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{NLS})$")
+        # ad var_domain="time": newey-west se(tau)
+        true, estimates_ = result["ad_aa_nw"]["tau"].std(), result["ad_aa_nw"]["se(tau)"]
+        axs["F"].set_xlabel(r"$\widehat{se}_\text{NW}(\hat\tau_\text{AD})$")
         axs["F"].hist(estimates_, color=colors[idx], range=hist_range(estimates_), **hist_kwargs)
         axs["F"].axvline(true, color=colors[idx], **vline_kwargs)
         axs_inset["F"].scatter(idx, rrmse(true, estimates_), color=colors[idx], **scatter_kwargs)
