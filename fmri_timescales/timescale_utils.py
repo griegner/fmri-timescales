@@ -289,7 +289,7 @@ class AD(BaseEstimator):
         with Parallel(n_jobs=self.n_jobs) as parallel:
             ad_fits = parallel(self._fit_ad(X[:, idx]) for idx in range(X.shape[1]))
             phis_, se_phis_ = map(np.array, zip(*ad_fits))
-            taus_, se_taus_ = _phi_to_tau(phis_, se_phis_, self.lag_interval)
+            taus_, se_taus_ = _phi_to_tau(phis_, se_phis_)
 
         self.estimates_ = {"phi": phis_, "se(phi)": se_phis_, "tau": taus_, "se(tau)": se_taus_}
         return self

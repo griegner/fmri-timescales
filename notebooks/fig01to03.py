@@ -72,7 +72,7 @@ def run_simulation(phis, n_timepoints, n_lags, estimators, acm=None, n_repeats=1
                 results[idx][name] = {}
 
             if "aa" in name:
-                estimator.set_params(X_sfreq=sfreq)
+                estimator.set_params(lag_interval=sfreq)
                 if "nw" in name:
                     var_n_lags = gridsearch_n_lags(estimator, X_acf[:, :100], n_rows=n_lags * sfreq)
                     results[idx][name]["var_n_lags"] = var_n_lags
