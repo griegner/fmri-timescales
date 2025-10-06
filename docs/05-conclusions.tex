@@ -1,10 +1,58 @@
 \documentclass[docs/main.tex]{subfiles}
 
 \begin{document}
+\section{Practical Considerations}
+
+\subsection{Measurement noise}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig08-noise.pdf}
+    \caption{\textit{CAPTION.}}
+    \subcaption*{SUBCAPTION}
+    \label{fig:sim-noise}
+\end{figure}
+
+In the fMRI setting, an autoregressive process is unlikely to generate the observed time series. Instead, is it more plausible that it is really the sum of several distinct stochastic processes, at the very least one capturing neural dynamics, and another capturing measurement noise. In such settings, regions with identical neural timescales can nonetheless yield different apparent fMRI timescales under varying amounts of measurement noise. This raises an interpretational concern -- the fitted timescale may be well-estimated yet not correspond to the intended index of neural integration if measurement noise dominates. \\
+
+To motivate this limitation, consider the simulation setting where the latent neural process is generated as an AR1 process with a fixed timescale $\tautd^* = 4.48$ ($\phitd^* = 0.8$):
+
+\begin{align}
+    z_t = \phitd^* z_{t-1} + e_t, \quad e_t \overset{\text{iid}}{\sim} \mathcal{N}(0, 1).
+\end{align}
+
+\noindent Observations are formed by adding independent measurement noise of increasing magnitude:
+
+\begin{align}
+    x_t = z_t + \epsilon_t, \quad \epsilon_t \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2_{\epsilon}), \quad \sigma^2_{\epsilon} \in \{0, 0.5, 1.0, 2.0\},
+\end{align}
+
+\noindent to vary observation quality while holding the latent timescale constant. Under this signal + noise construction, increasing $\sigma^2_\epsilon$ increases the rate of autocorrelation decay (\textbf{Figure \ref{fig:sim-noise} Panel A}), because it inflates only the lag-0 variance without changing cross-lag covariances, so the ratio that defines the autocorrelation in \eqref{eq:acf} shrinks. As a consequence of increasing measurement noise, the time-domain estimator in \textbf{Panel B row 1} increasingly underestimates the theoretical latent neural timescale, even though the robust standard errors are correct in \textbf{Panel B row 2}. This perspective emphasizes that denoising the fMRI time series before estimating neural timescales is nontrivial to the interpretation of timescale maps; especially when making inference about neural timescales separate from other sources of variability like measurement or physiological noise.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig07-rshrf.pdf}
+    \caption{\textit{CAPTION.}}
+    \subcaption*{SUBCAPTION}
+    \label{fig:map-rshrf}
+\end{figure}
+
+Take for example the hemodynamic response function ...
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig09-oscillations.pdf}
+    \caption{\textit{CAPTION.}}
+    \subcaption*{SUBCAPTION}
+    \label{fig:sim-oscillations}
+\end{figure}
+
+Monotonic autocorrelation decay...
+
 \section{Conclusions}
 This study introduces statistical methods for mapping fMRI timescales. We detail the large-sample properties of time- and autocorrelation-domain methods, showing both give estimates that converge, but to different values. This difference arises from the distinct definitions of the timescale parameter inherent to each method. We also demonstrate that both estimators yield consistent standard errors under broad conditions, allowing reliable inference and hypothesis testing. This addresses a major limitation in neural timescale studies that typically report only point estimates without uncertainty measures.\\
 
-Simulation results highlight differences in finite sample bias and variance between the time- and autocorrelation-domain methods. All timescale estimators show largely unbiased results, with the linear least squares (LLS) method performing as well as or better than nonlinear least squares (NLS) in terms of relative root mean square error (rRMSE). Standard error estimates exhibit pronounced differences between naive and Newey-West corrected methods, particularly under misspecified settings such as AR(2) processes and realistic rfMRI data. Notably, standard errors cannot be directly estimated in the autocorrelation domain from sample autocorrelation functions (ACFs) of time-series data, necessitating a hybrid approach as detailed in \nameref{sec:stderr-autocorrelation/time-domain_}. Furthermore, time-domain methods demonstrate comparable or superior performance to autocorrelation-domain methods across all simulation scenarios. Specifically, the time-domain linear method \eqref{eq:ar1} offers greater computational efficiency and estimation stability for smaller timescales, whereas the autocorrelation-domain nonlinear method \eqref{eq:nlm} accommodates longer-range autocorrelations at the cost of reduced accuracy. The application of Newey-West corrected standard errors enhances inference reliability by reducing bias across both methods \citep{newey_simple_1987}, particularly evident in scenarios where autocorrelation decay is not exponential.\\
+Simulation results highlight differences in finite sample bias and variance between the time- and autocorrelation-domain methods. All timescale estimators show largely unbiased results, with the time-domain method performing as well as or better than the autocorrelation-domain method in terms of relative root mean square error (rRMSE). Standard error estimates exhibit pronounced differences between naive and Newey-West corrected methods, particularly under misspecified settings such as AR2 processes and realistic rfMRI data. Notably, standard errors cannot be directly estimated in the autocorrelation domain from sample autocorrelation functions (ACFs) of time-series data, necessitating a hybrid approach as detailed in \nameref{sec:stderr-autocorrelation/time-domain_}. Furthermore, time-domain methods demonstrate comparable or superior performance to autocorrelation-domain methods across all simulation scenarios. Specifically, the time-domain linear method \eqref{eq:ar1} offers greater computational efficiency and estimation stability for smaller timescales, whereas the autocorrelation-domain nonlinear method \eqref{eq:nlm} accommodates longer-range autocorrelations at the cost of reduced accuracy. The application of Newey-West corrected standard errors enhances inference reliability by reducing bias across both methods \citep{newey_simple_1987}, particularly evident in scenarios where autocorrelation decay is not exponential.\\
 
 Applied to HCP rfMRI data, both methods yield timescale and t-statistic maps consistent with known functional hierarchies \citep{van_essen_wu-minn_2013}. These results align with prior work demonstrating larger timescales in associative versus sensory cortices \citep{raut_hierarchical_2020, shafiei_topographic_2020, lurie_cortical_2024, mitra_lag_2014, kaneoke_variance_2012, wengler_distinct_2020, shinn_functional_2023, manea_intrinsic_2022, ito_cortical_2020, muller_core_2020}. The spatial patterns reinforce the hypothesis that hierarchical organization governs temporal processing across cortical regions. However, mechanistic interpretations of these timescales -- particularly their relationship to underlying neurophysiological processes -- remain to be fully explored in future work.\\
 

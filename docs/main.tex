@@ -18,6 +18,37 @@
 \titleformat{\subsection}{\bfseries\itshape\large}{\thesubsection}{1em}{}
 \titleformat{\subsubsection}{\itshape\normalsize}{\thesubsubsection}{1em}{}
 
+% distinguish AD from TD
+\newcommand{\phitd}{\phi_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hatphitd}{\hat{\phi}^*_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\tautd}{\tau_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hattautd}{\hat{\tau}^*_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\qtd}{q_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hatqtd}{\hat{q}_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\omegatd}{\omega_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hatomegatd}{\hat{\omega}_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\sigmatd}{\sigma_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hatsigmatd}{\hat{\sigma}_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\phiad}{\phi_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hatphiad}{\hat{\phi}^*_{\scriptscriptstyle\text{AD}}}
+
+\newcommand{\tauad}{\tau_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hattauad}{\hat{\tau}^*_{\scriptscriptstyle\text{AD}}}
+
+\newcommand{\qad}{q_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hatqad}{\hat{q}_{\scriptscriptstyle\text{AD}}}
+
+\newcommand{\omegaad}{\omega_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hatomegaad}{\hat{\omega}_{\scriptscriptstyle\text{AD}}}
+
+\newcommand{\sigmaad}{\sigma_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hatsigmaad}{\hat{\sigma}_{\scriptscriptstyle\text{AD}}}
+
 \title{Estimating fMRI Timescale Maps}
 \author{Gabriel Riegner $^{1\ast}$, Samuel Davenport $^{2}$, Bradley Voytek $^{1,3,4}$, Armin Schwartzman $^{1,2}$\\
 {\small $^{1}$Halicio\u{g}lu Data Science Institute, University of California San Diego}\\
@@ -32,7 +63,7 @@
 \maketitle
 
 \section*{Abstract}
-Brain activity unfolds over hierarchical timescales that reflect how brain regions integrate and process information, linking functional and structural organization. While timescale studies are prevalent, existing estimation methods rely on the restrictive assumption of exponentially decaying autocorrelation and only provide point estimates without standard errors, limiting statistical inference. In this paper, we formalize and evaluate two methods for mapping timescales in resting-state fMRI: a time-domain fit of an autoregressive (AR1) model and an autocorrelation-domain fit of an exponential decay model. Rather than assuming exponential autocorrelation decay, we define timescales by projecting the fMRI time series onto these approximating models, requiring only stationarity and mixing conditions while incorporating robust standard errors to account for model misspecification. We introduce theoretical properties of timescale estimators and show parameter recovery in realistic simulations, as well as applications to fMRI from the Human Connectome Project. Comparatively, the time-domain method produces more accurate estimates under model misspecification, remains computationally efficient for high-dimensional fMRI data, and yields maps aligned with known functional brain organization. In this work we show valid statistical inference on fMRI timescale maps, and provide Python implementations of all methods.
+Brain activity unfolds over hierarchical timescales that reflect how brain regions integrate and process information, linking functional and structural organization. While timescale studies are prevalent, existing estimation methods rely on the restrictive assumption of exponentially decaying temporal autocorrelation and only provide point estimates without standard errors, limiting statistical inference. In this paper, we formalize and evaluate two methods for mapping timescales in resting-state fMRI: a time-domain fit of an autoregressive (AR1) model and an autocorrelation-domain fit of an exponential decay model. Rather than assuming exponential autocorrelation decay, we define timescales by projecting the fMRI time series onto these approximating models, requiring only stationarity and mixing conditions while incorporating robust standard errors to account for model misspecification. We introduce theoretical properties of timescale estimators and show parameter recovery in realistic simulations, as well as applications to fMRI from the Human Connectome Project. Comparatively, the time-domain method produces more accurate estimates under model misspecification, remains computationally efficient for high-dimensional fMRI data, and yields maps aligned with known functional brain organization. In this work we show valid statistical inference on fMRI timescale maps, and provide Python implementations of all methods.
 
 \vfill
 \noindent\textit{Keywords:} time-domain linear model, autocorrelation-domain nonlinear model, uncertainty quantification, statistical inference, human connectome project, functional brain organization
