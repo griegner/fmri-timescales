@@ -48,15 +48,17 @@ The parameter $\phitd^*$ is the value that minimizes the expected squared error 
     \frac{d}{d\phitd} S(\phitd) = -2 \mathbb{E}[X_{t-1}(X_t - \phitd X_{t-1})] = 0.
 \end{align}
 
-\noindent Differentiating this quadratic function yields a linear equation in $\phitd$, and solving this results in a closed-form expression for the optimal $\phitd^*$. Therefore, $\phitd^*$ is defined by \textit{linear projection} and the timescale parameter $\tautd^*$ by a change of variable:
+\noindent Differentiating the quadratic function yields a linear equation in $\phitd$, and solving this results in a closed-form expression for the optimal $\phitd^*$. Therefore, $\phitd^*$ is defined by \textit{linear projection} and the timescale parameter $\tautd^*$ by a change of variable:
 \begin{align}
     \phitd^* &= (\mathbb{E}[X_{t-1}^2])^{-1}(\mathbb{E}[X_t X_{t-1}]) \label{eq:ar1-phi},\\
     \tautd^* &= g(\phitd^*) = -\frac{1}{\text{log}(|\phitd^*|)}. \label{eq:ar1-tau}
 \end{align}
 
-\noindent Thus, the timescale represents the characteristic time of $1/e$ autocorrelation decay derived from the best-fitting AR1 model under squared error loss. Since $X_t$ is stationary with finite variance, the parameters $\phitd^*$ and $\tautd^*$ defined by projection are unique; in fact, any approximating AR1 model is identifiable if $\mathbb{E}[X_{t-1}^2]$ is nonzero and finite \citep[Theorem~14.28]{hansen_econometrics_2022}.\\
+\noindent Thus, the timescale represents the characteristic time of $1/e$ autocorrelation decay derived from the best-fitting AR1 model under squared error loss. Since $X_t$ is stationary with finite variance, the parameters $\phitd^*$ and $\tautd^*$ defined by projection are unique; in fact, any approximating AR1 model is identifiable if $\mathbb{E}[X_{t-1}^2]$ is nonzero and finite \citep[Theorem~14.28]{hansen_econometrics_2022}. Importantly, the observed process $X_t$ need not follow the AR1 model from equation~\eqref{eq:ar1} with \textit{iid} innovations $e_t$. This allows for projection errors, i.e. residuals from linear projection onto the working model, which may exhibit unequal variance and autocorrelation. This applies to any stationary and mixing process, even if the true data-generating process is not AR1, so the resulting fit an AR1 projection.
 
-The parameter $\phitd^*$ then represents the best linear, mean-square approximation of the process $X_t$ by an AR1 model. Importantly, the observed process $X_t$ need not follow the AR1 model from equation~\eqref{eq:ar1} with \textbf{iid} innovations $e_t$. This allows for projection errors $e_t^* = X_t - \phitd X_{t-1}$, i.e. residuals from linear projection onto the working model, in which deviations from AR1 are subsumed by $e_t^*$ which may exhibit unequal variance and autocorrelation. This applies to any stationary and mixing process, even if the true data-generating process is not AR1, so the resulting fit an AR1 projection.
+\begin{align}
+    e_t^* = X_t - \phitd^* X_{t-1}, \quad \sigmatd^{*2} = \mathbb{E}[e_t^{*2}]
+\end{align}
 
 \subsubsection{Autocorrelation-Domain Nonlinear Model}\label{sec:autocorrelation-domain-nonlinear-model}
 
@@ -82,7 +84,7 @@ Here, the projection parameter $\phiad^*$ is the value that minimizes the expect
     \tauad^* &= g(\phiad^*) = -\frac{1}{\text{log}(|\phiad^*|)}. \label{eq:nlm-tau}
 \end{align}
 
-The pseudo-true parameter $\phiad$ is the nonlinear least-squares approximation of the ACF by a single exponential, with projection error residuals $e_k^* = \rho_k - \phiad$. These errors reduce to zero when the data-generating process is AR1, otherwise they are a function of lags $k$ that absorbs the non-exponential or damped-oscillatory features allowed under stationary and mixing. 
+The pseudo-true parameter $\phiad$ is the nonlinear least-squares approximation of the ACF by a single exponential, with projection error residuals $e_k^* = \rho_k - \phiad$. These errors reduce to zero when the data-generating process is AR1, otherwise they are a function of lags $k$ that absorb the non-exponential or damped-oscillatory features allowed under stationary and mixing. 
 
 \subsection{Timescale Estimation}\label{sec:timescale-estimation}
 \subsubsection{Time-Domain Linear Estimator}\label{sec:time-domain-linear-estimator}
@@ -101,7 +103,7 @@ The nonlinear least squares estimator of the \nameref{sec:autocorrelation-domain
     \hat\rho_k &= \hat\gamma_0^{-1}\hat\gamma_k = \left(\sum_{t=1}^T x_t^2\right)^{-1} \left(\sum_{t=k+1}^{T}x_t x_{t-k}\right),
 \end{align}
 
-\noindent where $\hat\gamma_k$ is the sample covariance at lag $k$ and $\hat\gamma_0$ is the sample variance. Under the mixing assumption, the population ACF \eqref{eq:acf} approaches zero as lag $k$ increases. However, sampling variability may yield non-zero autocorrelations even when true values are zero. To mitigate this, the sample ACF estimator \eqref{eq:acf_} imposes a bias towards zero by scaling the autocovariances ($\hat \gamma_k$, calculated using $T-k$ terms) by the total sample variance ($\hat\gamma_0$, calculated using all $T$ timepoints). The finite sample performance of this ACF estimator was compared to other standard estimators and shown to be the most suitable \citep{marriott_bias_1954}.\\
+\noindent where $\hat\gamma_k$ is the sample covariance at lag $k$ and $\hat\gamma_0$ is the sample variance. Under the mixing assumption, the population ACF \eqref{eq:acf} approaches zero as lag $k$ increases. However, sampling variability may yield non-zero autocorrelations even when true values are zero. To mitigate this, the sample ACF estimator \eqref{eq:acf_} imposes a bias towards zero by scaling the autocovariances ($\hat \gamma_k$, calculated using $T-k$ terms) by the total sample variance ($\hat\gamma_0$, calculated using all $T$ timepoints). The finite sample performance of this ACF estimator was compared to other standard estimators and shown to perform best in terms of bias and variance \citep{marriott_bias_1954}.\\
 
 By the model definition \eqref{eq:nlm}, the exponential decay parameter $\phiad^*$ that minimizes the cost function, $S(\phiad)$ in equation~\eqref{eq:nlm_loss}, is estimated by minimizing the sample analog $\widehat{S}_{K}(\phiad)$:
 \begin{align}
@@ -237,8 +239,6 @@ Following \citet[Theorem~14.33]{hansen_econometrics_2022}, the asymptotic distri
 \begin{align}
     \frac{\hat{\tau}^*_{\scriptscriptstyle\text{LLS}} - \tau^*}{\widehat{\text{se}}_{NW}(\hat{\tau}^*_{\scriptscriptstyle\text{LLS}}) } \underset{d}{\to} \mathcal{N}(0,1).
 \end{align}
-
-
 
 \subsubsection{Autocorrelation-Domain Method}
 
