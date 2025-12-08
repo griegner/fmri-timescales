@@ -531,7 +531,7 @@ However, reliance on a canonical HRF may oversimplify the relationship between n
 
 \begin{figure}[!ht]
     \centering
-    \includegraphics[width=1\textwidth]{docs/figures/fig08-noise.pdf}
+    \includegraphics[width=1\textwidth]{docs/figures/fig07-noise.pdf}
     \caption{\textit{AR1 with added measurement noise simulations.}}
     \subcaption*{
     (\textbf{A}) Simulation Setting: solid lines show the simulated ACFs of the AR1 + measurement noise process defined in equation \eqref{eq:measurement-noise} with a fixed timescale and increasing measurement noise variance $\sigma_{\eta}^2$; the dashed black line shows the AR1-projected ACF with no noise variance ($\sigma_{\eta}^2 = 0$). Increasing noise (red-to-blue) increases the rate of autocorrelation decay even when the latent timescale is fixed. (\textbf{B}) Timescale and Standard Error Estimates: vertical lines show the true latent neural timescale ($\tautd = 4.48$ for all settings); histograms show estimates across $B = 10,000$ replications; points show rRMSE. \textbf{(Row 1)} \nameref{sec:time-domain-linear-estimator}, where rRMSE is plotted versus a 10\% error line. (\textbf{Row 2}) \nameref{sec:stderr-time-domain_} (Newey-West), where rRMSE is plotted versus a 20\% error line.
@@ -561,7 +561,7 @@ This dependency emphasizes that the fitted timescale is effectively a confounded
 
 \begin{figure}[!ht]
     \centering
-    \includegraphics[width=1\textwidth]{docs/figures/fig09-oscillations.pdf}
+    \includegraphics[width=1\textwidth]{docs/figures/fig08-oscillations.pdf}
     \caption{\textit{AR2 with damped oscillation simulations.}}
     \subcaption*{
      (\textbf{A}) Simulation Setting (\textbf{Left}): triangle shows the AR2 stationary region in the $(\phi_1, \phi_2)$ plane, with the periodic/aperiodic boundary at $\phi_2 = -\phi_1^2/4$. Points show five selected AR2 $(\phi_1, \phi_2)$ combinations that project to the same AR1 timescale, with increasing periodicity magnitude by adjusting $\sqrt{-\phi_2}$. (\textbf{Right}): solid lines show the simulated ACFs of the AR2 process defined in equation \eqref{eq:sim-td-ar2}; the dashed black line shows the same AR1-projected ACF for all processes. (\textbf{B}) Timescale and Standard Error Estimates: vertical lines show the true timescale ($\tautd = 4.48$ for all settings); histograms show estimates across $B = 10,000$ replications; points show rRMSE. \textbf{(Row 1)} \nameref{sec:time-domain-linear-estimator}, where rRMSE is plotted versus a 10\% error line. (\textbf{Row 2}) \nameref{sec:stderr-time-domain_} (Newey-West), where rRMSE is plotted versus a 20\% error line.
