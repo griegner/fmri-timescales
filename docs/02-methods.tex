@@ -15,14 +15,14 @@ Weak stationarity implies a constant mean and variance (independent of time inde
 \rho_k = \text{corr}(X_t, X_{t-k}) = \gamma_k/\gamma_0,
 \end{align}
 
-\noindent where $\gamma_k$ is the autocovariance at lag $k$ and $\gamma_0$ is the variance. As a correlation, $|\rho_k|\le 1$, but stationarity alone does not guarantee decay of $\rho_k$ with increasing lag; constant or periodic processes can maintain nonzero correlations indefinitely. 
+\noindent where $\gamma_k$ is the autocovariance at lag $k$ and $\gamma_0$ is the variance. We emphasize that $\rho_k$ represents \textit{temporal} autocorrelation, not spatial autocorrelation often referenced in the fMRI literature. As a correlation, $|\rho_k|\le 1$, but stationarity alone does not guarantee decay of $\rho_k$ with increasing time lag; constant or periodic processes can maintain nonzero correlations indefinitely. 
 
 \subsubsection{Strong Mixing} \label{sec:strong-mixing}
 Strong mixing ($\alpha$-mixing) imposes stronger dependence constraints than stationarity while still allowing for a wide set of stochastic processes. By definition, a process is strong mixing if $\alpha(\ell) \rightarrow 0$ as $\ell \rightarrow \infty$, where $\alpha(\ell)$ measures the \emph{maximum dependence} between events separated by $\ell$ time points; this controls the full joint dependence structure and implies distant events are uncorrelated. Strong mixing also implies ergodicity \citep[Chapter~14.12]{hansen_econometrics_2022}, which ensures consistent estimation by the ergodic theorem \citep[Theorem~14.9]{hansen_econometrics_2022}. Additionally, if a mixing process has $r>2$ finite moments $\mathbb{E}|X_t|^r < \infty$ and its mixing coefficients satisfy $\sum_{\ell=0}^{\infty} \alpha(\ell)^{1-2/r} < \infty$, then its autocorrelations decay sufficiently fast for application of the central limit theorem for dependent data \citep[Theorem~14.15]{hansen_econometrics_2022}. These conditions enable asymptotic theory for estimation and inference on timescale maps (see \nameref{sec:estimator-properties}).\\
 
 As introduced by \citet{murray_hierarchy_2014}, the timescale $\tau$ represents the lag where exponentially decaying autocorrelations reach $1/e \approx 0.37$, analogous to the time constants of many physical systems and often referred to as $e$-folding time in other fields. While it provides an intuitive description of the memory or persistence of that process, assuming an exponential function imposes stricter constraints than strong mixing, which alone does not prescribe any specific type of decay (exponential, linear, damped periodic, etc.). Despite this, the timescale serves as a useful summary statistic for the duration of temporal dependence, enabling direct comparisons across brain regions even when the true decay structure is more complex. This highlights an important distinction between the data-generating process and the simplified parametric model used to describe the timescale at which such a process becomes decorrelated. In the present paper, we adopt broad assumptions, requiring only that the process is stationary and mixing, to account for cases where the ACF decay may not be strictly exponential.
 
-\subsubsection{Estimation and Inference under Misspecification}
+\subsubsection{Estimation and Inference under Misspecification}\label{sec:misspecification}
 
 We approximate the dominant exponential decay in autocorrelations by a single timescale parameter $\tau$, and formally evaluate two timescale methods that are commonly applied across neuroimaging modalities (fMRI, EEG, ECoG, MEG). The time-domain (TD) linear model estimated with linear least squares \citep{kaneoke_variance_2012, meisel_decline_2017, huang_timescales_2018, lurie_cortical_2024, shinn_functional_2023, shafiei_topographic_2020, spitmaan_multiple_2020, trepka_training-dependent_2024}, and the autocorrelation-domain (AD) nonlinear model estimated with nonlinear least squares \citep{rossi-pool_invariant_2021, cirillo_neural_2018, ito_cortical_2020, runyan_distinct_2017, zeraati_flexible_2022, nougaret_intrinsic_2021, wasmuht_intrinsic_2018, muller_core_2020, maisson_choice-relevant_2021, li_hierarchical_2022, shafiei_topographic_2020}. Both belong to the subclass of m-estimators defined by minimizing a sample squared error loss function. This approach seeks the best approximation in terms of squared error and does not require full specification of the data-generating distribution, relying on method of moments instead of maximum likelihood estimation. \\
 
@@ -54,7 +54,7 @@ The parameter $\phitd^*$ is the value that minimizes the expected squared error 
     \tautd^* &= g(\phitd^*) = -\frac{1}{\text{log}(|\phitd^*|)}. \label{eq:ar1-tau}
 \end{align}
 
-\noindent Thus, the timescale represents the characteristic time of $1/e$ autocorrelation decay derived from the best-fitting AR1 model under squared error loss. Since $X_t$ is stationary with finite variance, the parameters $\phitd^*$ and $\tautd^*$ defined by projection are unique; in fact, any approximating AR1 model is identifiable if $\mathbb{E}[X_{t-1}^2]$ is nonzero and finite \citep[Theorem~14.28]{hansen_econometrics_2022}. Importantly, the observed process $X_t$ need not follow the AR1 model from equation~\eqref{eq:ar1} with \textit{iid} innovations $e_t$. This allows for projection errors, i.e. residuals from linear projection onto the working model:
+\noindent Thus, the timescale represents the characteristic time of $1/e$ autocorrelation decay derived from the best-fitting AR1 model under squared error loss. Since $X_t$ is stationary with finite variance, the parameters $\phitd^*$ and $\tautd^*$ defined by projection are unique; in fact, any approximating AR1 model is identifiable if $\mathbb{E}[X_{t-1}^2]$ is nonzero and finite \citep[Theorem~14.28]{hansen_econometrics_2022}. Importantly, the observed process $X_t$ need not follow the AR1 model from equation~\eqref{eq:ar1} with \textit{iid} innovations $e_t$. This allows for projection errors, i.e., residuals from linear projection onto the working model:
 
 \begin{align}
     e_t^* = X_t - \phitd^* X_{t-1}
@@ -81,7 +81,7 @@ Here, the projection parameter $\phiad^*$ is the value that minimizes the expect
     \frac{d}{d\phiad} S(\phiad) &= -2\mathbb{E}[(k\phiad^{k-1})(\rho_k - \phiad^k)] = 0.
 \end{align}
 
-\noindent However, the derivative is nonlinear in $\phiad$, preventing a closed-form solution for least squares minimization. This is because the first-order condition sums nonlinear terms across many lags, yielding a high-order equation with no general algebraic solution. Therefore, optimization methods are needed to approximate $\phiad^*$ by \textit{nonlinear projection} of the lag-indexed ACF onto the curve $\phiad^k$ under the squared error loss in \eqref{eq:nlm_loss}. Like before, the corresponding timescale is defined as the time lag at which the fitted ACF reaches $1/e$ and can be expressed by the change or variable:
+\noindent However, the derivative is nonlinear in $\phiad$, preventing a closed-form solution for least squares minimization. This is because the first-order condition sums nonlinear terms across many lags, yielding a high-order equation with no general algebraic solution. Therefore, optimization methods are needed to approximate $\phiad^*$ by \textit{nonlinear projection} of the lag-indexed ACF onto the curve $\phiad^k$ under the squared error loss in \eqref{eq:nlm_loss}. Like before, the corresponding timescale is defined as the time lag at which the fitted ACF reaches $1/e$ and can be expressed by the change of variable:
 \begin{align}
     \tauad^* &= g(\phiad^*) = -\frac{1}{\text{log}(|\phiad^*|)}. \label{eq:nlm-tau}
 \end{align}
@@ -114,10 +114,10 @@ By the model definition \eqref{eq:nlm}, the exponential decay parameter $\phiad^
     \hattauad &= g(\hatphiad) = -\frac{1}{\text{log}(|\hatphiad|)}.
 \end{align}
 
-\noindent In this paper we use the Levenberg-Marquart algorithm to iteratively update the estimate of $\hatphiad$ until convergence (i.e., when the step size goes below a $10^{-6}$ tolerance) \citep{levenberg_method_1944}.\\
+\noindent In this paper we use the Levenberg-Marquardt algorithm to iteratively update the estimate of $\hatphiad$ until convergence (i.e., when the step size goes below a $10^{-6}$ tolerance) \citep{levenberg_method_1944}.\\
 
 \subsection{Estimator Properties}\label{sec:estimator-properties}
-In this section, we describe the large-sample properties of both the \nameref{sec:time-domain-linear-model} and \nameref{sec:autocorrelation-domain-nonlinear-model}, focusing on the consistency and asymptotic distribution of their respective estimators. Under general conditions --- when the time-domain method is applied to a process that is not AR(1), or the autocorrelation-domain method is applied to a decay process that is not exponential --- we demonstrate that the asymptotic distribution is Gaussian, with a limiting variance that can be consistently estimated. Specific expressions for this variance and its estimator are provided after in sections \nameref{sec:stderr} and \nameref{sec:stderr_}. This allows for the construction of hypothesis tests and confidence intervals across timescale maps of the brain.
+In this section, we describe the large-sample properties of both the \nameref{sec:time-domain-linear-model} and \nameref{sec:autocorrelation-domain-nonlinear-model}, focusing on the consistency and asymptotic distribution of their respective estimators. Under general conditions --- when the time-domain method is applied to a process that is not AR1, or the autocorrelation-domain method is applied to a decay process that is not exponential --- we demonstrate that the asymptotic distribution is Gaussian, with a limiting variance that can be consistently estimated. Specific expressions for this variance and its estimator are provided after in sections \nameref{sec:stderr} and \nameref{sec:stderr_}. This allows for the construction of hypothesis tests and confidence intervals across timescale maps of the brain.
 
 \subsubsection{Time-Domain Method}
 Following the description in \citet[Theorem~14.29]{hansen_econometrics_2022}, the ergodic theorem shows that mixing (which implies ergodicity) is a sufficient condition for \textit{consistent estimation}. Since $X_t$ is stationary and ergodic, so too are $X_t X_{t-1}$ and $X_{t-1}^2$, and as $T \to \infty$:
@@ -205,7 +205,7 @@ Following the description in \citet[Chapter~22.8 and Chapter~23.5]{hansen_econom
     \omegaad = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[(m_{\phiad^*, k} \cdot e_{k})(m_{\phiad^*, k-\ell} \cdot e_{k-\ell})].
 \end{align}
 
-\noindent The derivative of the regression function $m_{\phiad^*, k}$ evaluated at $\phiad^*$ locally approximates the nonlinear model by a linear one, and the expression for $\omegaad$ sums the covariance structure of the errors, ensuring that the standard errors are asymptotically valid under model misspecification (see \eqref{eq:nls-phi-clt}). This is a realistic scenario under the mild conditions of stationarity and mixing. In the special case where the errors are \textit{iid}, the standard error of $\phiad^*$ simplifies to the usual formula:
+\noindent The derivative of the regression function $m_{\phiad^*, k}$ evaluated at $\phiad^*$ locally approximates the nonlinear model by a linear one, and the expression for $\omegaad$ sums the covariance structure of the errors, ensuring that the standard errors are asymptotically valid under model misspecification (see equation \eqref{eq:nls-phi-clt}). This is a realistic scenario under the mild conditions of stationarity and mixing. In the special case where the errors are \textit{iid}, the standard error of $\phiad^*$ simplifies to the usual formula:
 \begin{align}
     \text{se}_{\text{Naive}}(\hatphiad) = \sqrt{\sigmaad^2 \qad^{-1}},
 \end{align}
@@ -259,7 +259,7 @@ The sample standard error estimator takes the form:
 \noindent In the case of correct specification the equation simplifies to:
 \begin{align}
     \widehat{\text{se}}_\text{Naive}(\hatphiad) &= \sqrt{\hatsigmaad^2 \hatqad^{-1}},\\
-    \widehat{\text{se}}_\text{Naive}(\hattauad &\approx \widehat{\text{se}}_{\text{Naive}}(\hatphiad) \frac{d}{d\phiad} g(\phiad)\big|_{\phiad=\hatphiad},
+    \widehat{\text{se}}_\text{Naive}(\hattauad) &\approx \widehat{\text{se}}_{\text{Naive}}(\hatphiad) \frac{d}{d\phiad} g(\phiad)\big|_{\phiad=\hatphiad},
 \end{align}
 
 \noindent where $\hatsigmaad^2 = 1/K \sum_{k=0}^K \hat e_k^{*2}$ is an estimate of the autocorrelation-domain error variance.\\
