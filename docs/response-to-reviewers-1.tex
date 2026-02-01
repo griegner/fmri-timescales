@@ -1,0 +1,162 @@
+\documentclass[docs/main.tex]{subfiles}
+
+
+\usepackage{parskip} % no indents
+
+\newcommand{\reviewercomment}[1]{\vspace{0.3cm}\noindent\textbf{#1}\vspace{0.15cm}}
+\newcommand{\manuscriptquote}[1]{\begin{quote}\textit{#1}\end{quote}}
+
+\begin{document}
+
+Dear Imaging Neuroscience Editors and Reviewers,
+
+\vspace{0.5cm}
+
+We sincerely thank the reviewers for their excellent and thoughtful feedback on our manuscript, ``Estimating fMRI Timescale Maps,'' and appreciate the time and care invested in providing such detailed reviews. We hope our gratitude is reflected in the careful revisions we have undertaken, which have made the manuscript significantly clearer and more accessible for both statistical modelers and practitioners. We have revised the text to fully address all reviewer comments. As an overview, we have:
+
+\begin{enumerate}
+    \item Incorporated \textit{RAPIDtide} denoising of the resting-state fMRI data to mitigate physiological artifacts and systemic low-frequency oscillations, and regenerated all \textit{Data Analysis Results} (4.2; Reviewer 2).
+    \item Added a new section, \textit{Practical Considerations for fMRI Timescale Estimation} (5), with three subsections explicitly addressing the effects of the \textit{hemodynamic response function} (5.1), \textit{measurement noise} (5.2), and \textit{periodicity} (5.3) on timescale estimation (Reviewers 1–3).
+    \item Included additional simulation settings to demonstrate the impact of measurement noise (Figure 7) and damped oscillations (Figure 8) on our proposed timescale methods (Reviewers 2–3).
+    \item In the methods section, prefaced reliance on Hansen’s textbook, revised the notation to better distinguish between the time- and autocorrelation-domain methods and their respective estimands and estimators, included more background on \textit{Estimation and Inference under Misspecification} (2.1.3), and introduced \textit{Estimator Properties} (2.4) before \textit{Standard Error of the Estimators} (2.5; Reviewer 3).
+\end{enumerate}
+
+\vspace{0.5cm}
+
+Below, we provide a point-by-point response to the reviewers’ comments. Reviewer comments are in \textbf{bold}, our responses in plain text, and changes to the manuscript in \textit{italics}.
+
+\subsection*{Reviewer 1}
+
+\reviewercomment{Should the manuscript require any revision, I would like to suggest the following. Because the paper stands to become the de facto technical reference for timescale estimation with fMRI, it would be nice for the authors to also comment on fMRI-specific methodological considerations as well as their interaction with statistical procedures discussed here (please note that I am not requesting additional analyses).}
+
+\reviewercomment{1. In the former case, for instance, the authors might simply mention potential artifacts that are worth considering in the context of timescale estimation, such as physiological confounds and head motion (Goldberg et al., 2024).}
+
+We agree that physiological confounds and head motion are important considerations, especially after reading the suggested reference. We have added a discussion on this in \textit{Section 5.2 (Effects of Measurement Noise)} and cited Goldberg et al. (2024). Furthermore, we now explicitly mention denoising with ICA-FIX and RAPIDtide to mitigate physiological artifacts in \textit{Section 4.1}.
+
+\manuscriptquote{To further mitigate systemic low-frequency physiological oscillations driven by respiration and $\text{CO}_2$ variation, we applied RAPIDtide (Frederick, 2025). This step accounts for the regionally varying lags of these global signals, caused by differences in blood arrival times, which can otherwise mimic or inflate regionally specific autocorrelation. [Section 4.1]\\...}
+
+
+\manuscriptquote{Therefore in practice, effective denoising is a prerequisite for separating neural timescales from artifacts such as head motion or physiological noise. [Section 5.2]}
+
+\reviewercomment{2. A comment on low-SNR regions is also advisable: the "limbic network" is here observed to have short autocorrelation times, and this is attributed to the limbic network being "sensory". An alternative explanation is that the limbic network essentially overlaps with regions of BOLD signal dropout, leading to low-SNR and flatter power spectrum (see e.g. SNR maps and discussion in (Yeo et al., 2011; Du et al., 2024)).}
+
+We appreciate this insight. We have revised our discussion in \textit{Sections 4.2.1 and 5.2} to acknowledge that signal dropout and low SNR in the limbic network may contribute to the observed short timescales, citing Yeo et al. (2011) and Du et al. (2024).
+
+\manuscriptquote{However, interpreting these network differences requires caution, particularly because regions in the limbic network are especially susceptible to measurement noise, which can conflate timescale estimation. [Section 4.2.1]\\...}
+
+\manuscriptquote{Finally, even with careful denoising, interpretational caution is warranted in regions susceptible to signal loss, such as the orbital frontal cortex and the anterior inferior medial temporal lobe (Yeo et al., 2011; Du et al., 2024). [Section 5.2]}
+
+\reviewercomment{3. Motion censoring is an effective and commonly employed strategy in fMRI analysis, but its implementation in contexts where dynamics are of interest (as is the case for timescale analysis) is nontrivial; see e.g. (Goldberg et al., 2024). On the other hand, perhaps the AR1 projection method advocated by the authors would provide an elegant resolution to this matter by naturally providing a method for interpolation over censored frames? (Or perhaps censored frames can be excluded altogether during AR1 model fitting by following a procedure analogous to the "exact DMD" approach (see 2.2 in (Tu et al., 2014).)}
+
+Thank you for this suggestion. We have highlighted in \textit{Section 5.2} that our method allows for the exclusion of motion-contaminated frames without the need for interpolation (similar to approaches like exact DMD), as it relies only on adjacent timepoint pairs.
+
+\manuscriptquote{Regarding motion, the proposed Time-Domain Linear Estimator offers a practical advantage because this estimator relies solely on adjacent timepoint pairs ($x_t, x_{t+1}$). This allows motion-contaminated frames to be excluded without interpolation (Goldberg et al., 2024). [Section 5.2]}
+
+\subsection*{Reviewer 2}
+
+\reviewercomment{You treat timescales as intrinsic properties of the "aperiodic" component of the BOLD signal, yet this framing is both circular and conceptually fragile. In practice, 1/f slope, often used to operationalize "aperiodic", to the point of becoming a synonym, can emerge from entirely rhythmic processes with nonstationary amplitude envelopes. In this sense, the assumption that BOLD is mostly aperiodic is either difficult to verify (if we look for "truly" aperiodic activity, supposing it exists), or a truism, given that the amplitude of rhythmic processes will definitely change over several minutes.}
+
+We agree that the distinction between ``aperiodic'' and ``rhythmic'' can be circular. We have clarified in \textit{Section 1.2} that our method avoids external criteria to separate these components and is robust to mixed processes that contain both aperiodic and rhythmic components. We also added \textit{Section 5.3 (Effects of Periodicity)} and \textit{Figure 8} to demonstrate this robustness via simulations of AR2 processes with increasing oscillatory strength.
+
+\manuscriptquote{Because amplitude-modulated rhythmic activity can mimic aperiodic properties (He et al., 2010; He, 2011), distinguishing the true generative process is often circular. Instead, we introduce a timescale estimator that is robust regardless of whether the underlying process is strictly aperiodic, damped-oscillatory, or a mixture of both, and we validate this robustness using simulations across these regimes. [Section 1.2]\\...}
+
+\manuscriptquote{To validate the robustness of the time-domain estimator in this setting, we simulated AR2 processes that display oscillations, holding the projected timescale constant ($\tau_{TD}^* = 4.48$) while increasing the oscillatory strength via the second-order coefficient $\sqrt{-\phi_2} \in \{0.5, 0.642, 0.758, 0.859, 0.949\}$. [Section 5.3]}
+
+\reviewercomment{The slow BOLD fluctuations underlying the estimated timescales are highly susceptible to non-neuronal physiological influences, including systemic low-frequency oscillations (sLFOs) driven by autonomic processes such as respiration and $\text{CO}_2$ variation. These global signals exhibit regionally varying lags due to blood arrival time differences, which can mimic or inflate regionally specific autocorrelation structures. Methods such as RAPIDtide have shown that these delays are widespread and can dominate low-frequency variance in resting-state fMRI. Here you don't address this issue, which is particularly problematic given the centrality of slow autocorrelations in the analysis.}
+
+We thank the reviewer for pointing out that traditional denoising approaches such as ICA-FIX do little to mitigate systemic low-frequency oscillations (sLFOs), and that sLFOs can inflate low-frequency variance over time in ways related to arousal and physiology. Because this would violate the weak stationarity assumptions of our timescale methods, we took care to address it. We applied RAPIDtide to all HCP subjects in our analysis (after ICA-FIX) to remove these additional sLFO confounds, as described in \textit{Section 4.1}. Figures 5–6 now reflect fMRI timescale maps after denoising with RAPIDtide.
+
+\manuscriptquote{To further mitigate systemic low-frequency physiological oscillations driven by respiration and CO$_2$ variation, we applied RAPIDtide (Frederick, 2025). This step accounts for the regionally varying lags of these global signals, caused by differences in blood arrival times, which can otherwise mimic or inflate regionally specific autocorrelation. [Section 4.1]}
+
+\reviewercomment{A recent study by Korponay et al. shows that rsFC values inflate artifactually throughout fMRI scans with a substantial contribution from the mechanism explained above, and connected to arousal, beyond neural coupling. The same processes could inflate regional autocorrelation and thus timescale estimates. This questions whether the reported cortical hierarchies truly reflect neural temporal integration or are consequences of temporally correlated physiological fluctuations.}
+
+We have cited Korponay et al. (2024) in \textit{Section 5.3} and acknowledged that systemic oscillations can mimic neural timescales. We argue that while our estimator is statistically robust to oscillatory structure in the data (as shown in the new simulations), valid biological interpretation requires careful denoising (such as RAPIDtide) to reduce physiologically driven autocorrelations.
+
+\manuscriptquote{Furthermore, non-neural sources, such as respiration and CO$_2$ variation, can introduce systemic low-frequency oscillations (Tong et al., 2019; Korponay et al., 2024). These dynamics manifest as periodic fluctuations in the ACF, creating a case of model misspecification. However, distinguishing neural from non-neural confounding remains critical for interpretation. We therefore recommend denoising methods such as RAPIDtide to remove confounding time-lagged oscillations, ensuring the estimated timescale more closely reflects neural rather than physiological processes. [Section 5.3]}
+
+\reviewercomment{The hemodynamic response function is another filter that displays spatial and subject specificity.}
+
+We have added \textit{Section 5.1 (Effect of the Hemodynamic Response Function)} to explicitly discuss how the HRF acts as a low-pass filter that inflates timescales. We note that while it may preserve relative hierarchies, HRF variability can be a confound when interpreting estimated timescales as neural properties.
+
+\manuscriptquote{...reliance on a canonical HRF may oversimplify the relationship between neural and vascular dynamics. Recent evidence demonstrates that HRF shape varies across both brain regions and individuals (Bailes et al., 2023; Rangaprakash et al., 2018). This variability introduces a potential confound where observed timescale differences may stem from vascular origins—such as regional heterogeneity in blood flow latency—rather than differences in neural processing. A method proposed by Wu et al.(2021) for HRF estimation and deconvolution offers a promising route to disentangle these effects from the resting-state BOLD signal. Nevertheless, a fundamental identifiability problem remains in that both a wider HRF and a longer neural timescale can produce nearly identical observed BOLD signals. Resolving this ambiguity requires moving beyond observational studies, and future work should leverage experimental manipulations and/or concurrent EEG-fMRI to tease apart vascular and neural timescales. [Section 5.1]}
+
+\manuscriptquote{}
+
+\reviewercomment{You correctly argue that standard errors derived from the ACF itself are biased under most realistic signal structures. However, this limitation is underplayed in the manuscript. The rationale for the hybrid autocorrelation/time-domain method needs to be better justified, particularly in emphasizing why modeling the error structure of ACFs is nontrivial and often invalid without explicit noise models.}
+
+We have expanded the justification for the hybrid method in \textit{Section 2.5.3} and its estimator in \textit{Section 2.6.3}, explaining that ACF residuals in autoregressive processes represent misspecification error rather than random noise, which makes standard error estimation purely in the autocorrelation domain problematic. This motivates defining the timescale via the autocorrelation domain while estimating its variance in the time domain.
+
+\manuscriptquote{... the model (8) assumes a signal-plus-noise structure that is unrealistic for an autoregressive process. For example, the ACF of a correctly specified AR1 process is deterministic ($\rho_k=\phiad^k$) with no additive error. In this case, the autocorrelation-domain residuals $e_k^*$ are zero, giving the false impression that the standard error vanishes. This is misleading because the parameter $\phiad^*$ is still a random variable with a sampling distribution governed by the stochastic time-domain innovations $e_t$; because this variability arises in the time domain, it must be estimated there. [Section 2.5.3]\\...}
+
+\manuscriptquote{To address this, we propose a hybrid approach where the timescale is defined in the autocorrelation domain by equation (9) to capture long-range correlations, but its standard error is defined in the time domain by equation (27) to correctly capture the sampling variability arising from the innovations.}
+
+\reviewercomment{Ultimately, what are we supposed to do with these fMRI timescales? If they should reflect neural timescales, I don't think we're there yet. If they are (yet another) derived property from BOLD signal, what does it add to the existing ones?}
+
+We fully agree with your skepticism regarding the addition of new measures without clear links to underlying biology. However, timescale measures are already widely applied in the fMRI literature. The focus of this paper is not to introduce new measures, but to formalize and evaluate existing ones to ensure they are statistically valid. Addressing the important empirical questions you raise -- such as disentangling neural integration from physiological noise -- requires a framework for valid inference. Without quantifying uncertainty, claims about sensitivity or specificity to biological conditions are untestable. By establishing estimators with robust standard errors, this work lays the methodological foundation necessary to distinguish genuine physiological relationships from statistical artifacts in future research. We try to make this point more explicit in our conclusions:
+
+\manuscriptquote{However, mechanistic interpretations of these timescales -- particularly their relationship to underlying neurophysiological processes -- remain to be fully explored in future work. Linking fMRI timescale maps to underlying biology will require systematic consideration of how the HRF, measurement noise, and periodic signals shape observed patterns and how these factors relate to their physiological origins. [Section 6]\\...}
+\manuscriptquote{This work lays the methodological foundation for future research
+into the role of timescales in brain structure and function.}
+
+We have also expanded the discussion to address the physiological specificity (or lack thereof) of these measures:
+\manuscriptquote{The mixed metabolic and neuronal origins of the hemodynamic signal complicate mechanistic interpretations (Raut et al., 2020; He, 2011). Consequently, interpreting fMRI timescales as proxies for \textit{intrinsic neural timescales} requires disentangling latent neural dynamics from confounding sources of variability.}
+
+\subsection*{Reviewer 3}
+
+We would like to specifically thank this reviewer for their incredibly detailed review. Their feedback identified several oversights, and addressing their suggestions has significantly strengthened the theoretical framework and overall rigor of the paper. Whoever you are, thank you for the time and expertise you dedicated to improving this work.
+
+\reviewercomment{2.1 Distinguishing Measurement Notion from Innovation\\
+The AR1 model at the heart of much of the work presented in (3) has a fundamental shortcoming: the "errors" $e_t$ are really innovations... In the fMRI setting, it seems far more plausible that the observation $X_t$ is really the sum of several distinct stochastic processes... I think the paper would benefit from more explicitly articulating this challenge, and perhaps exploring it in an additional simulation setting.}
+
+We agree with this distinction between innovations and measurement noise. We have added \textit{Section 5.2 (Effects of Measurement Noise)} and a new simulation study (\textit{Figure 7}) modeled by Equations (54) and (55). This simulation explicitly separates latent neural dynamics (innovations) from added measurement noise. We show that measurement noise influences the timescale estimands, and we discuss the resulting timescale as a ``pseudo-true'' parameter that reflects a combination of neural and measurement processes.
+
+\manuscriptquote{To illustrate this limitation, consider the simulation setting where the latent neural process is generated as an AR1 with a fixed timescale... Observations are formed by adding independent measurement noise... Consequently, the time-domain estimator... diverges from the true latent neural timescale... This dependency emphasizes that the fitted timescale is effectively a confounded measure of both neural dynamics and measurement noise and the resulting timescale should be interpreted as the pseudo-true timescale under model misspecification. [Section 5.2]}
+
+\reviewercomment{3.1 Distinguishing Estimands from Estimators\\
+The paper sometimes conceptually equivocates between estimands (the target of estimation) and estimators (a random quantity computed from the data intended to approximate the estimand).}
+
+We have clarified this distinction throughout the text. In the added \textit{Section 2.1.3: Estimation and Inference under Misspecification}, we clarify the ``pseudo-true parameter'' (estimand), denoted by a superscript star, distinct from its estimator.
+
+\manuscriptquote{Throughout, a superscript star (e.g. $\phi^\ast$) denotes the pseudo-true parameter corresponding to the best fitting parameter in a possibly misspecified model. If correctly specified, $\phi^\ast$ is the true timescale otherwise, it is an approximation. [Section 2.1.3]}
+
+\reviewercomment{3.2.1 Decouple Models from Estimation Techniques\\
+The paper largely hinges on the "working model" that is used in analysis. However, the notation conflates this with the estimation technique employed.}
+
+We have refined the notation to more clearly distinguish between the working models and the estimation techniques. We use TD'' and AD'' subscripts to denote the time-domain and autocorrelation-domain working models, added throughout all the text and figures.
+
+\reviewercomment{3.2.2 More Background Needed for Misspecification\\
+While the paper gives a good amount of background on timescale estimation, it would be helpful to include a brief primer on estimation and inference under misspecification.}
+
+We have added \textit{Section 2.1.3 (Estimation and Inference under Misspecification)} to provide this background, framing the estimators as M-estimators that minimize a squared error loss and defining the pseudo-true parameter as the minimizer of the corresponding population loss under misspecification.
+
+\manuscriptquote{Both belong to the subclass of m-estimators defined by minimizing a sample squared error loss function... Under the above assumptions and relevant moment conditions, the m-estimators are consistent for the pseudo-true parameter and asymptotically normal... [Section 2.1.3]}
+
+\reviewercomment{3.2.3 Inconsistent Use of $\cdot^\ast$\\
+The authors frequently use $\cdot^\ast$ (e.g., $\phi^\ast$) to emphasize that the "parameter" is not necessarily indexing the "true" model but instead the parameter associated with the projection of the true model onto the set of working models. However, they are not entirely consistent with when this superscript is used.}
+
+We have standardized the use of the superscript $^\ast$ throughout the text.
+
+\reviewercomment{3.2.4 $X_t$ vs $x_t$\\
+I’m a bit confused by what kind of objects $X_t$ and $x_t$ are.}
+
+We have clarified in \textit{Section 2.1} that $X_t$ denotes the underlying stochastic process and $x_t$ denotes an observed realization.
+
+\manuscriptquote{Let $\{X_t\}_{t\in\{\dots, -2, -1, 0, 1, 2, \dots\}}$ be a discrete-time stochastic process that is weakly stationary and strong mixing, and let $x = \{x_1, x_2, \ldots, x_T\}$ where $x_t$ denotes an observed sample of $X_t$. [Section 2.1]}
+
+\reviewercomment{3.3 Preface Reliance on Hansen’s Textbook\\
+The manuscript relies heavily on results from Hansen’s 2022 "Econometrics" textbook. While this is entirely fine, I think it would behoove the authors to preface and justify this reliance to avoid the appearance that this paper is simply the result of direct application of textbook arguments to the fMRI setting.}
+
+We have added a preface to \textit{Section 2 (Methods)} explicitly stating and contextualizing our reliance on Hansen (2022).
+
+\manuscriptquote{There are varying definitions and conventions in the study of time series data and stochastic processes more generally. To simplify our presentation, this work closely follows the Hansen (2022) \textit{Econometrics} textbook as a primary reference. Throughout, we will frequently refer the reader to specific results from this textbook. [Section 2]}
+
+\reviewercomment{3.4 Standard Errors Before Normality\\
+I’d suggest rearranging the text so that much of 2.6 comes before 2.4 and 2.5. I think it would be more natural to first establish that the estimators are asymptotically normal, and then turn to the question of obtaining (and then estimating) their variances.}
+
+We have reordered the sections accordingly. \textit{Estimator Properties} (now Section 2.4), which establishes consistency and asymptotic normality, now precedes \textit{Standard Error of the Estimators} (Section 2.5) and \textit{Standard Error Estimation} (Section 2.6).
+
+\reviewercomment{4 Minor Issues}
+
+Please see the revised manuscript (clean or tracked versions) where we have addressed all these minor concerns, including the clarification of temporal versus spatial autocorrelation, improvements to notation, and adjustments to figures for clarity.
+
+\end{document}

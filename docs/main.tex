@@ -3,6 +3,8 @@
 \usepackage{subfiles} % include subfiles
 \usepackage{fullpage} % 1-in margins
 \usepackage{amsmath, amsfonts, amssymb} % equations
+\usepackage{mathtools}
+\mathtoolsset{showonlyrefs} % only number referenced equations
 \usepackage{graphicx} % figures
 \usepackage{subcaption} % subcaptions
 \usepackage{float} % figures
@@ -49,6 +51,9 @@
 
 \newcommand{\sigmaad}{\sigma_{\scriptscriptstyle\text{AD}}}
 \newcommand{\hatsigmaad}{\hat{\sigma}_{\scriptscriptstyle\text{AD}}}
+
+% full reference
+\newcommand{\fullref}[1]{\hyperref[#1]{\ref*{#1}~\nameref*{#1}}}
 
 \title{Estimating fMRI Timescale Maps}
 \author{Gabriel Riegner $^{1\ast}$, Samuel Davenport $^{2}$, Bradley Voytek $^{1,3,4}$, Armin Schwartzman $^{1,2}$\\

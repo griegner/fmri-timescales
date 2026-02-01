@@ -1,0 +1,81 @@
+\documentclass[docs/main.tex]{subfiles}
+
+
+\usepackage{parskip} % no indents
+
+\newcommand{\reviewercomment}[1]{\vspace{0.3cm}\noindent\textbf{#1}\vspace{0.15cm}}
+\newcommand{\manuscriptquote}[1]{\begin{quote}\textit{#1}\end{quote}}
+
+\begin{document}
+
+...
+Below, we provide a point-by-point response to the reviewers’ comments. Reviewer comments are in \textbf{bold}, our responses in plain text, and changes to the manuscript in \textit{italics}.
+
+\subsection*{Reviewer 1}
+
+\reviewercomment{
+One minor comment: The authors have rerun all analyses following RAPIDtide denoising, replacing the original results. My impression is that this has not materially affected the findings? If this is the case -- which certainly strengthens the results -- I would suggest the authors simply make note of this (e.g. ``Similar results were obtained without RAPIDtide denoisin''). The reason to clarify this point is that RAPIDtide represents a very particular choice of denoising procedure: although it seems to be favored by Reviewer 2, it is nonstandard (and, like all denoising strategies, leverages imperfect, simplifying assumptions/introduces bias in attempt to license stronger causal inference). So in the interest of generalizability of the paper's empirical content, it would be helpful to comment on its (in)dependence on RAPIDtide denoising.}
+
+Thank you for this helpful suggestion. We agree that, because RAPIDtide is a specific (and nonstandard) denoising choice, it is important to clarify whether our empirical conclusions depend on it. Consistent with the reviewer’s impression, rerunning the full pipeline without RAPIDtide yielded similar results: RAPIDtide had only a small influence on local vertex-level timescale estimates, and it did not alter the global network-level organization (e.g., the relative ordering of networks by timescale)
+
+\subsection*{Reviewer 2}
+\textbf{3.1 Confusion Regarding Autocorrelation-Domain Nonlinear Model}
+
+ I'm still a bit confused by the model presented in section 2.2.2.
+
+ First, this model is not well-identified in \(\phi_{\text{AD}}\) and
+ \(e_{k}\): for example, we could take \(\phi_{\text{AD}} = 0\) and
+ \(e_{k} = \rho_{k}\) for all \(k\), or take \(\phi_{\text{AD}} = 1\)
+ and shift all of the \(e_{k}\) accordingly. Instead, I think the idea
+ is to say that we have a class of "working" models where \(\rho_{k} =
+ \phi_{\text{AD}}^{k}\), and our goal is to "project" our true model
+ (parameterized by a sequence of \(\rho_{k}\)) onto this class in a way
+ that minimizes the sum of squared errors in the sense of (6).
+
+ Second, in my previous review, I expressed confusion about how
+ \(e_{k}\) in (5) was an "error term" and I note that the authors now
+ characterize it as something that "captures any structure...not
+ explained by...\(\phi_{\text{AD}}^{k}\)." This makes more sense to me,
+ but the subsequent derivations seem to continue to treat \(e_{k}\) as
+ random. For example, in my previous review, I asked about the
+ expectation operator in (6). I see that in the revision, it is now
+ explained that the "expectation denotes a function of population
+ expectations aggregated across lags." Taking the preceding literally,
+ I interpret this as
+ \begin{equation*}
+   \phi_{\text{AD}}^{\star} =
+   \operatorname*{argmin}_{\phi}
+   \frac{1}{K} \sum\limits_{k=1}^K E \left[\left( \rho_{k} - \phi^{k} \right)^2\right].
+ \end{equation*}
+ The sum handles "aggregation" and each term is constant. This suggests
+ that \(\phi_{\text{AD}}^{\star}\) is *constant* and not random.
+ However, later in section 2.5.3 it is claimed that
+ \(\phi_{\text{AD}}^{\star}\) is "still a random variable," but I don't
+ understand how this is the case given my interpretation of (6) above.
+
+ Finally, I am a bit confused by the distinction between \(e_{k}\) and
+ \(e_{k}^{\star}\). I suspect that this is something like residuals vs
+ empirical residuals, but pinning this down would require more insight
+ into whether the \(e_{k}\) are thought of as random (and if so, in
+ what sense?). There is discussion of how these errors are reducible,
+ but I'm not quite sure what that means.
+
+ I think this is all quite relevant for the consistency results
+ presented in section 2.4.2, which require a notion in which \(K \to
+ \infty\).
+
+\textbf{3.2 Terminology}
+
+\reviewercomment{The paper is now much more careful with the terms ``weakly stationary'' and ``strong mixing'' However, these are occasionally shortened to just ``stationary'' and ``mixing'' (respectively), e.g., at the end of section 2.1.2. While it's cumbersome to write these out in full every time, perhaps where ``weakly stationary'' and ``strong mixing'' are first introduced, there can be a note that for the remainder of the paper, ``stationary'' is used to signify ``weakly stationary'' and ``mixing'' to signify ``strong mixing.''}
+
+\textbf{3.3 Perhaps Overly Rigorous?}
+
+\reviewercomment{While I certainly appreciate the addition of more rigorous details throughout the text (e.g., regarding applications of the delta-method), on reflection I wonder if this may now be less accessible to the technically savvy, but generally statistically lay, audience of the journal. I flag this not as something I'd like to see changed, but simply to articulate that if other reviewers or the AE/editor want to nudge some of these details into an appendix, I wouldn't object.}
+
+\reviewercomment{In particular, I suspect that the newly added section 5 may be of the broadest interest. The paper may benefit from the inclusion of the (standard in the statistics literature) paragraph at the end of the introduction that begins, ``The remainder of this paper is organized as follows...'' which could help direct readers to the sections most relevant to their interest.}
+
+\textbf{4 Minor Issues}
+
+\reviewercomment{}
+
+\end{document}
