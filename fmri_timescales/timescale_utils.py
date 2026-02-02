@@ -183,13 +183,12 @@ class AD(BaseEstimator):
         T, K = len(x), self.acf_n_lags
 
         # acf estimator
-        x_acf = acf_utils.ACF(n_lags=K + 1).fit_transform(x.reshape(-1, 1), T).squeeze()
+        x_acf = acf_utils.ACF(n_lags=K + 1).fit_transform(x.reshape(-1, 1), T).squeeze()[1:]
 
         # define the regression function (m), and its linearized regressor (dm_dphi)
-        ks = np.linspace(0, K - 1, K)
+        ks = np.arange(1, K + 1)
         m = lambda ks, phi: phi**ks
-        dm_dphi = lambda ks, phi: ks * phi ** (ks - 1)
-        jac = lambda ks, phi: dm_dphi(ks, phi + 1e-10).reshape(-1, 1)
+        jac = lambda ks, phi: (ks * phi ** (ks - 1)).reshape(-1, 1)
 
         # phi estimator
         phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
@@ -197,25 +196,32 @@ class AD(BaseEstimator):
 
         # variance estimators
         def non_robust():
-            e_ = x[1:] - phi_ * x[:-1]
-            q_ = np.sum(x[:-1] ** 2)
-            sigma2_ = (1 / T) * np.sum(e_**2)
-            return (1 / q_) * sigma2_
+            q_ = np.mean((ks * phi_ ** (ks - 1)) ** 2)
+            weights = ks * (phi_ ** (ks - 1))
+            weights_phi = weights * (phi_**ks)
+            conv1 = np.convolve(x, weights, mode="full")
+            conv2 = np.convolve(x**2, weights_phi, mode="full")
+            u_ = (1 / K) * (x[K:T] * conv1[K - 1 : T - 1] - conv2[K - 1 : T - 1])
+            omega_ = np.var(u_)
+            return (1 / K) * np.sqrt((1 / q_) * omega_ * (1 / q_))
 
         def newey_west():
-            e_ = x[1:] - phi_ * x[:-1]
-            q_ = np.sum(x[:-1] ** 2)
-            u_ = x[:-1] * e_
-            omega_ = newey_west_omega(u_, n_lags=self.var_n_lags)
-            return (1 / q_) * omega_ * (1 / q_)
+            q_ = np.mean((ks * phi_ ** (ks - 1)) ** 2)
+            weights = ks * (phi_ ** (ks - 1))
+            weights_phi = weights * (phi_**ks)
+            conv1 = np.convolve(x, weights, mode="full")
+            conv2 = np.convolve(x**2, weights_phi, mode="full")
+            u_ = (1 / K) * (x[K:T] * conv1[K - 1 : T - 1] - conv2[K - 1 : T - 1])
+            omega_ = (1 / (len(u_))) * newey_west_omega(u_, n_lags=self.var_n_lags)
+            return (1 / K) * np.sqrt((1 / q_) * omega_ * (1 / q_))
 
         var_estimators = {"non-robust": non_robust, "newey-west": newey_west}
 
         if self.var_estimator not in var_estimators:
             raise ValueError("var_estimator must be either 'newey-west' or 'non-robust'")
 
-        var_ = var_estimators[self.var_estimator]()
-        return phi_, np.sqrt(var_)
+        se_phi_ = var_estimators[self.var_estimator]()
+        return phi_, se_phi_
 
     def fit(self, X: np.ndarray, n_timepoints: int):
         """Fit the AD model.
