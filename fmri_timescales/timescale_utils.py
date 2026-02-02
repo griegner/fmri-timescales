@@ -209,8 +209,7 @@ class AD(BaseEstimator):
             raise ValueError("X_domain must be 'time' or 'autocorrelation'")
 
         # define the regression function (m), and its linearized regressor (dm_dphi)
-        lag = self.lag_interval
-        ks = np.linspace(0, K - 1, K) * (1.0 / lag)
+        ks = np.linspace(0, K - 1, K) * (1.0 / self.lag_interval)
         m = lambda ks, phi: phi**ks
         dm_dphi = lambda ks, phi: ks * phi ** (ks - 1)
         jac = lambda ks, phi: dm_dphi(ks, phi + 1e-10).reshape(-1, 1)
@@ -218,6 +217,8 @@ class AD(BaseEstimator):
         # phi estimator
         phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
         phi_ = phi_.squeeze()
+
+        lag = int(self.lag_interval + 1)
 
         # variance estimators
         def non_robust_time():
