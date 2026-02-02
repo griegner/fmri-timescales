@@ -196,14 +196,10 @@ class AD(BaseEstimator):
 
         # variance estimators
         def non_robust():
-            q_ = np.mean((ks * phi_ ** (ks - 1)) ** 2)
-            weights = ks * (phi_ ** (ks - 1))
-            weights_phi = weights * (phi_**ks)
-            conv1 = np.convolve(x, weights, mode="full")
-            conv2 = np.convolve(x**2, weights_phi, mode="full")
-            u_ = (1 / K) * (x[K:T] * conv1[K - 1 : T - 1] - conv2[K - 1 : T - 1])
-            omega_ = np.var(u_)
-            return (1 / K) * np.sqrt((1 / q_) * omega_ * (1 / q_))
+            e_ = x[1:] - phi_ * x[:-1]
+            q_ = np.sum(x[:-1] ** 2)
+            sigma2_ = (1 / T) * np.sum(e_**2)
+            return np.sqrt((1 / q_) * sigma2_)
 
         def newey_west():
             q_ = np.mean((ks * phi_ ** (ks - 1)) ** 2)
@@ -243,6 +239,8 @@ class AD(BaseEstimator):
             raise ValueError("X should be in (n_timepoints, n_regions) form")
         X = X.copy() if self.copy_X else X
         X = (X - X.mean(axis=0)) / X.std(axis=0)  # mean zero, variance 1
+        if self.acf_n_lags is None:
+            self.acf_n_lags = n_timepoints // 100
 
         with Parallel(n_jobs=self.n_jobs) as parallel:
             ad_fits = parallel(self._fit_ad(X[:, idx]) for idx in range(X.shape[1]))
