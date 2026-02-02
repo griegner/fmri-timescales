@@ -36,8 +36,6 @@ class TD(BaseEstimator):
         The variance estimator to use. Options are "newey-west" or "non-robust", by default "newey-west"
     var_n_lags : int, optional
         The lag truncation number for the bartlett kernel, by default None
-    lag_interval : int, optional
-        Separation in sampling intervals at which to compute lagged autocorrelation, by default 1
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
     n_jobs : int, optional
@@ -65,13 +63,11 @@ class TD(BaseEstimator):
         self,
         var_estimator: str = "newey-west",
         var_n_lags: Optional[int] = None,
-        lag_interval: int = 1,
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
         self.var_estimator = var_estimator
         self.var_n_lags = var_n_lags
-        self.lag_interval = lag_interval
         self.copy_X = copy_X
         self.n_jobs = n_jobs
 
@@ -79,21 +75,20 @@ class TD(BaseEstimator):
     def _fit_td(self, x: np.ndarray) -> tuple:
         """fit model to a single timeseries x in X"""
         T = len(x) - 1
-        lag = self.lag_interval
         # x_t = X[1:], x_{t-1} = x[:-1] (Hz=1)
-        phi_ = np.sum(x[lag:] * x[:-lag]) / np.sum(x[:-lag] ** 2)
+        phi_ = np.sum(x[1:] * x[:-1]) / np.sum(x[:-1] ** 2)
 
         # variance estimators
         def non_robust():
-            e_ = x[lag:] - phi_ * x[:-lag]
-            q_ = np.sum(x[:-lag] ** 2)
+            e_ = x[1:] - phi_ * x[:-1]
+            q_ = np.sum(x[:-1] ** 2)
             sigma2_ = (1 / T) * np.sum(e_**2)
             return (1 / q_) * sigma2_
 
         def newey_west():
-            e_ = x[lag:] - phi_ * x[:-lag]
-            q_ = np.sum(x[:-lag] ** 2)
-            u_ = x[:-lag] * e_
+            e_ = x[1:] - phi_ * x[:-1]
+            q_ = np.sum(x[:-1] ** 2)
+            u_ = x[:-1] * e_
             omega_ = newey_west_omega(u_, n_lags=self.var_n_lags)
             return (1 / q_) * omega_ * (1 / q_)
 
@@ -129,7 +124,7 @@ class TD(BaseEstimator):
         with Parallel(n_jobs=self.n_jobs) as parallel:
             td_fits = parallel(self._fit_td(X[:, idx]) for idx in range(X.shape[1]))
             phis_, se_phis_ = map(np.array, zip(*td_fits))
-            taus_, se_taus_ = _phi_to_tau(phis_, se_phis_, self.lag_interval)
+            taus_, se_taus_ = _phi_to_tau(phis_, se_phis_)
 
         self.estimates_ = {"phi": phis_, "se(phi)": se_phis_, "tau": taus_, "se(tau)": se_taus_}
         return self
@@ -146,8 +141,6 @@ class AD(BaseEstimator):
         The lag truncation number for the bartlett kernel, by default None
     acf_n_lags : int, optional
         The lag truncation number for the autocorrelation function, by default None
-    lag_interval : int, optional
-        Separation in sampling intervals at which to compute lagged autocorrelation, by default 1
     copy_X : bool, optional
         If True X will be copied, else it may be overwritten, by default False
     n_jobs : _type_, optional
@@ -174,14 +167,12 @@ class AD(BaseEstimator):
         var_estimator: str = "newey-west",
         var_n_lags: Optional[int] = None,
         acf_n_lags: Optional[int] = None,
-        lag_interval: int = 1,
         copy_X: bool = False,
         n_jobs: Optional[int] = None,
     ) -> None:
         self.var_estimator = var_estimator
         self.var_n_lags = var_n_lags
         self.acf_n_lags = acf_n_lags
-        self.lag_interval = lag_interval
         self.copy_X = copy_X
         self.n_jobs = n_jobs
 
@@ -190,10 +181,12 @@ class AD(BaseEstimator):
         """fit model to a single timeseries/autocorrelation function x in X"""
 
         T, K = len(x), self.acf_n_lags
-        x_acf = acf_utils.ACF(n_lags=K).fit_transform(x.reshape(-1, 1), T).squeeze()
+
+        # acf estimator
+        x_acf = acf_utils.ACF(n_lags=K + 1).fit_transform(x.reshape(-1, 1), T).squeeze()
 
         # define the regression function (m), and its linearized regressor (dm_dphi)
-        ks = np.linspace(0, K - 1, K) * (1.0 / self.lag_interval)
+        ks = np.linspace(0, K - 1, K)
         m = lambda ks, phi: phi**ks
         dm_dphi = lambda ks, phi: ks * phi ** (ks - 1)
         jac = lambda ks, phi: dm_dphi(ks, phi + 1e-10).reshape(-1, 1)
@@ -202,19 +195,17 @@ class AD(BaseEstimator):
         phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
         phi_ = phi_.squeeze()
 
-        lag = int(self.lag_interval + 1)
-
         # variance estimators
         def non_robust():
-            e_ = x[lag:] - phi_ * x[:-lag]
-            q_ = np.sum(x[:-lag] ** 2)
+            e_ = x[1:] - phi_ * x[:-1]
+            q_ = np.sum(x[:-1] ** 2)
             sigma2_ = (1 / T) * np.sum(e_**2)
             return (1 / q_) * sigma2_
 
         def newey_west():
-            e_ = x[lag:] - phi_ * x[:-lag]
-            q_ = np.sum(x[:-lag] ** 2)
-            u_ = x[:-lag] * e_
+            e_ = x[1:] - phi_ * x[:-1]
+            q_ = np.sum(x[:-1] ** 2)
+            u_ = x[:-1] * e_
             omega_ = newey_west_omega(u_, n_lags=self.var_n_lags)
             return (1 / q_) * omega_ * (1 / q_)
 
