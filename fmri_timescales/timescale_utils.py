@@ -191,7 +191,8 @@ class AD(BaseEstimator):
         jac = lambda ks, phi: (ks * phi ** (ks - 1)).reshape(-1, 1)
 
         # phi estimator
-        phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1, +1), ftol=1e-6, jac=jac)
+        eps = 1e-10
+        phi_, _ = curve_fit(f=m, xdata=ks, ydata=x_acf, p0=1e-2, bounds=(-1 + eps, +1 - eps), ftol=1e-6, jac=jac)
         phi_ = phi_.squeeze()
 
         # variance estimators
