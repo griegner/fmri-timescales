@@ -2,11 +2,21 @@ from pathlib import Path
 
 import nibabel as nib
 import numpy as np
+from sklearn.base import clone
 
 
-def scale(X, axis=0):
-    "return zero mean, unit variance X"
-    return (X - X.mean(axis=axis)) / X.std(axis=axis)
+def scale(X, axis=0, eps=1e-8):
+    "return zero mean, unit variance X; avoid zero-std columns"
+    mean = X.mean(axis=axis, keepdims=True)
+    std = X.std(axis=axis, keepdims=True)
+    flat = std < eps
+    if flat.any():
+        X = X.copy()
+        noise = eps * np.random.standard_normal(X[..., flat.squeeze()].shape)
+        X[..., flat.squeeze()] += noise  # add jitter
+        std = X.std(axis=axis, keepdims=True)
+    std = np.where(std < eps, 1.0, std)
+    return (X - mean) / std
 
 
 def get_X(dtseries_paths):
@@ -75,10 +85,12 @@ def fit_timescale_models(input_path, output_path, td, ad):
         dtseries_paths = sorted(sub_path.glob("*desc-lfofilterCleaned_bold.dtseries.nii"))
         X = np.vstack(list(get_X(dtseries_paths)))
 
-        td_ = td.fit(X, n_timepoints=len(X)).estimates_
+        td_model = clone(td)
+        td_ = td_model.fit(X, n_timepoints=len(X)).estimates_
         np.save(output_path / f"sub-{sub}_task-rest_estimator-td_tau.npy", td_["tau"])
         np.save(output_path / f"sub-{sub}_task-rest_estimator-td_se.npy", td_["se(tau)"])
 
-        ad_ = ad.fit(X, n_timepoints=len(X)).estimates_
+        ad_model = clone(ad)
+        ad_ = ad_model.fit(X, n_timepoints=len(X)).estimates_
         np.save(output_path / f"sub-{sub}_task-rest_estimator-ad_tau.npy", ad_["tau"])
         np.save(output_path / f"sub-{sub}_task-rest_estimator-ad_se.npy", ad_["se(tau)"])
