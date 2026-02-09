@@ -200,25 +200,25 @@ class AD(BaseEstimator):
             e_ = x[1:] - phi_ * x[:-1]
             q_ = np.sum(x[:-1] ** 2)
             sigma2_ = (1 / T) * np.sum(e_**2)
-            return np.sqrt((1 / q_) * sigma2_)
+            return (1 / q_) * sigma2_
 
         def newey_west():
-            q_ = np.mean((ks * phi_ ** (ks - 1)) ** 2)
+            q_ = np.sum((ks * phi_ ** (ks - 1)) ** 2)
             weights = ks * (phi_ ** (ks - 1))
             weights_phi = weights * (phi_**ks)
             conv1 = np.convolve(x, weights, mode="full")
             conv2 = np.convolve(x**2, weights_phi, mode="full")
-            u_ = (1 / K) * (x[K:T] * conv1[K - 1 : T - 1] - conv2[K - 1 : T - 1])
-            omega_ = (1 / (len(u_))) * newey_west_omega(u_, n_lags=self.var_n_lags)
-            return (1 / K) * np.sqrt((1 / q_) * omega_ * (1 / q_))
+            u_ = x[K:T] * conv1[K - 1 : T - 1] - conv2[K - 1 : T - 1]
+            omega_ = (1 / len(u_) ** 2) * newey_west_omega(u_, n_lags=self.var_n_lags)
+            return (1 / q_) * omega_ * (1 / q_)
 
         var_estimators = {"non-robust": non_robust, "newey-west": newey_west}
 
         if self.var_estimator not in var_estimators:
             raise ValueError("var_estimator must be either 'newey-west' or 'non-robust'")
 
-        se_phi_ = var_estimators[self.var_estimator]()
-        return phi_, se_phi_
+        var_ = var_estimators[self.var_estimator]()
+        return phi_, np.sqrt(var_)
 
     def fit(self, X: np.ndarray, n_timepoints: int):
         """Fit the AD model.
