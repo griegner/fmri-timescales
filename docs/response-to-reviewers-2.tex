@@ -8,7 +8,19 @@
 
 \begin{document}
 
-...
+Dear Imaging Neuroscience Editors and Reviewers,
+
+We are again grateful to the reviewers for their thoughtful and constructive feedback on our manuscript, ``Estimating fMRI Timescale Maps.'' We particularly appreciate the detailed comments regarding the theoretical formulation of the autocorrelation-domain model, which helped us identify and correct a subtle but important inconsistency in our original presentation.
+
+In response, we have revised the manuscript to:
+\begin{enumerate}
+    \item \textbf{Clarify the Autocorrelation-Domain Model:} We have removed the random error term from the population model definition and now treat the projection residuals as fixed deterministic quantities. This change naturally leads to a more rigorous derivation of the standard errors that aligns with the ``hybrid'' approach we previously employed, allowing us to consolidate the methods and remove the separate hybrid section.
+    \item \textbf{Update Simulation and Analysis Results:} We have regenerated all simulations and data analyses to reflect these methodological adjustments, yet the main results are consistent with the previous version.
+    \item \textbf{Address Practical Concerns:} We have added clarifications regarding the robustness of our results to specific denoising choices (RAPIDtide) and improved the accessibility of the text by adding a roadmap to the paper's organization.
+\end{enumerate}
+
+\vspace{0.5cm}
+
 Below, we provide a point-by-point response to the reviewers’ comments. Reviewer comments are in \textbf{bold}, our responses in plain text, and changes to the manuscript in \textit{italics}.
 
 \subsection*{Reviewer 1}
@@ -16,57 +28,43 @@ Below, we provide a point-by-point response to the reviewers’ comments. Review
 \reviewercomment{
 One minor comment: The authors have rerun all analyses following RAPIDtide denoising, replacing the original results. My impression is that this has not materially affected the findings? If this is the case -- which certainly strengthens the results -- I would suggest the authors simply make note of this (e.g. ``Similar results were obtained without RAPIDtide denoisin''). The reason to clarify this point is that RAPIDtide represents a very particular choice of denoising procedure: although it seems to be favored by Reviewer 2, it is nonstandard (and, like all denoising strategies, leverages imperfect, simplifying assumptions/introduces bias in attempt to license stronger causal inference). So in the interest of generalizability of the paper's empirical content, it would be helpful to comment on its (in)dependence on RAPIDtide denoising.}
 
-Thank you for this helpful suggestion. We agree that, because RAPIDtide is a specific (and nonstandard) denoising choice, it is important to clarify whether our empirical conclusions depend on it. Consistent with the reviewer’s impression, rerunning the full pipeline without RAPIDtide yielded similar results: RAPIDtide had only a small influence on local vertex-level timescale estimates, and it did not alter the global network-level organization (e.g., the relative ordering of networks by timescale)
+Thank you for this helpful suggestion. We agree that, because RAPIDtide is a specific (and nonstandard) denoising choice, it is important to clarify whether our empirical conclusions depend on it. Consistent with the reviewer’s impression, rerunning the full pipeline without RAPIDtide yielded similar results, and we now include the following notes sections 4.2.1 and 5.3:
+
+\manuscriptquote{As a sensitivity check, we repeated the analyses without added RAPIDtide denoising step and found that it had only a small influence on local vertex-level timescale estimates, and it did not alter the global network-level organization (e.g., the relative ordering of networks by timescale).}
+
+\manuscriptquote{We therefore recommend denoising methods such as RAPIDtide to remove confounding time-lagged oscillations, ensuring the estimated timescale more closely reflects neural rather than physiological processes (Frederick, 2025). That said, the maps reported in Data Analysis were robust to the exclusion of RAPIDtide denoising, suggesting the hierarchical organization of fMRI timescales is generalizable beyond this specific denoising strategy.}
 
 \subsection*{Reviewer 2}
-\textbf{3.1 Confusion Regarding Autocorrelation-Domain Nonlinear Model}
 
- I'm still a bit confused by the model presented in section 2.2.2.
+\reviewercomment{3.1 Confusion Regarding Autocorrelation-Domain Nonlinear Model}
 
- First, this model is not well-identified in \(\phi_{\text{AD}}\) and
- \(e_{k}\): for example, we could take \(\phi_{\text{AD}} = 0\) and
- \(e_{k} = \rho_{k}\) for all \(k\), or take \(\phi_{\text{AD}} = 1\)
- and shift all of the \(e_{k}\) accordingly. Instead, I think the idea
- is to say that we have a class of "working" models where \(\rho_{k} =
- \phi_{\text{AD}}^{k}\), and our goal is to "project" our true model
- (parameterized by a sequence of \(\rho_{k}\)) onto this class in a way
- that minimizes the sum of squared errors in the sense of (6).
+We are very grateful to the reviewer for this insightful comment. Their confusion (and admittedly ours too) regarding the identification of the model and the nature of the error term $e_k$ helped us identify a subtle but important mistake in our original formulation of the Autocorrelation-Domain Nonlinear Model.
 
- Second, in my previous review, I expressed confusion about how
- \(e_{k}\) in (5) was an "error term" and I note that the authors now
- characterize it as something that "captures any structure...not
- explained by...\(\phi_{\text{AD}}^{k}\)." This makes more sense to me,
- but the subsequent derivations seem to continue to treat \(e_{k}\) as
- random. For example, in my previous review, I asked about the
- expectation operator in (6). I see that in the revision, it is now
- explained that the "expectation denotes a function of population
- expectations aggregated across lags." Taking the preceding literally,
- I interpret this as
- \begin{equation*}
-   \phi_{\text{AD}}^{\star} =
-   \operatorname*{argmin}_{\phi}
-   \frac{1}{K} \sum\limits_{k=1}^K E \left[\left( \rho_{k} - \phi^{k} \right)^2\right].
- \end{equation*}
- The sum handles "aggregation" and each term is constant. This suggests
- that \(\phi_{\text{AD}}^{\star}\) is *constant* and not random.
- However, later in section 2.5.3 it is claimed that
- \(\phi_{\text{AD}}^{\star}\) is "still a random variable," but I don't
- understand how this is the case given my interpretation of (6) above.
+The reviewer correctly pointed out that treating the projection residuals $(\rho_k - \phiad^{*k})$ as a random ``error term'' was incorrect, given that they depend on fixed population parameters $\rho_k$ and $\phiad^*$. We have revised methods sections 2.2.2, 2.3.2, 2.4.2, 2.5.2, and 2.6.2 (and resulting simulation and data analysis results) to address this:
 
- Finally, I am a bit confused by the distinction between \(e_{k}\) and
- \(e_{k}^{\star}\). I suspect that this is something like residuals vs
- empirical residuals, but pinning this down would require more insight
- into whether the \(e_{k}\) are thought of as random (and if so, in
- what sense?). There is discussion of how these errors are reducible,
- but I'm not quite sure what that means.
+\begin{itemize}
+    \item \textbf{Removal of $e_k$:} We have removed the $e_k$ term from the model definition to avoid any connotation that it represents a random error. We now explicitly treat the difference $\rho_k - \phiad^{*k}$ as a fixed projection residual---a deterministic quantity that captures the systematic discrepancy between the true autocorrelation structure and the exponential approximation.
+    
+    \item \textbf{Expectation Operator:} As a downstream effect of this change, the expectation operator in the minimization objective (previously Eq. 9, now Eq. 5) is no longer treated as an expectation over a random variable. Instead, the objective function $S_K(\phiad)$ is defined as an average over fixed $K$ lags. Since there are no longer random components in the population model itself (i.e., $\phiad^*$ is treated as constant and not a random variable), the only source of randomness enters during estimation via the sample autocorrelation sequence $\hat{\rho}_1, \dots, \hat{\rho}_K$ calculated from the time domain.
 
- I think this is all quite relevant for the consistency results
- presented in section 2.4.2, which require a notion in which \(K \to
- \infty\).
+    \item \textbf{Estimator Properties:} Consequently, we have refined the theoretical properties of the estimator. We now present consistency and asymptotic normality for fixed $K$ as $T \to \infty$ (whereas we previously relied on $K \to \infty$). This formulation aligns better with the practical application of fMRI analysis, where the number of lags $K$ is fixed by the researcher (especially since the sampling rate is usually fixed), but the number of time points $T$ is large.
+    
+    \item \textbf{Revised Standard Errors:} The structure of the standard error definition now takes the variance term $\omegaad$ (defined in Eq. 16) to sum the long-run variance of the normalized score process $u_t$ in the \textit{time domain}, rather than treating it as variance in the \textit{autocorrelation domain} as previously presented. This explicitly maps the joint dependence structure of the autocorrelation sequence onto a scalar process that accounts for both within- and between-lag correlations. 
+\end{itemize}
+
+These changes have consolidated the methods section significantly. The revised standard errors are now very close to those produced by the ``hybrid'' method we previously presented, but they are now presented with more rigorous theory. This also negates the need for including a separate hybrid approach, allowing us to remove it and simplify the presentation of the methods and results.
+
+Accordingly, we have regenerated the simulations (section 3) and data analysis (section 4) results. The simulation section is now more succinct and realistic, as we no longer need the artificial ``autocorrelation domain'' simulation setting, where ACFs were simulated directly with added $i.i.d.$ noise. All simulations now rely on time-domain data generating processes (AR1, AR2, and realistic autocorrelations). The new results are mostly consistent with our previous findings, because the current implementation of AD standard errors is near-identical to the hybrid method we were using previously. 
+
+We sincerely thank the reviewer for pushing us to clarify this aspect of the model, as the theoretical and downstream results now follow much more clearly.
 
 \textbf{3.2 Terminology}
 
 \reviewercomment{The paper is now much more careful with the terms ``weakly stationary'' and ``strong mixing'' However, these are occasionally shortened to just ``stationary'' and ``mixing'' (respectively), e.g., at the end of section 2.1.2. While it's cumbersome to write these out in full every time, perhaps where ``weakly stationary'' and ``strong mixing'' are first introduced, there can be a note that for the remainder of the paper, ``stationary'' is used to signify ``weakly stationary'' and ``mixing'' to signify ``strong mixing.''}
+
+Thank you for this clarification. We have included the following note when the terms ``weakly stationary'' and ``strong mixing'' are first introduced:
+
+\manuscriptquote{abbreviated as ``stationary'' and ``mixing'' throughout}
 
 \textbf{3.3 Perhaps Overly Rigorous?}
 
@@ -74,8 +72,24 @@ Thank you for this helpful suggestion. We agree that, because RAPIDtide is a spe
 
 \reviewercomment{In particular, I suspect that the newly added section 5 may be of the broadest interest. The paper may benefit from the inclusion of the (standard in the statistics literature) paragraph at the end of the introduction that begins, ``The remainder of this paper is organized as follows...'' which could help direct readers to the sections most relevant to their interest.}
 
-\textbf{4 Minor Issues}
+We agree that the previous version had a rather dense methods section. We would be happy to restructure the sections if the reviewers or the AE/editor suggest it. However, the methods section in this revision is slightly more succinct than before because we now only introduce two methods---the time domain and autocorrelation domain---without separate sections for the hybrid approaches included previously. To aid the reader in identifying the most important equations, we removed equation numbers from those not referenced, so that unnumbered equations can be skipped without loss of continuity. Per the reviewer's suggestion, we have included the following paragraph linking to the relevant sections at the end of the introduction to orient the reader:
 
-\reviewercomment{}
+\manuscriptquote{The proposed methods address important limitations in fMRI timescale research by providing rigorous
+statistical methods that move beyond point estimates to incorporate uncertainty quantification.
+This work establishes a methodological foundation for reliable inference, organized as follows. First,
+2 Methods formalizes the statistical models and their properties. Numbered equations indicate important
+expressions that are referenced throughout, while the others provide intermediate steps that
+can be skipped without loss of continuity. These models are validated against varying degrees of realistic
+misspecification in 3 Simulations, followed by a demonstration of their empirical utility in 4 Data
+Analysis using the Human Connectome Project dataset. Finally, 5 Practical Considerations for fMRI
+Timescale Estimation addresses the interpretation of these estimates in the context of fMRI — detailing
+the influence of hemodynamics, measurement noise, and periodicity — to support future research
+investigating the functional and structural organization of timescales in the brain.}
+
+\textbf{4 Minor Issues}
+\reviewercomment{Below are very minor issues, including typos, where I indicate the location
+in the draft and the issue I noticed.}
+
+We thank the reviewer for a second round of very careful edits. We have fixed the typos in the revised manuscript. Clean and tracked versions are included in this response.
 
 \end{document}
