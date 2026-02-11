@@ -180,13 +180,13 @@ class AD(BaseEstimator):
     def _fit_ad(self, x: np.ndarray) -> tuple:
         """fit model to a single timeseries/autocorrelation function x in X"""
 
-        T, K = len(x), self.acf_n_lags
+        T = len(x)
 
         # acf estimator
-        x_acf = acf_utils.ACF(n_lags=K + 1).fit_transform(x.reshape(-1, 1), T).squeeze()[1:]
+        x_acf = acf_utils.ACF(n_lags=self.acf_n_lags + 1).fit_transform(x.reshape(-1, 1), T).squeeze()[1:]
 
-        # define the regression function (m), and its linearized regressor (dm_dphi)
-        ks = np.arange(1, K + 1)
+        # regression function (m), and its linearized regressor (dm_dphi)
+        ks = np.arange(1, len(x_acf) + 1)
         m = lambda ks, phi: phi**ks
         jac = lambda ks, phi: (ks * phi ** (ks - 1)).reshape(-1, 1)
 
@@ -208,7 +208,7 @@ class AD(BaseEstimator):
             weights_phi = weights * (phi_**ks)
             conv1 = np.convolve(x, weights, mode="full")
             conv2 = np.convolve(x**2, weights_phi, mode="full")
-            u_ = x[K:T] * conv1[K - 1 : T - 1] - conv2[K - 1 : T - 1]
+            u_ = x[len(ks) : T] * conv1[len(ks) - 1 : T - 1] - conv2[len(ks) - 1 : T - 1]
             omega_ = (1 / len(u_) ** 2) * newey_west_omega(u_, n_lags=self.var_n_lags)
             return (1 / q_) * omega_ * (1 / q_)
 
