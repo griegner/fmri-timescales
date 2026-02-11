@@ -32,7 +32,7 @@ To illustrate this limitation, consider the simulation setting where the latent 
 
 \noindent Observations are formed by adding independent measurement noise of increasing magnitude to vary observation quality while holding the latent timescale constant:
 \begin{align}\label{eq:measurement-noise}
-    x_t = z_t + \epsilon_t, \quad \epsilon_t \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2_{\epsilon}), \quad \sigma^2_{\epsilon} \in \{0, 0.5, 1.0, 2.0\},
+    x_t = z_t + \epsilon_t, \quad \epsilon_t \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2_{\epsilon}), \quad \sigma^2_{\epsilon} \in \{0, 0.5, 1.0, 1.5, 2.0\},
 \end{align}
 
 \noindent Under this construction, increasing $\sigma^2_\epsilon$ accelerates the rate of autocorrelation decay (\textbf{Figure \ref{fig:sim-noise} Panel A}). This occurs because noise inflates the lag-0 variance without altering cross-lag covariances, shrinking the autocorrelation ratio in equation \eqref{eq:acf}. Consequently, the time-domain estimator in \textbf{Panel B row 1} diverges from the true latent neural timescale, reflecting instead the \textit{pseudo-true timescale} of the misspecified process (see \nameref{sec:misspecification}). Importantly, while the Newey-West standard errors in \textbf{Panel B row 2} ensure that inference on this pseudo-true timescale remains statistically valid, its interpretation should reflect the mixture of neural integration and confounding measurement noise.\\

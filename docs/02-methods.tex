@@ -167,7 +167,7 @@ With the additional assumption that the objective function \eqref{eq:nlm_loss} i
     \sqrt{T}(\hatphiad - \phiad^*) \;\overset{d}{\to}\; \mathcal{N}\big(0,\, \qad^{-1}\,\omegaad\,\qad^{-1}\big)\;\text{as}\;T\to\infty.
 \end{align}
 
-\noindent Thus, the autocorrelation-domain estimator exhibits Gaussian asymptotic behavior governed by a sandwich covariance matrix composed of $\qad$ and $\omegaad$, which are defined below in equation~\eqref{eq:ad-qomega}. Finally, the asymptotic distribution of the timescale $\hattauad$ follows from the delta method, accounting for the nonlinear transformation in equation \eqref{eq:nlm-tau}:
+\noindent Thus, the autocorrelation-domain estimator exhibits Gaussian asymptotic behavior governed by a sandwich variance composed of $\qad$ and $\omegaad$, which are defined below in equation~\eqref{eq:ad-qomega}. Finally, the asymptotic distribution of the timescale $\hattauad$ follows from the delta method, accounting for the nonlinear transformation in equation \eqref{eq:nlm-tau}:
 \begin{align}
     \sqrt{T}(\hattauad - \tauad^*) \overset{d}{\to} \mathcal{N}\left(0, \qad^{-1}\; \omegaad \; \qad^{-1} \left[\frac{d}{d\phiad} g(\phiad)\bigg|_{\phiad=\phiad^*}\right]^2\right)\;\text{as}\;T\to\infty.
 \end{align}
@@ -210,7 +210,7 @@ Following \citet[Chapter~22.8 and Chapter~23.5]{hansen_econometrics_2022}, the t
     u_t = \frac{1}{\gamma_0} \sum_{k=1}^K (k \phiad^{*k-1}) (X_t X_{t-k} - \phiad^{*k}X_t^2).
 \end{align}
 
-\noindent Defining $\omegaad$ in terms of the score process $u_t$ maps the joint dependence structure of the autocorrelation sequence $\rho_1, \dots, \rho_K$ onto a scalar process. This linearized representation ensures that the long-run variance $\omegaad$ captures all relevant dependencies, including both the correlations within and between lags. Under the special case of correct AR1 specification, higher-order lags provide no additional information as they are deterministic functions of the first lag $\rho_1$. In this case, the autocorrelation-domain standard error is asymptotically equivalent to the time-domain estimator in \eqref{eq:se-naive}, except that $\hatphiad$ replaces $\hatphitd$.
+Defining $\omegaad$ in terms of the score process $u_t$ maps the joint dependence structure of the autocorrelation sequence $\rho_1, \dots, \rho_K$ onto a scalar process. Of note, $u_t$ is defined in the time domain since $\rho_k=\gamma_k/\gamma_0$ is a function of moments of $X_t$. This linearized representation ensures that the long-run variance $\omegaad$ captures the relevant dependencies, including both the correlations within and between lags. For a stationary process with $|\phiad^*| < 1$, the weights $k\phiad^{*k-1}$ in the score process decrease rapidly with lag $k$, meaning the asymptotic variance is largely determined by the variability of the lower-order sample autocorrelations. Under the special case of correct AR1 specification, higher-order lags provide no additional information as they are deterministic functions of the first lag $\rho_1$. In this case, the autocorrelation-domain standard error is asymptotically equivalent to the time-domain standard error in \eqref{eq:se-naive}, replacing $\phitd^*$ with $\phiad^*$.
 
 \subsection{Estimation of Standard Errors}\label{sec:stderr_}
 \subsubsection{Time-Domain Standard Error Estimator}\label{sec:stderr-time-domain_}
@@ -243,10 +243,10 @@ The sample standard error estimator takes the form:
     \widehat{\text{se}}_{\text{NW}}(\hattauad) \approx \widehat{\text{se}}_{\text{NW}}(\hatphiad) \cdot \frac{d}{d\phiad} g(\phiad)\Big|_{\phiad=\hatphiad},
 \end{align}
 
-\noindent where the curvature $\hatqad$ is estimated by the sum of the squared first derivatives evaluated at $\hatphiad$, and the long-run variance $\omegaad$ by applying a Newey–West estimator to the normalized score process $\hat u_t$:
+\noindent where the curvature $\hatqad$ is estimated by the sum of the squared first derivatives evaluated at $\hatphiad$, and the long-run variance $\omegaad$ is obtained by applying a Newey–West estimator to the sample normalized score process $\hat u_t$:
 \begin{align}\label{eq:nls_q_omega_}
     \hatqad = \sum_{k=1}^K (k {\hatphiad}^{k-1})^2, \quad \hatomegaad = \sum_{\ell=-M}^M \left(1 - \frac{|\ell|}{M+1}\right)\,\frac{1}{T} \sum_{1 \le t - \ell \le T} \hat u_t \hat u_{t-\ell}, \quad \hat u_t = \frac{1}{\hat{\gamma}_0} \sum_{k=1}^K (k \hatphiad^{k-1}) (x_t x_{t-k} - \hatphiad^k x_t^2).
 \end{align}
 
-\noindent The estimator $\hatomegaad$ sums the sample autocovariances of $\hat u_t$ up to lag $M$, weighted by a Bartlett kernel. This explicitly accounts for the temporal structure inherited from $x_t$, distinct from the lag structure of the autocorrelation model itself. In the case of correct specification, the equation simplifies to \eqref{eq:se-naive_}, replacing $\hatphitd$ with $\hatphiad$.
+\noindent The estimator $\hatomegaad$ sums sample autocovariances of $\hat u_t$ up to lag $M$ using a Bartlett kernel. This explicitly accounts for serial dependence in $x_t$ that is not captured by the fitted autocorrelation model, ensuring robust inference under misspecification (e.g., non-exponential decay). In the case of correct specification, the equation simplifies to \eqref{eq:se-naive_}, replacing $\hatphitd$ with $\hatphiad$.
 \end{document}
