@@ -299,7 +299,7 @@ Following \citet[Chapter~22.8 and Chapter~23.5]{hansen_econometrics_2022}, the t
     \text{se}_{\text{NW}}(\hattauad) \approx \text{se}_{\text{NW}}(\hatphiad) \cdot \frac{d}{d\phiad}g(\phiad)\Big|_{\phiad=\phiad^*}.
 \end{align}
 
-\noindent The curvature term $\qad$ is the sum of the squared first derivatives of the regression function $\phiad^k$ with respect to $\phiad$, evaluated at the minimizer $\phiad^*$. The variance term $\omegaad$ is the long-run variance of the normalized score process $u_t$. This process is a weighted sum of the time-domain score contributions across all $K$ lags, where the weights are given by the regression function derivative:
+\noindent The curvature term $\qad$ is the sum of the squared first derivatives of the regression function $\phiad^k$ with respect to $\phiad$, evaluated at the minimizer $\phiad^*$. The variance term $\omegaad$ is the long-run variance of the normalized score process $u_t$ (see Appendix for the derivation). This process is a weighted sum of the time-domain score contributions across all $K$ lags, where the weights are given by the regression function derivative:
 \begin{align}\label{eq:ad-qomega}
     \qad = \sum_{k=1}^K (k \phiad^{*k-1})^2, \quad \omegaad = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[u_t u_{t-\ell}], \quad 
     u_t = \frac{1}{\gamma_0} \sum_{k=1}^K (k \phiad^{*k-1}) (X_t X_{t-k} - \phiad^{*k}X_t^2).
@@ -546,6 +546,29 @@ Simulation results highlight differences in finite sample bias and variance betw
 Applied to HCP rfMRI data, both methods yield timescale and t-statistic maps consistent with known functional hierarchies \citep{van_essen_wu-minn_2013}. These results align with prior work demonstrating larger timescales in associative versus sensory cortices \citep{raut_hierarchical_2020, shafiei_topographic_2020, lurie_cortical_2024, mitra_lag_2014, kaneoke_variance_2012, wengler_distinct_2020, shinn_functional_2023, manea_intrinsic_2022, ito_cortical_2020, muller_core_2020}. The spatial patterns reinforce the hypothesis that hierarchical organization governs temporal processing across cortical regions. However, mechanistic interpretations must carefully distinguish intrinsic neural dynamics from the confounding effects of hemodynamics and measurement noise. Linking macroscopic fMRI timescales to their underlying physiology remains an important objective for future research.\\
 
 In conclusion, we present robust rfMRI estimators for timescales and standard errors, enabling rigorous statistical comparisons across regions, conditions, and subjects. These methods advance the accuracy and interpretability of neural timescale maps, moving beyond point estimates to incorporate uncertainty for inference and testing. This work lays the methodological foundation for future research into the role of timescales in brain structure and function.
+
+\section*{Appendix: Autocorrelation-Domain Score Process}
+
+This appendix derives the score process $u_t$ from equation \eqref{eq:ad-qomega}. We omit scaling factors (e.g., $1/K$), as they cancel out in the sandwich variance ratio $\qad^{-1} \omegaad \qad^{-1}$.\\
+
+\noindent The pseudo-true parameter $\phiad^*$ minimizes the population objective function $S_K(\phiad)$ \eqref{eq:nlm_loss}, satisfying the first-order condition:
+\begin{align}\label{eq:a1}
+    \sum_{k=1}^{K} \psi_k(\phiad^*) (\rho_k - \phiad^{*k}) = 0, \quad \text{where } \psi_k(\phiad^*) = \left. \frac{d}{d\phiad}(\phiad^k) \right|_{\phiad=\phiad^*} = k\phi_{\text{AD}}^{*k-1}.
+\end{align}
+Using $\rho_k = \mathbb{E}[X_t X_{t-k}]/\gamma_0$ \eqref{eq:acf}, we rewrite the residual term as an expectation:
+\begin{align}\label{eq:a2}
+    \rho_k - \phiad^{*k} = \mathbb{E}\left[ \frac{X_t X_{t-k} - \phiad^{*k} X_t^2}{\gamma_0} \right].
+\end{align}
+Substituting \eqref{eq:a2} into \eqref{eq:a1} defines the score process $u_t$:
+\begin{equation}
+    \mathbb{E}\left[ \frac{1}{\gamma_0} \sum_{k=1}^{K} \psi_k(\phiad^*) (X_t X_{t-k} - \phiad^{*k} X_t^2) \right] = \mathbb{E}[u_t] = 0.
+\end{equation}
+This matches the definition in equation \eqref{eq:ad-qomega}. The asymptotic variance is then determined by the long-run variance of this score, $\omegaad = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[u_t u_{t-\ell}]$.\\
+
+\noindent The sample score process $\hat{u}_t$ used for variance estimation is obtained by replacing population expectations with sample moments and the parameter $\phiad^*$ with the estimator $\hatphiad$:
+\begin{equation}
+    \hat{u}_t = \frac{1}{\hat{\gamma}_0} \sum_{k=1}^{K} k (\hatphiad)^{k-1} (x_t x_{t-k} - (\hatphiad)^k x_t^2).
+\end{equation}
 
 \section*{Code and Data Availability}
 All simulation results and fMRI timescale maps, inclusive of the code by which they were derived, can be accessed on \href{https://github.com/griegner/fmri-timescales}{github.com/griegner/fmri-timescales}. The code is under the open source MIT license, allowing access and reuse with attribution. The Human Connectome Project young adult dataset (ages 22-35; 2018 release) used in this study is publicly accessible under a \href{https://www.humanconnectome.org/storage/app/media/data_use_terms/DataUseTerms-HCP-Open-Access-26Apr2013.pdf}{data usage agreement}, which describes specific terms for data use and sharing.

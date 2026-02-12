@@ -83,6 +83,29 @@ Brain activity unfolds over hierarchical timescales that reflect how brain regio
 \subfile{docs/04-data-analysis}
 \subfile{docs/05-conclusions}
 
+\section*{Appendix: Autocorrelation-Domain Score Process}
+
+This appendix derives the score process $u_t$ from equation \eqref{eq:ad-qomega}. We omit scaling factors (e.g., $1/K$), as they cancel out in the sandwich variance ratio $\qad^{-1} \omegaad \qad^{-1}$.\\
+
+\noindent The pseudo-true parameter $\phiad^*$ minimizes the population objective function $S_K(\phiad)$ \eqref{eq:nlm_loss}, satisfying the first-order condition:
+\begin{align}\label{eq:a1}
+    \sum_{k=1}^{K} \psi_k(\phiad^*) (\rho_k - \phiad^{*k}) = 0, \quad \text{where } \psi_k(\phiad^*) = \left. \frac{d}{d\phiad}(\phiad^k) \right|_{\phiad=\phiad^*} = k\phi_{\text{AD}}^{*k-1}.
+\end{align}
+Using $\rho_k = \mathbb{E}[X_t X_{t-k}]/\gamma_0$ \eqref{eq:acf}, we rewrite the residual term as an expectation:
+\begin{align}\label{eq:a2}
+    \rho_k - \phiad^{*k} = \mathbb{E}\left[ \frac{X_t X_{t-k} - \phiad^{*k} X_t^2}{\gamma_0} \right].
+\end{align}
+Substituting \eqref{eq:a2} into \eqref{eq:a1} defines the score process $u_t$:
+\begin{equation}
+    \mathbb{E}\left[ \frac{1}{\gamma_0} \sum_{k=1}^{K} \psi_k(\phiad^*) (X_t X_{t-k} - \phiad^{*k} X_t^2) \right] = \mathbb{E}[u_t] = 0.
+\end{equation}
+This matches the definition in equation \eqref{eq:ad-qomega}. The asymptotic variance is then determined by the long-run variance of this score, $\omegaad = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[u_t u_{t-\ell}]$.\\
+
+\noindent The sample score process $\hat{u}_t$ used for variance estimation is obtained by replacing population expectations with sample moments and the parameter $\phiad^*$ with the estimator $\hatphiad$:
+\begin{equation}
+    \hat{u}_t = \frac{1}{\hat{\gamma}_0} \sum_{k=1}^{K} k (\hatphiad)^{k-1} (x_t x_{t-k} - (\hatphiad)^k x_t^2).
+\end{equation}
+
 \section*{Code and Data Availability}
 All simulation results and fMRI timescale maps, inclusive of the code by which they were derived, can be accessed on \href{https://github.com/griegner/fmri-timescales}{github.com/griegner/fmri-timescales}. The code is under the open source MIT license, allowing access and reuse with attribution. The Human Connectome Project young adult dataset (ages 22-35; 2018 release) used in this study is publicly accessible under a \href{https://www.humanconnectome.org/storage/app/media/data_use_terms/DataUseTerms-HCP-Open-Access-26Apr2013.pdf}{data usage agreement}, which describes specific terms for data use and sharing.
 

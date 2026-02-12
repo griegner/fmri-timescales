@@ -204,7 +204,7 @@ Following \citet[Chapter~22.8 and Chapter~23.5]{hansen_econometrics_2022}, the t
     \text{se}_{\text{NW}}(\hattauad) \approx \text{se}_{\text{NW}}(\hatphiad) \cdot \frac{d}{d\phiad}g(\phiad)\Big|_{\phiad=\phiad^*}.
 \end{align}
 
-\noindent The curvature term $\qad$ is the sum of the squared first derivatives of the regression function $\phiad^k$ with respect to $\phiad$, evaluated at the minimizer $\phiad^*$. The variance term $\omegaad$ is the long-run variance of the normalized score process $u_t$. This process is a weighted sum of the time-domain score contributions across all $K$ lags, where the weights are given by the regression function derivative:
+\noindent The curvature term $\qad$ is the sum of the squared first derivatives of the regression function $\phiad^k$ with respect to $\phiad$, evaluated at the minimizer $\phiad^*$. The variance term $\omegaad$ is the long-run variance of the normalized score process $u_t$ (see Appendix for the derivation). This process is a weighted sum of the time-domain score contributions across all $K$ lags, where the weights are given by the regression function derivative:
 \begin{align}\label{eq:ad-qomega}
     \qad = \sum_{k=1}^K (k \phiad^{*k-1})^2, \quad \omegaad = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[u_t u_{t-\ell}], \quad 
     u_t = \frac{1}{\gamma_0} \sum_{k=1}^K (k \phiad^{*k-1}) (X_t X_{t-k} - \phiad^{*k}X_t^2).
