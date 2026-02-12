@@ -90,9 +90,9 @@ Autocorrelation Domain (AD) Nonlinear Model, Fit by Nonlinear Least Squares:
     >>> ad = timescale_utils.AD(var_domain="time", var_estimator="newey-west", var_n_lags=10)
     >>> ad.fit(X=X, n_timepoints=1000).estimates_
     {
-        'phi': array([0.7802222]),
-        'se(phi)': array([0.02174618]),
-        'tau': array([4.02938991]),
-        'se(tau)': array([0.45252581])
+        'phi': array([0.78021651]),
+        'se(phi)': array([0.02814532]),
+        'tau': array([4.02927146]),
+        'se(tau)': array([0.58565806])
     }
 ```
