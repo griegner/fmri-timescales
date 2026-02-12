@@ -1,0 +1,604 @@
+\documentclass[9pt]{article}
+
+\usepackage{subfiles} % include subfiles
+\usepackage{fullpage} % 1-in margins
+\usepackage{amsmath, amsfonts, amssymb} % equations
+\usepackage{graphicx} % figures
+\usepackage{subcaption} % subcaptions
+\usepackage{float} % figures
+\usepackage[section]{placeins} % figures
+\usepackage{xcolor} % links
+\usepackage[colorlinks=true, linkcolor=gray, citecolor=gray, urlcolor=gray]{hyperref} % links
+\usepackage[round]{natbib} % citations + references
+\bibliographystyle{apalike} % citations + references
+\usepackage{fontspec} % font
+\usepackage[defaultsans]{opensans} % font
+\setmainfont[BoldFont={Open Sans Semibold}]{Open Sans} % bold font
+\usepackage{titlesec} % sections/subsections/subsubsections
+\titleformat{\section}{\bfseries\Large}{\thesection}{1em}{}
+\titleformat{\subsection}{\bfseries\itshape\large}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\itshape\normalsize}{\thesubsubsection}{1em}{}
+
+% distinguish AD from TD
+\newcommand{\phitd}{\phi_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hatphitd}{\hat{\phi}^*_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\tautd}{\tau_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hattautd}{\hat{\tau}^*_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\qtd}{q_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hatqtd}{\hat{q}_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\omegatd}{\omega_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hatomegatd}{\hat{\omega}_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\sigmatd}{\sigma_{\scriptscriptstyle\text{TD}}}
+\newcommand{\hatsigmatd}{\hat{\sigma}_{\scriptscriptstyle\text{TD}}}
+
+\newcommand{\phiad}{\phi_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hatphiad}{\hat{\phi}^*_{\scriptscriptstyle\text{AD}}}
+
+\newcommand{\tauad}{\tau_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hattauad}{\hat{\tau}^*_{\scriptscriptstyle\text{AD}}}
+
+\newcommand{\qad}{q_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hatqad}{\hat{q}_{\scriptscriptstyle\text{AD}}}
+
+\newcommand{\omegaad}{\omega_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hatomegaad}{\hat{\omega}_{\scriptscriptstyle\text{AD}}}
+
+\newcommand{\sigmaad}{\sigma_{\scriptscriptstyle\text{AD}}}
+\newcommand{\hatsigmaad}{\hat{\sigma}_{\scriptscriptstyle\text{AD}}}
+
+\title{Estimating fMRI Timescale Maps}
+\author{Gabriel Riegner $^{1\ast}$, Samuel Davenport $^{2}$, Bradley Voytek $^{1,3,4}$, Armin Schwartzman $^{1,2}$\\
+{\small $^{1}$Halicio\u{g}lu Data Science Institute, University of California San Diego}\\
+{\small $^{2}$Division of Biostatistics, University of California San Diego}\\
+{\small $^{3}$Department of Cognitive Science, University of California San Diego}\\
+{\small $^{4}$Neurosciences Graduate Program, University of California San Diego}\\
+{\small $^\ast$Correspondence:  gariegner@ucsd.edu}
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Abstract}
+Brain activity unfolds over hierarchical timescales that reflect how brain regions integrate and process information, linking functional and structural organization. While timescale studies are prevalent, existing estimation methods rely on the restrictive assumption of exponentially decaying temporal autocorrelation and only provide point estimates without standard errors, limiting statistical inference. In this paper, we formalize and evaluate two methods for mapping timescales in resting-state fMRI: a time-domain fit of an autoregressive (AR1) model and an autocorrelation-domain fit of an exponential decay model. Rather than assuming exponential autocorrelation decay, we define timescales by projecting the fMRI time series onto these approximating models, requiring only stationarity and mixing conditions while incorporating robust standard errors to account for model misspecification. We introduce theoretical properties of timescale estimators and show parameter recovery in realistic simulations, as well as applications to fMRI from the Human Connectome Project. Comparatively, the time-domain method produces more accurate estimates under model misspecification, remains computationally efficient for high-dimensional fMRI data, and yields maps aligned with known functional brain organization. In this work, we show valid statistical inference on fMRI timescale maps, and provide Python implementations of all methods.
+
+\vfill
+\noindent\textit{Keywords:} time-domain linear model, autocorrelation-domain nonlinear model, uncertainty quantification, statistical inference, human connectome project, functional brain organization
+\thispagestyle{empty}
+\newpage
+\setcounter{page}{1}
+
+\section{Introduction}
+
+\subsection{fMRI Timescale Maps}
+Neural processes span multiple timescales, from millisecond synaptic events to slower activity coordinating distributed brain networks \citep{buzsaki_large-scale_2004}. Timescales index the integration of neural activity over time, defined by exponential decay in autocorrelation that emerges from stochastic models of neural activity \citep[Supplementary Mathematical Note]{murray_hierarchy_2014}. When mapped across the cortex, these local temporal timescales reveal a large-scale spatial organization. Multimodal evidence links these timescale differences to intrinsic brain hierarchies, reflecting how distinct regions integrate and process information over time. Timescale maps of the brain align with functional hierarchy -- sensory areas that process rapidly changing stimuli show shorter timescales than association areas involved in cognitive processes that unfold over longer durations \citep{raut_hierarchical_2020, gao_neuronal_2020, hasson_hierarchy_2008, murray_hierarchy_2014, stephens_place_2013}. This hierarchy is also associated with anatomical organization including myelination levels and gene expression patterns, as shown in studies using human electrophysiology, MEG, and gene expression profiling \citep{gao_neuronal_2020, shafiei_neurophysiological_2023}.\\
+
+Computational modeling by \citet{li_hierarchical_2022} suggests that hierarchical timescales emerge from: (1) brain-wide gradients in synaptic excitation strength, (2) electrophysiological differences between excitatory and inhibitory neurons, and (3) balance between distant excitatory and local inhibitory inputs. In addition to these intrinsic mechanisms, there is growing evidence that neuronal timescales are dynamic and modulated by experimental manipulations or behavioral demands. For example, pharmacological agents like propofol and serotonergic drugs alter intrinsic timescales, affecting the temporal integration of information in the brain \citep{huang_timescales_2018, shinn_functional_2023}. Timescale changes have also been observed during development, sleep deprivation, wakefulness, neuropsychiatric disorders (autism and schizophrenia), and naturalistic behaviors \citep{martin-burgos_development_2024, meisel_decline_2017, watanabe_atypical_2019, wengler_distinct_2020, manea_neural_2024}. These findings demonstrate that timescales are broadly relevant to both structural and functional properties of the brain.\\
+
+Seminal research on timescales has primarily used invasive electrophysiology in non-human animals \citep{murray_hierarchy_2014, cirillo_neural_2018, nougaret_intrinsic_2021, manea_intrinsic_2022, spitmaan_multiple_2020, trepka_training-dependent_2024}. While these methods provide high temporal resolution for studying neural activity at the single-neuron level, they are limited by sparse spatial sampling. Investigating the large-scale spatial organization of timescale maps requires non-invasive methods like resting-state functional MRI (rfMRI), which measures spontaneous fluctuations in the blood oxygen level-dependent (BOLD) signal. Unlike techniques with sparser spatial coverage such as EEG or MEG, rfMRI provides dense, whole-brain coverage, though its power is concentrated in the much slower (<0.1 Hz) frequency range \citep{raut_hierarchical_2020, he_scale-free_2011}. This is because the BOLD signal reflects hemodynamic changes, which act as a low-pass filter on neural activity, and because the signal-to-noise ratio is highest in this infraslow frequency band. Although an indirect measure, the BOLD signal reflects functionally significant fluctuations associated with underlying electrophysiological activity \citep{logothetis_what_2008}, making it a valuable tool for investigating high spatial-resolution cortical timescale maps. Studies have shown that rfMRI-derived timescale maps align spatially with those from other imaging modalities across human and animal models \citep{raut_hierarchical_2020, shafiei_topographic_2020, lurie_cortical_2024}. The present study will focus on rfMRI from the Human Connectome Project dataset \citep{van_essen_wu-minn_2013}.
+
+\subsection{Current methods}
+A key consideration is the representation of the time series -- whether in its original time domain, or transformed into another domain for analysis. Timescales are generally estimated using three main methods corresponding to neural data represented in the (1) time domain, (2) autocorrelation domain, or (3) frequency domain. The most common is the autocorrelation domain, where timescales are defined by fitting an exponential decay model to the sample autocorrelation function (ACF) \citep{rossi-pool_invariant_2021, cirillo_neural_2018, ito_cortical_2020, runyan_distinct_2017, zeraati_flexible_2022, nougaret_intrinsic_2021, wasmuht_intrinsic_2018, muller_core_2020, maisson_choice-relevant_2021, li_hierarchical_2022, shafiei_topographic_2020}. Similar approaches compute timescales directly from the sample ACF as the sum of positive autocorrelations \citep{wengler_distinct_2020, manea_intrinsic_2022, watanabe_atypical_2019}, or by identifying where the sample ACF crosses a specified threshold \citep{wengler_distinct_2020, zilio_are_2021}. Alternatively, the time-domain method uses a first-order autoregressive (AR1) model to estimate timescales directly from time series \citep{kaneoke_variance_2012, meisel_decline_2017, huang_timescales_2018, lurie_cortical_2024, shinn_functional_2023, shafiei_topographic_2020, spitmaan_multiple_2020, trepka_training-dependent_2024}, and has shown better test-retest reliability than autocorrelation-domain methods for rfMRI \citep{huang_timescales_2018}. Finally, frequency-domain methods operate on the premise that timescales are properties of the brain's aperiodic (non-rhythmic) activity. These methods therefore use the power-spectral density to estimate and remove oscillatory components to mitigate their influence on timescale estimates \citep{donoghue_parameterizing_2020, gao_neuronal_2020, manea_neural_2024, zeraati_flexible_2022, fallon_timescales_2020}. This paper focuses on time- and autocorrelation-domain methods, avoiding external criteria that attempt to separate periodic from aperiodic contributions to the BOLD signal. Because amplitude-modulated rhythmic activity can mimic aperiodic properties \citep{he_temporal_2010, he_scale-free_2011}, distinguishing the true generative process is often circular. Instead, we introduce a timescale estimator that is robust regardless of whether the underlying process is strictly aperiodic, damped-oscillatory, or a mixture of both, and we validate this robustness using simulations across these regimes.
+
+\subsection{Problem Statement and Proposed Solution}
+A key challenge in applied timescale research is the lack of standardized model definitions, where diverse approaches have led to inconsistent findings across studies \citep{zeraati_flexible_2022, fallon_timescales_2020, shafiei_topographic_2020}. Many parameterization methods rely on restrictive assumptions, such as exponential autocorrelation decay, which may bias timescale estimates and (more often) their standard errors \citep{woolrich_temporal_2001, zeraati_flexible_2022, raut_time_2019}. Additionally, the distributional properties of these methods are often ignored, resulting in studies reporting only point estimates without quantifying uncertainty, which limits statistical inference and hypothesis testing \citep{newey_simple_1987, white_nonlinear_1984}.\\
+
+To address these issues, this paper formalizes and evaluates two commonly applied timescale methods: the time-domain fit of an autoregressive (AR1) model and the autocorrelation-domain fit of an exponential decay model in rfMRI. The goal is to estimate accurate timescale maps that enable robust statistical testing and inference across brain regions. This work offers the following contributions: (1) The assumptions are generalized to include processes that are both stationary \emph{and} mixing, not only those with exponential autocorrelation decay. (2) Robust standard errors account for the inevitable mismatch between the data-generating process and fitted model, enabling valid inference despite model misspecification. (3) Theoretical properties demonstrate that both time- and autocorrelation-domain estimators converge to different values due to their distinct definitions, and are consistent (i.e., converge in probability to the method-specific estimand) and asymptotically normal. (4) Simulations confirm that both methods yield unbiased estimates across autoregressive and realistic settings, with standard errors that are robust to non-exponential autocorrelation decay. (5) Empirical analysis of rfMRI from the Human Connectome Project shows that both approaches yield similar t-ratio maps (timescales relative to their standard errors), revealing a hierarchical organization of timescales across the cortex. While this hierarchy aligns with prior point estimate maps, our approach improves interpretability by accounting for variability, ensuring that observed patterns are not artifacts of sampling noise or model misspecification. (6) Comparative Monte Carlo simulations and empirical data analyses show that the time-domain method performs as well as, and often better than, the autocorrelation-domain method, while maintaining greater computational efficiency for high-dimensional fMRI data.\\
+
+The proposed methods address important limitations in neural timescale research by providing rigorous statistical methods that move beyond point estimates to incorporate uncertainty quantification. Through formal definitions, theoretical validation, and extensive testing across simulations and empirical data, we demonstrate that both time- and autocorrelation-domain estimators yield consistent standard errors under broad conditions, enabling reliable inference and hypothesis testing. This work establishes a methodological foundation for future research investigating the functional and structural organization of timescales in the brain.
+
+\section{Methods}
+
+There are varying definitions and conventions in the study of time series data and stochastic processes more generally. To simplify our presentation, this work closely follows the \citet{hansen_econometrics_2022} \emph{Econometrics} textbook as a primary reference. Throughout, we will frequently refer the reader to specific results from this textbook.
+
+\subsection{Assumptions} \label{sec:assumptions}
+
+Let $\{X_t\}_{t\in\{\dots, -2, -1, 0, 1, 2, \dots\}}$ be a discrete-time stochastic process that is \nameref{sec:weak-stationarity} and \nameref{sec:strong-mixing}, and let $x = \{x_1, x_2, \ldots, x_T\}$ where $x_t$ denotes an observed sample of $X_t$. For simplicity, assume $\mathbb{E}[X_t] = 0$. 
+
+\subsubsection{Weakly stationary} \label{sec:weak-stationarity}
+Weak stationarity implies a constant mean and variance (independent of time index $t$), and an autocovariance function that only depends on time lag $k$, $\gamma_k = \text{cov}[X_t, X_{t-k}] =\mathbb{E}[X_t X_{t-k}]$. For analysis, we use a normalized measure of the autocovariances, the \textit{autocorrelation function (ACF)}:
+\begin{align} \label{eq:acf}
+\rho_k = \text{corr}(X_t, X_{t-k}) = \gamma_k/\gamma_0,
+\end{align}
+
+\noindent where $\gamma_k$ is the autocovariance at lag $k$ and $\gamma_0$ is the variance. We emphasize that $\rho_k$ represents \textit{temporal} autocorrelation, not spatial autocorrelation often referenced in the fMRI literature. As a correlation, $|\rho_k|\le 1$, but stationarity alone does not guarantee decay of $\rho_k$ with increasing time lag; constant or periodic processes can maintain nonzero correlations indefinitely. 
+
+\subsubsection{Strong Mixing} \label{sec:strong-mixing}
+Strong mixing ($\alpha$-mixing) imposes stronger dependence constraints than stationarity while still allowing for a wide set of stochastic processes. By definition, a process is strong mixing if $\alpha(\ell) \rightarrow 0$ as $\ell \rightarrow \infty$, where $\alpha(\ell)$ measures the \emph{maximum dependence} between events separated by $\ell$ time points; this controls the full joint dependence structure and implies distant events are uncorrelated. Strong mixing also implies ergodicity \citep[Chapter~14.12]{hansen_econometrics_2022}, which ensures consistent estimation by the ergodic theorem \citep[Theorem~14.9]{hansen_econometrics_2022}. Additionally, if a mixing process has $r>2$ finite moments $\mathbb{E}|X_t|^r < \infty$ and its mixing coefficients satisfy $\sum_{\ell=0}^{\infty} \alpha(\ell)^{1-2/r} < \infty$, then its autocorrelations decay sufficiently fast for application of the central limit theorem for dependent data \citep[Theorem~14.15]{hansen_econometrics_2022}. These conditions enable asymptotic theory for estimation and inference on timescale maps (see \nameref{sec:estimator-properties}).\\
+
+As introduced by \citet{murray_hierarchy_2014}, the timescale $\tau$ represents the lag where exponentially decaying autocorrelations reach $1/e \approx 0.37$, analogous to the time constants of many physical systems and often referred to as $e$-folding time in other fields. While it provides an intuitive description of the memory or persistence of that process, assuming an exponential function imposes stricter constraints than strong mixing, which alone does not prescribe any specific type of decay (exponential, linear, damped periodic, etc.). Despite this, the timescale serves as a useful summary statistic for the duration of temporal dependence, enabling direct comparisons across brain regions even when the true decay structure is more complex. This highlights an important distinction between the data-generating process and the simplified parametric model used to describe the timescale at which such a process becomes decorrelated. In the present paper, we adopt broad assumptions, requiring only that the process is stationary and mixing, to account for cases where the ACF decay may not be strictly exponential.
+
+\subsubsection{Estimation and Inference under Misspecification}\label{sec:misspecification}
+
+We approximate the dominant exponential decay in autocorrelations by a single timescale parameter $\tau$, and formally evaluate two timescale methods that are commonly applied across neuroimaging modalities (fMRI, EEG, ECoG, MEG). The time-domain (TD) linear model estimated with linear least squares \citep{kaneoke_variance_2012, meisel_decline_2017, huang_timescales_2018, lurie_cortical_2024, shinn_functional_2023, shafiei_topographic_2020, spitmaan_multiple_2020, trepka_training-dependent_2024}, and the autocorrelation-domain (AD) nonlinear model estimated with nonlinear least squares \citep{rossi-pool_invariant_2021, cirillo_neural_2018, ito_cortical_2020, runyan_distinct_2017, zeraati_flexible_2022, nougaret_intrinsic_2021, wasmuht_intrinsic_2018, muller_core_2020, maisson_choice-relevant_2021, li_hierarchical_2022, shafiei_topographic_2020}. Both belong to the subclass of m-estimators defined by minimizing a sample squared error loss function. This approach seeks the best approximation in terms of squared error and does not require full specification of the data-generating distribution, relying on method of moments instead of maximum likelihood estimation. \\
+
+Throughout, a superscript star (e.g. $\tau^*$) denotes the pseudo-true parameter corresponding to the best fitting parameter in a possibly misspecified model. If correctly specified, $\tau^*$ is the true timescale; otherwise, it is an approximation. Acknowledging that the data-generating process and fitted model will likely be different in practice, we introduce standard errors that account for this mismatch, enabling valid inference despite misspecification of the autocorrelation decay. Under the above assumptions and relevant moment conditions, the m-estimators are consistent for the pseudo-true parameter and asymptotically normal (see \nameref{sec:estimator-properties}). Further, they are invariant under the reparameterization needed to define timescales, with asymptotic normality preserved by the delta method, ensuring valid inference for transformed parameters.
+
+\subsection{Timescale Definitions}
+
+\subsubsection{Time-Domain Linear Model}\label{sec:time-domain-linear-model}
+A first order autoregressive model (AR1) provides a linear approximation of the timescale. The AR1 model:
+\begin{align}\label{eq:ar1}
+    X_t = \phitd X_{t-1} + e_t,
+\end{align}
+
+\noindent defines the process as a linear regression between $X_t$ and $X_{t-1}$ in the time domain with \textit{iid} innovations $e_t$ with variance $\sigmatd^2 = \mathbb{E}[e_t^2]$. In the autocorrelation domain, it implies that the theoretical ACF decays exponentially at a rate determined by $\phitd$, such that $\rho_k = \phitd^k$ \citep[Chapter~14.22]{hansen_econometrics_2022}. For a stationary process with $|\phitd|<1$, the exponential decay rate can be directly obtained from $\phitd$, with a timescale $\tautd$ equal to the lag at which the AR1-projected ACF reaches $1/e\approx 0.37$, that is,  $\rho_\tau = \phitd^\tau = 1/e$, resulting in $\tautd = g(\phitd) = -1/\text{log}(|\phitd|)$. The timescale $\tautd$ is expressed as a nonlinear function of $\phitd$, denoted by $g(\phitd)$. This defines $\tautd$ to be a real number even though the ACF only includes integer indices. The absolute value allows for $\phitd<0$ and is introduced as a modeling assumption to ensure the timescale captures the monotonic decay rate of autocorrelations, consistent with the approach of \citet{murray_hierarchy_2014}.\\
+
+The parameter $\phitd^*$ is the value that minimizes the expected squared error function $S(\phitd)$:
+\begin{align}
+    S(\phitd) = \mathbb{E}[(X_t - \phitd X_{t-1})^2],\quad \phitd^* = \underset{\phitd}{\text{argmin}} \; S(\phitd).
+\end{align}
+
+\noindent $S(\phitd)$ is minimized by taking its derivative with respect to $\phitd$, setting it to zero, and solving for $\phitd^*$:
+\begin{align}
+    \frac{d}{d\phitd} S(\phitd) = -2 \mathbb{E}[X_{t-1}(X_t - \phitd X_{t-1})] = 0.
+\end{align}
+
+\noindent Differentiating the quadratic function yields a linear equation in $\phitd$, and solving this results in a closed-form expression for the optimal $\phitd^*$. Therefore, $\phitd^*$ is defined by \textit{linear projection} and the timescale parameter $\tautd^*$ by a change of variable:
+\begin{align}
+    \phitd^* &= (\mathbb{E}[X_{t-1}^2])^{-1}(\mathbb{E}[X_t X_{t-1}]) \label{eq:ar1-phi},\\
+    \tautd^* &= g(\phitd^*) = -\frac{1}{\text{log}(|\phitd^*|)}. \label{eq:ar1-tau}
+\end{align}
+
+\noindent Thus, the timescale represents the characteristic time of $1/e$ autocorrelation decay derived from the best-fitting AR1 model under squared error loss. Since $X_t$ is stationary with finite variance, the parameters $\phitd^*$ and $\tautd^*$ defined by projection are unique; in fact, any approximating AR1 model is identifiable if $\mathbb{E}[X_{t-1}^2]$ is nonzero and finite \citep[Theorem~14.28]{hansen_econometrics_2022}. Importantly, the observed process $X_t$ need not follow the AR1 model from equation~\eqref{eq:ar1} with \textit{iid} innovations $e_t$. This allows for projection errors, i.e., residuals from linear projection onto the working model:
+
+\begin{align}
+    e_t^* = X_t - \phitd^* X_{t-1}
+\end{align}
+
+\noindent which may exhibit unequal variance and autocorrelation. This applies to any stationary and mixing process, even if the true data-generating process is not AR1, so the resulting fit an AR1 projection.
+
+\subsubsection{Autocorrelation-Domain Nonlinear Model}\label{sec:autocorrelation-domain-nonlinear-model}
+
+Alternatively, timescales can be defined in the autocorrelation domain by an exponential decay function, as introduced by \citet{murray_hierarchy_2014}. For consistent notation, we write the autocorrelation-domain nonlinear model as:
+\begin{align}\label{eq:nlm}
+    \rho_k = \phiad^k + e_k, \; \text{for}\; k \in \{0, 1, \ldots, K\},
+\end{align}
+
+\noindent where $\rho_k$ denotes the autocorrelation at lag $k$ and $e_k$ captures any structure in the ACF not explained by the single-parameter exponential decay $\phiad^k$. This allows the ACF to exhibit other behaviors consistent with general stationary and mixing conditions, such as multi-exponential decay, damped periodic oscillations, or other complex temporal dependencies. The relationship between $\rho_k$ and $k$ is nonlinear in $\phiad$ which determines the exponential decay rate. Unlike the \nameref{sec:time-domain-linear-model} above, this definition captures exponential decay across multiple ($K$) lags of the ACF rather than by a single lag, capturing longer-range temporal dependencies. Here, $k$ is a deterministic lag index and all statements below average across this index rather than condition on a single lag. Consequently, the parameter $\phiad$ here is not the same as the time-domain parameter $\phitd$, since both its value and interpretation differ when influenced by multiple lags.\\
+
+Here, the projection parameter $\phiad^*$ is the value that minimizes the expected squared error function $S(\phiad)$:
+\begin{align}\label{eq:nlm_loss}
+    S(\phiad) = \mathbb{E}[(\rho_k - \phiad^k)^2], \quad \phiad^* = \underset{\phiad}{\text{argmin}} \; S(\phiad).
+\end{align}
+
+\noindent The expectation denotes a function of population expectations aggregated across lags. $S(\phiad)$ is minimized by taking its derivative with respect to $\phiad$, setting it to zero, and solving for $\phiad$:
+\begin{align}
+    \frac{d}{d\phiad} S(\phiad) &= -2\mathbb{E}[(k\phiad^{k-1})(\rho_k - \phiad^k)] = 0.
+\end{align}
+
+\noindent However, the derivative is nonlinear in $\phiad$, preventing a closed-form solution for least squares minimization. This is because the first-order condition sums nonlinear terms across many lags, yielding a high-order equation with no general algebraic solution. Therefore, optimization methods are needed to approximate $\phiad^*$ by \textit{nonlinear projection} of the lag-indexed ACF onto the curve $\phiad^k$ under the squared error loss in \eqref{eq:nlm_loss}. Like before, the corresponding timescale is defined as the time lag at which the fitted ACF reaches $1/e$ and can be expressed by the change of variable:
+\begin{align}
+    \tauad^* &= g(\phiad^*) = -\frac{1}{\text{log}(|\phiad^*|)}. \label{eq:nlm-tau}
+\end{align}
+
+The pseudo-true parameter $\phiad$ is the nonlinear least-squares approximation of the ACF by a single exponential, with projection error residuals $e_k^* = \rho_k - \phiad$. These errors reduce to zero when the data-generating process is AR1, otherwise they are a function of lags $k$ that absorb the non-exponential or damped-oscillatory features possible under stationary and mixing. 
+
+\subsection{Timescale Estimation}\label{sec:timescale-estimation}
+\subsubsection{Time-Domain Linear Estimator}\label{sec:time-domain-linear-estimator}
+Given observations $x_1, \ldots, x_T$ are demeaned, the linear least squares estimator of the \nameref{sec:time-domain-linear-model} is obtained by replacing the expectations in equation~\eqref{eq:ar1-phi} using method of moments. It has the following closed-form expression:
+\begin{align}
+    \hatphitd &= \left(\sum_{t=2}^{T+1} x_{t-1}^2\right)^{-1} \left(\sum_{t=2}^T x_t x_{t-1}\right),\\
+    \hattautd &= g(\hatphitd) = -\frac{1}{\text{log}(|\hatphitd|)},
+\end{align}
+
+\noindent where $\hatphitd$ and $\hattautd$ are the sample versions of the population parameters from equations~\eqref{eq:ar1-phi} and \eqref{eq:ar1-tau}, respectively \citep[Chapter~14.3]{hansen_econometrics_2022}.\\
+
+
+\subsubsection{Autocorrelation-Domain Nonlinear Estimator}\label{sec:autocorrelation-domain-nonlinear-estimator}
+The nonlinear least squares estimator of the \nameref{sec:autocorrelation-domain-nonlinear-model} is fit to the ACF, so the time series needs to be first transformed into the autocorrelation domain. For a finite-length and centered time series, the population ACF from equation~\eqref{eq:acf} is estimated by:
+\begin{align}\label{eq:acf_}
+    \hat\rho_k &= \hat\gamma_0^{-1}\hat\gamma_k = \left(\sum_{t=1}^T x_t^2\right)^{-1} \left(\sum_{t=k+1}^{T}x_t x_{t-k}\right),
+\end{align}
+
+\noindent where $\hat\gamma_k$ is the sample covariance at lag $k$ and $\hat\gamma_0$ is the sample variance. Under the mixing assumption, the population ACF \eqref{eq:acf} approaches zero as lag $k$ increases. However, sampling variability may yield non-zero autocorrelations even when true values are zero. To mitigate this, the sample ACF estimator \eqref{eq:acf_} imposes a bias towards zero by scaling the autocovariances ($\hat \gamma_k$, calculated using $T-k$ terms) by the total sample variance ($\hat\gamma_0$, calculated using all $T$ timepoints). The finite sample performance of this ACF estimator was compared to other standard estimators and shown to perform best in terms of bias and variance \citep{marriott_bias_1954}.\\
+
+By the model definition \eqref{eq:nlm}, the exponential decay parameter $\phiad^*$ that minimizes the cost function, $S(\phiad)$ in equation~\eqref{eq:nlm_loss}, is estimated by minimizing the sample analog $\widehat{S}_{K}(\phiad)$:
+\begin{align}
+    \widehat{S}_{K}(\phiad) &= \frac{1}{K} \sum_{k=0}^K (\hat\rho_k - \phiad^k)^2, \label{eq:nls_loss_}\\
+    \hatphiad &= \underset{\phiad}{\text{argmin}} \; \widehat{S}_{K}(\phiad), \label{eq:nls_phi_}\\
+    \hattauad &= g(\hatphiad) = -\frac{1}{\text{log}(|\hatphiad|)}.
+\end{align}
+
+\noindent In this paper we use the Levenberg-Marquardt algorithm to iteratively update the estimate of $\hatphiad$ until convergence (i.e., when the step size goes below a $10^{-6}$ tolerance) \citep{levenberg_method_1944}.\\
+
+\subsection{Estimator Properties}\label{sec:estimator-properties}
+In this section, we describe the large-sample properties of both the \nameref{sec:time-domain-linear-model} and \nameref{sec:autocorrelation-domain-nonlinear-model}, focusing on the consistency and asymptotic distribution of their respective estimators. Under general conditions --- when the time-domain method is applied to a process that is not AR1, or the autocorrelation-domain method is applied to a decay process that is not exponential --- we demonstrate that the asymptotic distribution is Gaussian, with a limiting variance that can be consistently estimated. Specific expressions for this variance and its estimator are provided after in sections \nameref{sec:stderr} and \nameref{sec:stderr_}. This allows for the construction of hypothesis tests and confidence intervals across timescale maps of the brain.
+
+\subsubsection{Time-Domain Method}
+Following the description in \citet[Theorem~14.29]{hansen_econometrics_2022}, the ergodic theorem shows that mixing (which implies ergodicity) is a sufficient condition for \textit{consistent estimation}. Since $X_t$ is stationary and ergodic, so too are $X_t X_{t-1}$ and $X_{t-1}^2$, and as $T \to \infty$:
+\begin{align}
+    \frac{1}{T} \sum_{t=2}^T x_t x_{t-1} &\overset{p}{\to} \mathbb{E}[X_t X_{t-1}],\\
+    \frac{1}{T} \sum_{t=2}^T x_{t-1}^2 &\overset{p}{\to} \mathbb{E}[X_{t-1}^2].
+\end{align}
+
+\noindent Applying the continuous mapping theorem yields:
+\begin{align}
+    \hatphitd = \left(\frac{1}{T} \sum_{t=2}^T x_{t-1}^2\right)^{-1} \left( \frac{1}{T} \sum_{t=2}^T x_t x_{t-1}\right) &\overset{p}{\to} \mathbb{E}[X_{t-1}^2]^{-1}\mathbb{E}[X_t X_{t-1}] = \phitd^*.
+\end{align}
+
+\noindent This shows that the coefficients of the \nameref{sec:time-domain-linear-model} can be consistently estimated by least squares, for any stationary and mixing process with parameters defined by projection in equation~\eqref{eq:ar1-phi}.\\
+
+Following \citet[Theorem~14.33]{hansen_econometrics_2022}, the asymptotic distribution under general dependence states that the behavior of the estimators of $\phitd^*$ and $\tautd^*$ can be approximated using a central limit theorem for correlated observations:
+
+\begin{align}\label{eq:ar1-phi-clt}
+    \sqrt{T}(\hatphitd - \phitd^*) \overset{d}{\to} \mathcal{N}(0, \qtd^{-1}\; \omegatd \; \qtd^{-1})\;\text{as}\;T\to\infty.
+\end{align}
+
+\noindent The estimator converges to a Gaussian distribution with a sandwich-form variance with components $\qtd$ and $\omegatd$ defined below in equation \eqref{eq:se-ar1-qomega}. And by the delta method we obtain the asymptotic distribution for the timescale given the transformation from equation \eqref{eq:ar1-tau}:
+
+\begin{align}
+    \sqrt{T}(\hattautd - \tautd^*) \overset{d}{\to} \mathcal{N}(0, \qtd^{-1}\; \omegatd \; \qtd^{-1} \left[\frac{d}{d\phitd} g(\phitd)\big|_{\phitd=\phitd^*}\right]^2)\;\text{as}\;T\to\infty.
+\end{align}
+
+\subsubsection{Autocorrelation-Domain Method}
+
+To show \textit{consistent estimation}, unlike the time-domain method above where we apply the ergodic theorem to the explicit closed-form expression of the estimator, this is not possible for nonlinear estimators because there is no algebraic expression. Instead, nonlinear least squares minimizes the sample objective function $\widehat{S}_{K}(\phiad)$ from equation~\eqref{eq:nls_loss_}, which is itself a sample average. By \citet[Theorem~22.1]{hansen_econometrics_2022}, for any $\phiad$, the weak law of large numbers shows that:
+\begin{align}
+\widehat{S}_K(\phiad) &\overset{p}{\to} S(\phiad) \;\text{as}\;K\to\infty.
+\end{align}
+
+\noindent Further, if the minimizer $\phiad^*$ is unique, $S(\phiad) > S(\phiad^*)$ for all $\phiad \ne \phiad^*$, then the sample minimizer from equation~\eqref{eq:nls_phi_} converges in probability to the true minimum:
+\begin{align}
+\hatphiad &\overset{p}{\to} \phiad^* \;\text{as}\;K\to\infty.
+\end{align}
+
+\noindent This shows that the parameters of the \nameref{sec:autocorrelation-domain-nonlinear-model} can be consistently estimated by least squares. For this theoretical convergence to hold in practice, we assume that the numerical tolerance of the Levenberg-Marquardt algorithm approaches zero as $K \to \infty$.\\
+
+With the additional assumption that the objective function \eqref{eq:nlm_loss} is Lipschitz-continuous for $\phiad$ near $\phiad^*$, following \citet[Theorem~23.2]{hansen_econometrics_2022}, we can approximate the behavior of the estimators of $\phiad^*$ and $\tauad^*$ using a central limit theorem for correlated observations. Under general conditions, the autocorrelation-domain estimator has an asymptotic distribution with a similar structure to that of the time-domain estimator above; it converges to a Gaussian distribution with a sandwich-form variance:
+\begin{align}\label{eq:nls-phi-clt}
+    \sqrt{K}(\hatphiad - \phiad^*) \overset{d}{\to} \mathcal{N}(0, \qad^{-1}\; \omegaad \;\qad^{-1}) \;\text{as}\;K\to\infty.
+\end{align}
+
+\noindent The components $\qad$ and $\omegaad$ are defined below in equation \eqref{eq:ad-qomega}. And by the delta method we obtain the asymptotic distribution for the timescale given the transformation from equation \eqref{eq:nlm-tau}:
+\begin{align}
+    \sqrt{K}(\hattauad - \tauad^*) \overset{d}{\to} \mathcal{N}(0, \qad^{-1}\; \omegaad \; \qad^{-1} \left[\frac{d}{d\phiad} g(\phiad)\big|_{\phiad=\phiad^*}\right]^2)\;\text{as}\;K\to\infty.
+\end{align}
+
+\subsection{Standard Error of the Estimators}\label{sec:stderr}
+\subsubsection{Time-Domain Standard Error}\label{sec:stderr-time-domain}
+Having established in \nameref{sec:estimator-properties} that the estimators are asymptotically normal, we now define the specific variance components requires for inference. When the data-generating process deviates from AR1 such that the errors are dependent and/or heteroskedastic, the usual (naive) standard errors will be biased. As a result, confidence intervals or hypothesis tests that rely on them are invalid. To correct for this, the \citet{newey_simple_1987} (NW) expression takes a sandwich form and explicitly accounts for misspecification by summing the covariance structure of the errors, ensuring that the resulting standard errors are asymptotically valid \citep[Theorem 14.32]{hansen_econometrics_2022}.\\
+
+Given that $X_t$ is stationary and mixing, so too are the errors from equation~\eqref{eq:ar1} since these properties are preserved by finite transformations \citep[Theorem~14.2 and Theorem~14.12]{hansen_econometrics_2022}. Consequently, the autocovariances of the errors vanish as the time lag increases (see \nameref{sec:assumptions}). Further, because the timescale estimator $\hattautd$ is given by the nonlinear function $g(\hatphitd)$, its theoretical standard error can be approximated by the delta method, which uses the derivative with respect to $\phitd$ evaluated at the true parameter value $\phitd^*$:
+\begin{align}
+    \text{se}_{\text{NW}}(\hatphitd) = \sqrt{\qtd^{-1}\; \omegatd \; \qtd^{-1}} \label{eq:se-ar1-phi}, \quad
+    \text{se}_{\text{NW}}(\hattautd) \approx \text{se}_{\text{NW}}(\hatphitd) \cdot \frac{d}{d\phitd} g(\phitd)\big|_{\phitd=\phitd^*},
+\end{align}
+
+\noindent where
+\begin{align}\label{eq:se-ar1-qomega}
+    \qtd = \mathbb{E}[X_{t-1}^2] \quad\text{and}\quad \omegatd = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[(X_{t-1} \cdot e_t^*)(X_{t-1-\ell} \cdot e_{t-\ell}^*)].
+\end{align}
+
+\noindent These moments, $\qtd$ and $\omegatd$, are stationary and therefore do not depend on time index $t$. The covariance terms in $\omegatd$ capture deviations in the error structure from the standard \textit{iid} case. For the special case of correct specification, when $X_t$ is a true AR1 process, the standard error of $\hatphitd$ reduces to the usual formula:
+\begin{align}
+    \text{se}_{\text{Naive}}(\hatphitd) = \sqrt{\sigmatd^2 \qtd^{-1}},
+\end{align}
+
+\noindent where $\sigmatd^2$ is the time-domain error variance. \\
+
+\subsubsection{Autocorrelation-Domain Standard Error}\label{sec:stderr-autocorrelation-domain}
+Equation~\eqref{eq:nlm} models autocorrelation decay using a parametric exponential function. While usual (naive) applications assume \textit{iid} errors, our approach permits dependent errors generated by an underlying stationary and mixing process. The standard errors proposed below account for potential misspecification of exponential autocorrelation and are asymptotically valid under these more general conditions.\\
+
+Following the description in \citet[Chapter~22.8 and Chapter~23.5]{hansen_econometrics_2022}, if $\phiad^*$ uniquely minimizes $S(\phiad)$ in equation~\eqref{eq:nlm_loss}, such that $S(\phiad) > S(\phiad^*)$ for all $\phiad \neq \phiad^*$, the theoretical standard error of the estimator $\hatphiad$ can be computed using a \citet{newey_simple_1987} (NW) form that reflects both the curvature of the squared loss function at its minimum and the covariance of the errors. Further, because the timescale estimator $\hattauad$ is given by the nonlinear function $g(\hatphiad)$, its theoretical standard error can be approximated by the delta method using the derivative with respect to $\phiad$ evaluated at the true parameter value $\phiad^*$:
+\begin{align}\label{eq:stderr-autocorrelation-domain}
+    \text{se}_\text{NW}(\hatphiad) = \sqrt{\qad^{-1}\; \omegaad \;\qad^{-1}}, \quad \text{se}_\text{NW}(\hattauad) \approx \text{se}_\text{NW}(\hatphiad) \cdot \frac{d}{d\phiad}g(\phiad)\big|_{\phiad=\phiad^*}.
+\end{align}
+
+\noindent The components $\qad$ and $\omegaad$ are population quantities derived from the regression function $m(k, \phiad) = \phiad^k$ in \eqref{eq:nlm} and its derivative $m_{\phiad, k} = \frac{d}{d\phiad} m(k, \phiad) = k \phiad^{k-1}$, defined and evaluated at the minimizer $\phiad^*$ as:
+\begin{align}\label{eq:ad-qomega}
+    \qad = \mathbb{E}[m_{\phiad^*, k}^2] = \mathbb{E}[(k \phiad^{*k-1})^2] \quad\text{and}\quad
+    \omegaad = \sum_{\ell=-\infty}^{\infty} \mathbb{E}[(m_{\phiad^*, k} \cdot e_{k})(m_{\phiad^*, k-\ell} \cdot e_{k-\ell})].
+\end{align}
+
+\noindent The derivative of the regression function $m_{\phiad^*, k}$ evaluated at $\phiad^*$ locally approximates the nonlinear model by a linear one, and the expression for $\omegaad$ sums the covariance structure of the errors, ensuring that the standard errors are asymptotically valid under model misspecification (see equation \eqref{eq:nls-phi-clt}). This is a realistic scenario under the mild conditions of stationarity and mixing. In the special case where the errors are \textit{iid}, the standard error of $\phiad^*$ simplifies to the usual formula:
+\begin{align}
+    \text{se}_{\text{Naive}}(\hatphiad) = \sqrt{\sigmaad^2 \qad^{-1}},
+\end{align}
+\noindent where $\sigmaad^2$ is the autocorrelation-domain error variance.
+
+\subsubsection{Autocorrelation/Time-Domain Standard Error}\label{sec:stderr-time-autocorrelation-domain}
+
+As discussed, $\phiad^*$ defined in the autocorrelation domain captures longer-range autocorrelations than the time-domain parameter. However, the model \eqref{eq:nlm} assumes a signal-plus-noise structure that is unrealistic for an autoregressive process. For example, the ACF of a correctly specified AR1 process is deterministic ($\rho_k=\phiad^k$) with no additive error. In this case, the autocorrelation-domain residuals $e_k^*$ are zero, giving the false impression that the standard error vanishes. This is misleading because the parameter $\phiad^*$ is still a random variable with a sampling distribution governed by the stochastic time-domain innovations $e_t$; because this variability arises in the time domain, it must be estimated there.\\
+
+For higher-order autoregressive processes, the residuals $e_k^*$ represent misspecification error -- the part of the ACF the model fails to explain. Unlike the irreducible and stochastic innovations, this error is reducible and systematic. Consequently, the standard error formula \eqref{eq:stderr-autocorrelation-domain}, which treats $e_k^*$ as random noise, is invalid. To address this, we propose a hybrid approach where the timescale is defined in the autocorrelation domain by \eqref{eq:nlm_loss} to capture long-range correlations, but its standard error is defined in the time domain by \eqref{eq:se-ar1-phi} to correctly capture the sampling variability arising from the innovations. This distinction becomes important in section \nameref{sec:simulations}, where we evaluate these methods on simulated autoregressive processes.
+
+\subsection{Standard Error Estimation}\label{sec:stderr_}
+\subsubsection{Time-Domain Standard Error Estimator}\label{sec:stderr-time-domain_}
+The sample standard error estimator takes the form:
+\begin{align}\label{eq:stderr-time-domain_}
+\widehat{\text{se}}_{\text{NW}}(\hatphitd) = \sqrt{\hatqtd^{-1}\;\hatomegatd\; \hatqtd^{-1}}, \quad
+\widehat{\text{se}}_{\text{NW}}(\hattautd) \approx \widehat{\text{se}}_{\text{NW}}(\hatphitd) \cdot \frac{d}{d\phitd} g(\phitd)\big|_{\phitd=\hatphitd}
+\end{align}
+
+\noindent where
+\begin{align}\label{eq:lls_q_omega_}
+    \hatqtd = \frac{1}{T} \sum_{t=2}^T x_{t-1}^2 \quad\text{and}\quad
+    \hatomegatd = \sum_{\ell=-M}^M \left(1 - \frac{|\ell|}{M+1}\right) \quad \frac{1}{T} \sum_{1\le t - \ell \le T} (x_{t-1} \cdot \hat e_t^*)(x_{t-1-\ell} \cdot \hat e_{t-\ell}^*).
+\end{align}
+
+\noindent This estimator calculates a weighted sum of the regression scores $x_{t-1} \cdot \hat e_t^*$, where $\hat e_t^* = x_t - \hatphitd \cdot x_{t-1}$. The true $\omegatd$ is approximated by $\hatomegatd$ by taking a finite sum of the regression score covariances up to lag $M$, where $M$ is the lag-truncation (or bandwidth). The weights used in the sum decrease linearly with lag $\ell$, following a Bartlett kernel \citep{newey_simple_1987}. This kernel not only ensures the standard errors remain non-negative but also regularizes $\hatomegatd$ to change smoothly with $M$ \citep[Chapter~14.35]{hansen_econometrics_2022}.\\
+
+\noindent For comparison we also include the naive estimator which simplifies under correct specification:
+\begin{align}
+    \widehat{\text{se}}_\text{Naive}(\hatphitd) &= \sqrt{\hatsigmatd^2 \hatqtd^{-1}},\\
+    \widehat{\text{se}}_\text{Naive}(\hattautd) &\approx \widehat{\text{se}}_{\text{Naive}}(\hatphitd) \frac{d}{d\phitd} g(\phitd)\big|_{\phitd=\hatphitd},
+\end{align}
+
+\noindent where $\hatsigmatd^2 = 1/T \sum_{t=2}^T \hat e_t^{*2}$ is an estimate of the time-domain error variance.
+
+\subsubsection{Autocorrelation-Domain Standard Error Estimator}\label{sec:stderr-autocorrelation-domain_}
+The sample standard error estimator takes the form:
+\begin{align}\label{eq:stderr-autocorrelation-domain_}
+\widehat{\text{se}}_{\text{NW}}(\hatphiad) = \sqrt{\hatqad^{-1}\;\hatomegaad\; \hatqad^{-1}}, \quad
+\widehat{\text{se}}_{\text{NW}}(\hattauad) \approx \widehat{\text{se}}_{\text{NW}}(\hatphiad) \cdot \frac{d}{d\phi} g(\phiad)\big|_{\phiad=\hatphiad},
+\end{align}
+
+\noindent where
+\begin{align}
+    \hatqad &= \frac{1}{K} \sum_{k=0}^K (\hat m_{{\phiad},k})^2 = \frac{1}{K} \sum_{k=0}^K (k {\hatphiad}^{k-1})^2,\\
+    \hatomegaad &= \sum_{\ell=-M}^M \left(1 - \frac{|\ell|}{M+1}\right) \quad \frac{1}{K} \sum_{1 \le k - \ell \le K} (\hat m_{{\phiad}, k} \cdot \hat e_k^*) (\hat m_{{\phiad}, k-\ell} \cdot \hat e_{k-\ell}^*).\label{eq:nls_q_omega_}
+\end{align}
+
+\noindent This estimator calculates a weighted sum of the linearized regression scores $\hat m_{\phiad, k} \cdot \hat e_k^*$, where $\hat e_k^* = \hat\rho_k - (\hatphiad)^k$. The estimator $\hatomegaad$ takes a finite sum of these scores up to lag $M$, weighted by a Bartlett kernel, so that $\hatomegaad$ changes smoothly with $M$.\\
+
+\noindent In the case of correct specification the equation simplifies to:
+\begin{align}
+    \widehat{\text{se}}_\text{Naive}(\hatphiad) &= \sqrt{\hatsigmaad^2 \hatqad^{-1}},\\
+    \widehat{\text{se}}_\text{Naive}(\hattauad) &\approx \widehat{\text{se}}_{\text{Naive}}(\hatphiad) \frac{d}{d\phiad} g(\phiad)\big|_{\phiad=\hatphiad},
+\end{align}
+
+\noindent where $\hatsigmaad^2 = 1/K \sum_{k=0}^K \hat e_k^{*2}$ is an estimate of the autocorrelation-domain error variance.\\
+
+\subsubsection{Autocorrelation/Time-Domain Standard Error Estimator}\label{sec:stderr-autocorrelation/time-domain_}
+The sample standard error for the hybrid method introduced in \nameref{sec:stderr-time-autocorrelation-domain} is equivalent to \eqref{eq:stderr-time-domain_}, except that the time-domain estimator $\hatphitd$ is replaced with the autocorrelation-domain estimator $\hatphiad$, redefining the errors in the time domain as $\hat e_t^* = x_t - \hatphiad \cdot x_{t-1}$. This substitution applies the time-domain variance estimator to the sampling variability of the autocorrelation-domain parameter, needed when applying these timescale methods to autoregressive processes.
+
+\section{Simulations}\label{sec:simulations}
+
+\subsection{Simulation Settings}
+Monte Carlo simulations with $B = 10,000$ replications were used to evaluate time- and autocorrelation-domain methods. Time series realizations $x = \{x_1, x_2, ..., x_T\}$ with $T=4800$ were based on three data-generating processes, each characterized by a different autocorrelation structure: AR1, AR2, and autocorrelations derived from rfMRI data. All autocorrelation structures shared the same time-domain projection parameter ($\phitd^*$) for comparable timescales. That is, there is always a $\phitd^*$ value that represents the time-domain AR1 model projection, even if the time series was generated by a more complex process. To define a feasible parameter range for simulation, we referred to the Human Connectome Project (HCP) dataset, where $\hatphitd$ estimates ranged from +0.1 to +0.8. Accordingly, autocorrelation strength was varied using five positive $\phitd^*$ values (0.1 to 0.8) with corresponding timescales $\tautd^*$ from equation~\eqref{eq:ar1-tau}. This design resulted in a total of 15 simulation settings (three data-generating models $\times$ five autocorrelation strengths). For each setting, estimator performance was assessed by relative root mean squared error (rRMSE):
+
+\begin{align}
+    \text{rRMSE}(\hat\tau^*) = \frac{\sqrt{\frac{1}{B} \sum_{b=1}^B (\hat\tau^*_b - \tau^*)^2}}{\tau^*}, \quad \text{rRMSE}(\widehat{\text{se}}(\hat\tau^*)) = \frac{\sqrt{\frac{1}{B} \sum_{b=1}^B \left(\widehat{\text{se}}(\hat\tau^*_b) - \text{sd}(\hat\tau^*)\right)^2}}{\text{sd}(\hat\tau^*)},
+\end{align}
+
+\noindent where $\text{sd}(\hat\tau^*) = \sqrt{\frac{1}{B} \sum_{b=1}^B (\hat\tau^*_b - \bar\tau^*)^2}$ is the empirical standard deviation of the timescale estimator across $B$ simulation replications, and $\bar\tau^* = \frac{1}{B} \sum_{b=1}^B \hat\tau^*_b$. The rRMSE captures both bias and variance of timescale estimates and their standard errors as a proportion of the true value, facilitating comparison across parameter ranges and simulation settings. Cutoffs of <$10\%$ rRMSE for timescales and <$20\%$ for standard errors are shown to indicate ``good'' estimation, following applied time series conventions \citep{jadon_comprehensive_2024}.
+
+\subsubsection{Time-Domain Simulations}
+In the \textit{AR1 setting}, the data-generating process matches the fitted model, with time series simulated from the time-domain AR1 model:
+\begin{align}\label{eq:sim-td-ar1}
+    x_t &= \phitd^* x_{t-1} + e_t, \quad e_t \overset{\text{iid}}{\sim} \mathcal{N}(0, 1).
+\end{align}
+
+The \textit{AR2 setting} misspecifies the order of the autoregression by introducing a mismatch between the AR2 data-generating process and AR1 fitting,  with five pairs of AR2 coefficients selected so that the $\phitd^*$ projection matched the above setting (see Figure \ref{fig:sim-ar2} Panel A). The following model was used:
+\begin{align}\label{eq:sim-td-ar2}
+    x_t &= \phi_1 x_{t-1} + \phi_2 x_{t-2} + e_t, \quad e_t \overset{\text{iid}}{\sim} \mathcal{N}(0, 1).
+\end{align}
+
+The \textit{HCP setting} did not follow an autoregressive process, and instead used empirical ACFs from five brain regions of subject $\#100610$ in the HCP dataset (see \nameref{sec:dataset-description}). These regions were selected to match the $\phitd^*$ projections above. To simulate time series with the same autocorrelation structure as the empirical data, we sampled from a multivariate normal distribution $\mathcal{N}(0, \hat\Sigma)$, where $\hat\Sigma \in \mathbb{R}^{T\times T}$ is the covariance matrix constructed from the sample ACFs. Under stationarity, $\hat\Sigma$ is Toeplitz, so its $k^\text{th}$ off-diagonal equals the sample ACF at lag $k$: $\hat\Sigma_{i,j} = \hat\rho_{|i-j|}$ for indices $i,j=\{1, \dots, T\}$. A Cholesky decomposition of the covariance matrix $\hat\Sigma = LL^{\top}$, where $L$ is a lower triangular matrix, was multiplied with Gaussian white noise:
+\begin{align}\label{eq:sim-td-hcp}
+    x_t &= \sum_{j=1}^t L_{t,j} e_j, \quad e_j \overset{\text{iid}}{\sim} \mathcal{N}(0, 1).
+\end{align}
+
+\subsubsection{Autocorrelation-Domain Simulations}
+Lastly, generating data in the time domain as described above creates an inherent disadvantage for the autocorrelation-domain method when evaluating estimator performance. This method requires a two-step estimation process: (I) computing the sample autocorrelation function \eqref{eq:acf_} and (II) fitting the exponential decay function \eqref{eq:nls_phi_}, resulting in cumulative estimation errors. To isolate and evaluate parameter recovery specific to step (II), we directly generated ACFs $\rho_k = \{\rho_0, \rho_1, ..., \rho_K\}$ with $K=4800$ using the following signal + noise models:
+
+\begin{align}
+    \textit{AR1}&: \rho_k = \phitd^{*k} + e_k,\label{eq:sim-ad-ar1}\\
+    \textit{AR2}&: \rho_k = \phi_1\rho_{k-1} + \phi_2\rho_{k-2} + e_k,\label{eq:sim-ad-ar2}\\
+    \textit{HCP}&: \rho_k = \hat\rho_k + e_k.\label{eq:sim-ad-hcp}
+\end{align}
+
+\noindent Here, $e_k \overset{\text{iid}}{\sim} \mathcal{N}(0, 1)$ for all settings, and $\hat\rho_k$ represents the empirical autocorrelations obtained from subject $\#100610$ of the HCP dataset. While this setting is unrealistic in practice when working with time series data, it enables us to decouple the estimation steps of the autocorrelation-domain method and perform a specific comparison with the single-step time-domain method.
+
+\subsection{Simulation Results}
+
+\subsubsection{Results for Autoregressive Simulations}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig01-ar1.pdf}
+    \caption{\textit{AR1 time-domain simulations.}}
+    \subcaption*{
+    (\textbf{A}) Simulation Setting: solid lines show the simulated ACFs of the process defined in equation \eqref{eq:sim-td-ar1}; dashed lines show the AR1-projected ACFs which are overlapping as both follow AR1. Horizontal line marks the timescale where the AR1-projected ACF reaches $1/e \approx 0.37$.
+    (\textbf{B}) Timescale Estimates: vertical lines show true timescales $\tau^*$; histograms show estimates $\hat{\tau}^*$ across $B=10,000$ replications; points show rRMSE versus a 10\% error line. (\textbf{Row 1}): \nameref{sec:time-domain-linear-estimator}. (\textbf{Row 2}): \nameref{sec:autocorrelation-domain-nonlinear-estimator}. (\textbf{C}) Naive and (\textbf{D}) Newey-West Standard Errors: vertical lines show true standard errors $\text{se}(\hat\tau^*)$, i.e., standard deviations of the sampling distributions from panel B; histograms show standard error estimates $\widehat{\text{se}}(\hat\tau^*)$; points show rRMSE versus a 20\% error line. (\textbf{Row 1}): \nameref{sec:stderr-time-domain_}. (\textbf{Row 2}): \nameref{sec:stderr-autocorrelation/time-domain_}, where the hybrid approach is used to estimate standard errors for this autoregressive process.
+    }
+    \label{fig:sim-ar1}
+\end{figure}
+
+AR1 simulations (\textbf{Figure \ref{fig:sim-ar1}}) serve as a baseline for correct specification, where the data-generating process defined in \eqref{eq:sim-td-ar1} aligns with the fitted models (\textbf{Panel A}). \textbf{Panel B} demonstrates that while estimation variance increases with the true timescale, rRMSE remains below the conventional 10\% threshold. Regarding uncertainty quantification (\textbf{Panels C-D}), the time-domain estimator \textbf{(Row 1)} shows minimal difference between Naive and Newey-West approaches because of correct specification. However, for the autocorrelation-domain estimator \textbf{(Row 2)}, the hybrid naive approach exhibits a downward bias that is mitigated by the Newey-West correction. Finally, in the idealized autocorrelation-domain simulations generated via \eqref{eq:sim-ad-ar1} (\textbf{Figure \ref{fig:sim-ad} Row 1}), the \nameref{sec:stderr-autocorrelation-domain_} accurately estimates standard errors, though the Newey-West adjustment introduces higher estimator variance, thereby increasing rRMSE.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig02-ar2.pdf}
+    \caption{\textit{AR2 time-domain simulations.}}
+    \subcaption*{
+    (\textbf{A}) Simulation Setting (\textbf{Left}): triangle shows the AR2 stationary region in the $(\phi_1, \phi_2)$ plane, with the periodic/aperiodic boundary at $\phi_2 = -\phi_1^2/4$. Dashed lines within the triangle illustrate the preimage under the AR2-to-AR1 projection mapping; specifically, all $(\phi_1, \phi_2)$ pairs on a given dashed line correspond to AR2 processes that project to the same AR1. Points show five selected AR2 $(\phi_1, \phi_2)$ pairs, with their corresponding AR1 projections shown in the colorbar. (\textbf{Right}): solid lines plot the simulated ACFs from the process defined in equation \eqref{eq:sim-td-ar2}; dashed lines show the ACFs based on AR1-projected models, which are not overlapping because the simulated AR2 differs from its AR1 fit.
+    (\textbf{B}) Timescale Estimates: vertical lines show true timescales $\tau^*$; histograms show estimates $\hat{\tau}^*$ across $B=10,000$ replications; points show rRMSE versus a 10\% error line. (\textbf{Row 1}): \nameref{sec:time-domain-linear-estimator}. (\textbf{Row 2}): \nameref{sec:autocorrelation-domain-nonlinear-estimator}. (\textbf{C}) Naive and (\textbf{D}) Newey-West Standard Errors: vertical lines show true standard errors $\text{se}(\hat\tau^*)$, i.e., standard deviations of the sampling distributions from panel B; histograms show standard error estimates $\widehat{\text{se}}(\hat\tau^*)$; points show rRMSE versus a 20\% error line. (\textbf{Row 1}): \nameref{sec:stderr-time-domain_}. (\textbf{Row 2}): \nameref{sec:stderr-autocorrelation/time-domain_}, where the hybrid approach is used to estimate standard errors for this autoregressive process.
+    }
+    \label{fig:sim-ar2}
+\end{figure}
+
+AR2 simulations (\textbf{Figure \ref{fig:sim-ar2}}) assess estimator performance under model misspecification, using a higher-order process defined in \eqref{eq:sim-td-ar2} that deviates from the fitted AR1 model (\textbf{Panel A}). \textbf{Panel B} shows that the two estimators converge to slightly different timescales due to their distinct definitions. In terms of standard errors, \textbf{Panel C} shows a consistent underestimation by the naive estimator across both methods because of misspecification. \textbf{Panel D} demonstrates that this bias is largely mitigated by the Newey-West estimator. Consistent with these findings, the idealized simulations generated via \eqref{eq:sim-ad-ar2} in \textbf{Figure \ref{fig:sim-ad} (Row 2)} show that Naive standard errors are biased downwards and the Newey-West equivalent reduces this bias but increases variance.
+
+\subsubsection{Results for Realistic rfMRI Simulations}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig03-hcp.pdf}
+    \caption{\textit{Realistic rfMRI time-domain simulations.}}
+    \subcaption*{
+    (\textbf{A}) Simulation Setting: solid lines show estimated ACFs from five selected brain regions of HCP subject $\#100610$ used to generate the process define in equation \eqref{eq:sim-td-hcp}; dashed lines show the AR1-projected ACFs, which are not overlapping because the empirically estimated ACF differs from its AR1 fit. (\textbf{B}) Timescale Estimates: vertical lines show true timescales $\tau^*$; histograms show estimates $\hat{\tau}^*$ across $B=10,000$ replications; points show rRMSE versus a 10\% error line. (\textbf{Row 1}): \nameref{sec:time-domain-linear-estimator}. (\textbf{Row 2}): \nameref{sec:autocorrelation-domain-nonlinear-estimator}. (\textbf{C}) Naive and (\textbf{D}) Newey-West Standard Errors: vertical lines show true standard errors $\text{se}(\hat\tau^*)$, i.e., standard deviations of the sampling distributions from panel B; histograms show standard error estimates $\widehat{\text{se}}(\hat\tau^*)$; points show rRMSE versus a 20\% error line. (\textbf{Row 1}): \nameref{sec:stderr-autocorrelation/time-domain_}, where the hybrid approach is used to estimate standard errors for this autocorrelated Gaussian process.
+    }
+    \label{fig:sim-hcp}
+\end{figure}
+
+Realistic rfMRI simulations (\textbf{Figure \ref{fig:sim-hcp}}) evaluate estimator performance using the data-generating process defined in \eqref{eq:sim-td-hcp} with realistic autocorrelation derived from five distinct brain regions. Similar to the AR2 setting, this analysis examines the impact of model misspecification, as the empirical ACFs differ from the projected AR1 fits (\textbf{Panel A}). \textbf{Panel B} confirms that time- and autocorrelation-domain estimators capture distinct timescale values due to their distinct definitions. \textbf{Panels C-D} further demonstrate that naive standard errors are systematically underestimated, a bias that is substantially mitigated by the Newey-West correction. Finally, results from the idealized autocorrelation-domain simulations generated via \eqref{eq:sim-ad-hcp} (\textbf{Figure \ref{fig:sim-ad} Row 3}) reinforce that the \nameref{sec:stderr-autocorrelation-domain_} is valid only for ACFs with added noise; for realistic time series, accurate standard errors require time-domain fitting (via the hybrid approach), regardless of which domain is used for the point estimate.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig04-ad.pdf}
+    \caption{\textit{AR1, AR2, and realistic fMRI autocorrelation-domain simulations.}}
+    \subcaption*{
+    To isolate the performance of the \nameref{sec:stderr-autocorrelation-domain_}, data were generated directly in the autocorrelation domain using the signal + noise models defined in equations \eqref{eq:sim-ad-ar1}--\eqref{eq:sim-ad-hcp} with fixed timescales indicated by the colorbar. This setting serves to confirm theoretical properties and robustness to misspecified autocorrelation decay. However, because autocorrelations are not directly observable in practice without a preliminary estimation step, this scenario is idealized; accordingly, all lines and histograms are dashed to distinguish them from realistic data generation settings above. (\textbf{Rows 1-3}) show the three simulation settings where AR1 is correctly specified, while AR2 and HCP are misspecified. (\textbf{A}) Naive and (\textbf{B}) Newey-West Standard Errors: vertical lines show true standard errors $\text{se}(\hat\tau^*)$; histograms show standard error estimates $\widehat{\text{se}}(\hat\tau^*)$; points show rRMSE versus a 20\% error line.
+    }
+    \label{fig:sim-ad}
+\end{figure}
+
+\section{Data Analysis}
+
+\subsection{Dataset Description}\label{sec:dataset-description}
+
+Resting fMRI (rfMRI) scans were provided by the Human Connectome Project (HCP), WU-Minn Consortium (led by principal investigators David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers supporting the NIH Blueprint for Neuroscience Research, and by the McDonnell Center for Systems Neuroscience at Washington University \citep{van_essen_wu-minn_2013}. Informed consent was obtained from all participants. Two subsets of the dataset were used: one for methods development and defining realistic simulation parameters (see \nameref{sec:simulations}), and the other for estimating high-resolution timescale maps of the cortex.\\
+
+The \textit{methods development subset} included 10 subjects  (\#100004 - \#101410) scanned with a 3T gradient-echo EPI sequence (TR=720ms, slice thickness=2mm). Each subject completed four 15-minute runs (4800 timepoints total), preprocessed with standard steps including motion regression and artifact removal with ICA-FIX (see \citet{glasser_minimal_2013, salimi-khorshidi_automatic_2014} for details). To further mitigate systemic low-frequency physiological oscillations driven by respiration and $\text{CO}_2$ variation, we applied RAPIDtide \citep{frederick_rapidtide_2025}. This step accounts for the regionally varying lags of these global signals, caused by differences in blood arrival times, which can otherwise mimic or inflate regionally specific autocorrelation. The four runs were concatenated into a single continuous time series, under the assumption of weak stationarity (constant mean and variance) across denoised runs. The resulting dataset dimensions were \{10 subjects, 4800 timepoints, 300 regions\}. The \textit{timescale mapping subset} included 180 subjects scanned with a 7T gradient-echo EPI sequence (TR=1000ms, slice thickness=1.6mm) over four 16-minute runs (3600 timepoints total), using the same preprocessing and concatenation steps. Functional data were analyzed on the cortical surface down-sampled to 2mm spatial resolution, yielding a dataset with the dimensions \{180 subjects, 3600 timepoints, 64984 vertices\}. The time- and autocorrelation-domain methods were fit to each vertex independently, a mass-univariate analysis approach that resulted in subject-level spatial maps of temporal timescale estimates and their standard errors.\\
+
+\subsubsection{Group-level Analysis}\label{sec:group-level-analysis}
+Group-level maps combined individual timescales and standard errors, accounting for within- and between-subject variability. For the group-level analysis, we used the \textit{timescale mapping subset} of $N=180$ subjects $T=3600$ concatenated timepoints, distinct from the \textit{methods development subset} of $N=10$ subjects described above. While remaining within the mass-univariate framework, for simplicity, we express the group timescale at a single cortical vertex:
+\begin{align}
+    \hat\tau_n \; &\text{for} \; n\in\{1, 2, ..., N\},\\
+    \bar\tau &= \frac{1}{N} \sum_{n=1}^N \hat\tau_n.
+\end{align}
+
+\noindent The group-level standard error for the timescale is given by the law of total variance:
+\begin{align}
+    \widehat{\text{se}}(\bar\tau) = \sqrt{\frac{1}{N} \sum_{n=1}^N \widehat{\text{se}}(\hat\tau_n)^2 + \frac{1}{N} \sum_{n=1}^N (\hat\tau_n - \bar\tau)^2}.
+\end{align}
+
+\noindent Here, the first term under the square root is the within-individual variance and the second term is the between-individual variance.\\
+
+For visualization, brain-wide t-statistic maps tested whether timescales exceeded 0.5 seconds under the null hypothesis $H_0: \tau \leq 0.5$, by comparing the empirical group mean $\bar\tau$ to the null value $0.5$:
+\begin{align}\label{eq:t-ratio}
+    t(\bar\tau) = \frac{\bar\tau-0.5}{\widehat{\text{se}}(\bar\tau)}.
+\end{align}
+
+\noindent Similarly, relative standard error (RSE) maps visualize the spatial precision of timescale estimates to show the reciprocal of the unadjusted (zero-valued null) t-ratio:
+\begin{align}
+    \text{rse}(\bar\tau) = \frac{\widehat{\text{se}}(\bar\tau)}{\bar\tau}.
+\end{align}
+
+\subsection{Data Analysis Results}
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/fig05-hcp1.pdf}
+    \caption{\textit{Human Connectome Project subject-level timescale maps.}}
+    \subcaption*{
+     (\textbf{A-D}) Cortical surface maps from HCP subject $\#100610$. Displays show lateral-left, lateral-right, medial-left, and medial-right views, plotted using the \textit{StatBrainz} package \citep{davenport_statbrainz_2025}. The upper bounds on the colorbars are set for each panel at the 99$^\text{th}$ percentile of cortical map values. For each panel, the top row shows results of the time-domain method, and the bottom row the autocorrelation-domain method. (\textbf{A}) Timescale estimates: maps display the timescales (in seconds) estimated at each vertex. (\textbf{B}) Newey-West standard errors: shows the spatial distribution of standard errors, where smaller values indicate greater estimation precision. (\textbf{B row 2}) shows the hybrid autocorrelation/time method.
+     (\textbf{C}) T-statistics: unthresholded and uncorrected t-ratios testing where timescales exceed 0.5 seconds. (\textbf{D}) Relative Standard Errors (RSEs): relative reliability of estimates, where low RSE (near zero) indicates high precision with small uncertainty.
+    }
+    \label{fig:map-hcp1}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/fig06-hcp180.pdf}
+    \caption{\textit{Human Connectome Project group-level timescale maps.}}
+    \subcaption*{
+    (\textbf{A-D}) Cortical surface maps from $N=180$ HCP subjects. Displays show lateral-left, lateral-right, medial-left, and medial-right views, plotted using the \textit{StatBrainz} package \citep{davenport_statbrainz_2025}. The upper bounds on the colorbars are set for each panel at the 99$^\text{th}$ percentile of cortical map values. For each panel, the top row shows results of the time-domain method, and the bottom row the autocorrelation-domain method.
+    (\textbf{A}) Timescale estimates: maps display the group-level timescales (in seconds) at each vertex, averaged over subjects.
+    (\textbf{B}) Newey-West standard errors: group-level spatial distribution of estimates, accounting for within- and between-subject variability. Smaller values indicate greater precision.
+    (\textbf{C}) T-statistics: unthresholded and uncorrected t-ratios testing where group-level timescales exceed 0.5 seconds.
+    (\textbf{D}) Relative standard errors (RSEs): relative reliability of estimates, where low RSE (near zero) indicates high precision with small uncertainty across subjects.
+    (\textbf{E}) Timescale organization by brain network: maps display brain networks from the Yeo 7 Network Atlas, ordered by the network-averaged t-statistics (from panel C). This ordering is the same for time- and autocorrelation-domain methods, and highlights the hierarchical organization of timescales, progressing from sensory networks (e.g., somatomotor and limbic in blues) to association networks (e.g., frontoparietal and default mode in reds).
+    }
+    \label{fig:map-hcp180}
+\end{figure}
+
+\subsubsection{Results for rfMRI Timescale Maps}
+Subject-level maps (\textbf{Figure~\ref{fig:map-hcp1}}) were generated by mass-univariate fitting of time- and autocorrelation-domain estimators to cortical surface data at the individual vertex level (64984 vertices), where the autocorrelation-domain estimator was fit by the two-step approach detailed in \nameref{sec:stderr-autocorrelation/time-domain_}. \textbf{Panel A} presents the spatial distribution of timescale estimates, which show that autocorrelation-domain estimates tend to yield larger timescales than the time-domain estimator, consistent with simulation results. \textbf{Panel B} shows the corresponding maps of standard errors, which are aligned with the timescale maps, consistent with the simulation finding that larger timescales are associated with greater sampling variability. \textbf{Panel C} depicts the relative ratio of timescale estimates to their standard errors (i.e., t-statistics), testing whether the timescales significantly exceed a half second ($H_0: \tau \leq 0.5$). Despite larger standard errors for higher timescales, these regions still exhibit higher t-statistics. \textbf{Panel D} shows low RSEs across much of the brain indicating high estimation reliability. \\
+
+Group-level timescale maps (\textbf{Figure~\ref{fig:map-hcp180}}) were generated by combining individual estimates at the vertex level to account for both within- and between-individual variability, providing an aggregate view of timescale distributions across subjects. The smooth appearance of these timescale maps reflects the high spatial resolution of the vertex-level analysis and the averaging across subjects. \textbf{Panel A} shows that the average timescale maps for both time- and autocorrelation-domain estimators are smoother than the individual maps, displaying a well-organized spatial pattern across the cortex; notably autocorrelation-domain estimates are generally larger than time-domain estimates. \textbf{Panel B} presents the standard error maps, which combine variances from within-subject Newey-West estimates and between-subject timescale estimates. As expected from the simulation results, the standard errors are larger in the autocorrelation domain than in the time domain. \textbf{Panel C} depicts t-statistics testing whether timescales exceed half a second, while \textbf{Panel D} plots relative standard errors (RSEs), providing complementary views of estimation reliability. Interpreting these maps together clarifies how signal strength interacts with uncertainty: although standard errors theoretically increase with the true timescale (as shown in sections \ref{sec:stderr} and \ref{sec:simulations}), these empirical results demonstrate that the estimated timescale magnitude grows faster than its associated error. Consequently, regions with longer timescales actually exhibit higher signal-to-noise ratios (larger t-statistics). In contrast, regions with shorter timescales, such as the limbic network (comprising orbitalfrontal cortex and anterior temporal cortex), exhibit greater relative uncertainty and lower signal-to-noise ratios \citep{thomas_yeo_organization_2011, du_organization_2024}.\\
+
+\textbf{Panel E} highlights the spatial organization of timescales into networks by mapping the t-statistic at each vertex to one of seven networks from the \citet{thomas_yeo_organization_2011} atlas. The ordering \{limbic, somatomotor, ventral attention, visual, dorsal attention, default, frontoparietal\} aligns with the sensory-to-association axis of brain organization and is consistent with an extensive literature on the hierarchical organization of timescales \citep{murray_hierarchy_2014, stephens_place_2013, raut_hierarchical_2020, gao_neuronal_2020, hasson_hierarchy_2008}. Sensory networks (limbic and somatomotor) have short timescales, followed by attentional networks (ventral and dorsal attention), while higher-order association networks (default mode and frontoparietal) show the longest timescales. However, interpreting these network differences requires caution, particularly because regions in the limbic network are especially susceptible to measurement noise which can conflate timescale estimation (see \nameref{sec:measurement-noise}).\\
+
+This empirical analysis highlights methodological considerations for estimating fMRI timescale maps. (1) Both time- and autocorrelation-domain methods produce similar maps, but diverge at extremes -- the autocorrelation-domain estimator yields larger timescales. The corresponding standard errors in the autocorrelation domain are also larger, so the resulting t-ratio maps remain similar between the two methods, highlighting why point estimates can be misleading without considering standard errors.  Likewise, estimates are on average more precise for the time-domain estimator, consistent with simulation results.  (2) In this mass-univariate analysis, the computational cost of the time-domain estimator is substantially lower than autocorrelation-domain estimator because of its simple analytical solution. (3) The t-statistic maps organized by brain network exhibit a clear hierarchical timescale organization, reflecting how networks integrate and process information over time. And this pattern is consistent regardless of the estimation method. Taken together, these findings suggest that the time-domain method may be preferable for large-scale neuroimaging studies due to its computational efficiency and higher precision, while producing maps consistent with previously reported timescale hierarchies.
+
+\section{Practical Considerations for fMRI Timescale Estimation} 
+
+In this section, we provide recommendations for practitioners seeking to estimate fMRI timescale maps. We advocate for the \nameref{sec:time-domain-linear-estimator} over the \nameref{sec:autocorrelation-domain-nonlinear-estimator}, as it is more computationally efficient while maintaining robust performance in \nameref{sec:simulations}. However, a critical distinction must be drawn between the \textit{statistical validity} of the estimator and the \textit{biological interpretability} of the resulting timescale maps, which inevitably reflect the composite nature of the observed fMRI BOLD signals. The mixed metabolic and neuronal origins of the hemodynamic signal complicate mechanistic interpretations \citep{raut_hierarchical_2020, he_scale-free_2011}. Consequently, interpreting fMRI timescales as proxies for \textit{intrinsic neural timescales} requires disentangling latent neural dynamics from confounding sources of variability. The following subsections detail how the hemodynamic response function, measurement noise, and periodicity specifically impact these interpretations.
+
+\subsection{Effect of the Hemodynamic Response Function}\label{sec:hrf}
+
+The fMRI BOLD signal is a composite measure reflecting underlying neural activity filtered through a complex vascular system. While neural populations exhibit the characteristic exponential decay in autocorrelation that defines the intrinsic neural timescale \citep[Supplementary Mathematical Note]{murray_hierarchy_2014}, the hemodynamic response function (HRF) acts as a temporal low-pass filter on this latent neural activity. Forward modeling indicates that while this filtering inflates absolute timescale values, it generally preserves the relative spatial hierarchy, recovering the sensory-to-association axis observed empirically \citep{watanabe_atypical_2019}.\\
+
+However, reliance on a canonical HRF may oversimplify the relationship between neural and vascular dynamics. Recent evidence demonstrates that HRF shape varies across both brain regions and individuals \citep{bailes_resting-state_2023, rangaprakash_hemodynamic_2018}. This variability introduces a potential confound where observed timescale differences may stem from vascular origins—such as regional heterogeneity in blood flow latency—rather than differences in neural processing. A method proposed by \citet{wu_rshrf_2021} for HRF estimation and deconvolution offers a promising route to disentangle these effects from the resting-state BOLD signal. Nevertheless, a fundamental identifiability problem remains in that both a wider HRF and a longer neural timescale can produce nearly identical observed BOLD signals. Resolving this ambiguity requires moving beyond observational studies, and future work should leverage experimental manipulations and/or concurrent EEG-fMRI to tease apart vascular and neural timescales.
+
+\subsection{Effects of Measurement Noise}\label{sec:measurement-noise}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig07-noise.pdf}
+    \caption{\textit{AR1 with added measurement noise simulations.}}
+    \subcaption*{
+    (\textbf{A}) Simulation Setting: solid lines show the simulated ACFs of the AR1 + measurement noise process defined in equation \eqref{eq:measurement-noise} with a fixed timescale and increasing measurement noise variance $\sigma_{\eta}^2$; the dashed black line shows the AR1-projected ACF with no noise variance ($\sigma_{\eta}^2 = 0$). Increasing noise (red-to-blue) increases the rate of autocorrelation decay even when the latent timescale is fixed. (\textbf{B}) Timescale and Standard Error Estimates: vertical lines show the true latent neural timescale ($\tautd = 4.48$ for all settings); histograms show estimates across $B = 10,000$ replications; points show rRMSE. \textbf{(Row 1)} \nameref{sec:time-domain-linear-estimator}, where rRMSE is plotted versus a 10\% error line. (\textbf{Row 2}) \nameref{sec:stderr-time-domain_} (Newey-West), where rRMSE is plotted versus a 20\% error line.
+    }
+    \label{fig:sim-noise}
+\end{figure}
+
+While the HRF tends to lengthen timescales, measurement noise typically biases estimates in the opposite direction. In the fMRI setting, the observed time series is rarely generated by a clean autoregressive process; rather, it is a sum of distinct stochastic processes—capturing neural activity, hemodynamic filtering, and measurement noise. In such settings, regions with identical latent neural timescales can yield divergent observed fMRI timescales depending on their local signal-to-noise ratio. This raises an interpretational concern: the fitted timescale may be statistically well-estimated yet fail to correspond to the intended parameter of neural integration if measurement noise dominates. \\
+
+To illustrate this limitation, consider the simulation setting where the latent neural process is generated as an AR1 with a fixed timescale $\tautd^* = 4.48$ ($\phitd^* = 0.8$):
+
+\begin{align}
+    z_t = \phitd^* z_{t-1} + e_t, \quad e_t \overset{\text{iid}}{\sim} \mathcal{N}(0, 1).
+\end{align}
+
+\noindent Observations are formed by adding independent measurement noise of increasing magnitude:
+
+\begin{align}\label{eq:measurement-noise}
+    x_t = z_t + \epsilon_t, \quad \epsilon_t \overset{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2_{\epsilon}), \quad \sigma^2_{\epsilon} \in \{0, 0.5, 1.0, 2.0\},
+\end{align}
+
+\noindent to vary observation quality while holding the latent timescale constant. Under this construction, increasing $\sigma^2_\epsilon$ accelerates the rate of autocorrelation decay (\textbf{Figure \ref{fig:sim-noise} Panel A}). This occurs because noise inflates the lag-0 variance without altering cross-lag covariances, shrinking the autocorrelation ratio in equation \eqref{eq:acf}. Consequently, the time-domain estimator in \textbf{Panel B row 1} diverges from the true latent neural timescale, reflecting instead the \textit{pseudo-true timescale} of the misspecified process (see \nameref{sec:misspecification}). Importantly, while the Newey-West standard errors in \textbf{Panel B row 2} ensure that inference on this pseudo-true timescale is statistically valid, the biological interpretation is compromised because measurement noise confounds the estimate of neural integration.\\
+
+This dependency emphasizes that the fitted timescale is effectively a confounded measure of both neural dynamics and measurement noise and the resulting timescale should be interpreted as the pseudo-true timescale under model misspecification. Therefore in practice, effective denoising is a prerequisite for separating neural timescales from artifacts such as head motion or physiological noise. Regarding motion, the proposed \nameref{sec:time-domain-linear-estimator} offers a practical advantage: while standard strategies often require censoring followed by interpolation \citep{goldberg_strategies_2024}, this estimator relies solely on adjacent timepoint pairs $(x_t, x_{t+1})$. This allows motion-contaminated frames to be excluded without interpolation. Finally, even with careful denoising, interpretational caution is warranted in regions susceptible to signal loss, such as the orbital frontal cortex and the anterior inferior medial temporal lobe \citep{thomas_yeo_organization_2011, du_organization_2024}.
+
+\subsection{Effects of Periodicity}\label{sec:periodicity}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=1\textwidth]{docs/figures/fig08-oscillations.pdf}
+    \caption{\textit{AR2 with damped oscillation simulations.}}
+    \subcaption*{
+     (\textbf{A}) Simulation Setting (\textbf{Left}): triangle shows the AR2 stationary region in the $(\phi_1, \phi_2)$ plane, with the periodic/aperiodic boundary at $\phi_2 = -\phi_1^2/4$. Points show five selected AR2 $(\phi_1, \phi_2)$ combinations that project to the same AR1 timescale, with increasing periodicity magnitude by adjusting $\sqrt{-\phi_2}$. (\textbf{Right}): solid lines show the simulated ACFs of the AR2 process defined in equation \eqref{eq:sim-td-ar2}; the dashed black line shows the same AR1-projected ACF for all processes. (\textbf{B}) Timescale and Standard Error Estimates: vertical lines show the true timescale ($\tautd = 4.48$ for all settings); histograms show estimates across $B = 10,000$ replications; points show rRMSE. \textbf{(Row 1)} \nameref{sec:time-domain-linear-estimator}, where rRMSE is plotted versus a 10\% error line. (\textbf{Row 2}) \nameref{sec:stderr-time-domain_} (Newey-West), where rRMSE is plotted versus a 20\% error line.
+    }
+    \label{fig:sim-oscillations}
+\end{figure}
+
+In addition to the HRF and measurement noise, we consider the influence of periodic processes, since neural timescales are generally considered to originate from the brain's aperiodic (non-rhythmic) activity. While monotonic autocorrelation decay is consistent with an AR1 process, latent neural activity may exhibit rhythmic dynamics \citep{he_temporal_2010, he_scale-free_2011}. Furthermore, non-neural sources, such as respiration and $\text{CO}_2$ variation, can introduce systemic low-frequency oscillations \citep{tong_low_2019, korponay_brain-wide_2024}. These dynamics manifest as periodic fluctuations in the ACF, creating a case of model misspecification. To validate the robustness of the time-domain estimator in this setting, we simulated AR2 processes that display oscillations, holding the projected timescale constant ($\tautd^* = 4.48$) while increasing the oscillatory strength via the second-order coefficient $\sqrt{-\phi_2} \in \{0.5, 0.642, 0.758, 0.859, 0.949\}$.\\
+
+As shown in \textbf{Figure \ref{fig:sim-oscillations} Panel A}, we selected parameters along a preimage of constant timescale but increasing periodicity. Despite the mismatch between the data generating process (AR2) and the estimator (AR1), the histograms in \textbf{Panel B row 1} are accurately centered on the pseudo-true timescale. This demonstrates that the estimator recovers the dominant decay rate even amidst substantial oscillations. Notably, increasing the strength of oscillations decreases the variance of the sampling distributions; as the process becomes more rhythmic, the time-domain error variance shrinks. Consistent with this, the Newey-West standard errors (\textbf{Panel B row 2}) accurately track this reduction in sampling variability.\\
+
+Taken together, these results suggest that timescale inference can be reliably applied to oscillatory processes without explicitly disambiguating aperiodic and periodic components, a separation often required by frequency-domain methods \citep{donoghue_parameterizing_2020, gao_neuronal_2020}. However, distinguishing neural from non-neural confounding remains critical for interpretation. We therefore recommend denoising methods such as RAPIDtide to remove confounding time-lagged oscillations, ensuring the estimated timescale more closely reflects neural rather than physiological processes \citep{frederick_rapidtide_2025}.
+
+\section{Conclusions}
+This study introduces statistical methods for mapping fMRI timescales, characterizing differences in local temporal autocorrelation across brain regions. We detail the large-sample properties of time- and autocorrelation-domain methods, showing that while both converge, they converge to different values due to the distinct parameter definitions of each method. We also demonstrate that both estimators yield consistent standard errors under broad conditions, enabling reliable inference and hypothesis testing. This addresses a major limitation in neural timescale studies, which have typically reported point estimates without uncertainty measures.\\
+
+Simulation results highlight differences in finite sample bias and variance between the methods. While all estimators are largely unbiased, the time-domain method performs as well as, or better than, the autocorrelation-domain method in terms of relative root mean square error (rRMSE). Standard error estimates exhibit pronounced differences between naive and Newey-West corrected methods, particularly under misspecified settings such as AR2 processes and realistic rfMRI data. Notably, standard errors cannot be directly estimated in the autocorrelation domain from sample autocorrelation functions (ACFs) for some processes, necessitating a hybrid approach as detailed in \nameref{sec:stderr-autocorrelation/time-domain_}. Overall, the time-domain method \eqref{eq:ar1} offers greater computational efficiency and stability for smaller timescales, whereas the autocorrelation-domain method \eqref{eq:nlm} accommodates longer-range autocorrelations at the cost of reduced accuracy. The application of Newey-West corrected standard errors enhances inference reliability by reducing bias across both methods \citep{newey_simple_1987}, which is particularly vital when autocorrelation decay is not strictly exponential.\\
+
+Applied to HCP rfMRI data, both methods yield timescale and t-statistic maps consistent with known functional hierarchies \citep{van_essen_wu-minn_2013}. These results align with prior work demonstrating larger timescales in associative versus sensory cortices \citep{raut_hierarchical_2020, shafiei_topographic_2020, lurie_cortical_2024, mitra_lag_2014, kaneoke_variance_2012, wengler_distinct_2020, shinn_functional_2023, manea_intrinsic_2022, ito_cortical_2020, muller_core_2020}. The spatial patterns reinforce the hypothesis that hierarchical organization governs temporal processing across cortical regions. However, mechanistic interpretations of these timescales -- particularly their relationship to underlying neurophysiological processes -- remain to be fully explored in future work. Linking fMRI timescale maps to underlying biology will require systematic consideration of how the HRF, measurement noise, and periodic signals shape observed patterns and how these factors relate to their physiological origins.\\
+
+In conclusion, we present robust rfMRI estimators for timescales and standard errors, enabling rigorous statistical comparisons across regions, conditions, and subjects. These methods advance the accuracy and interpretability of neural timescale maps, moving beyond point estimates to incorporate uncertainty for inference and testing. This work lays the methodological foundation for future research into the role of timescales in brain structure and function.
+
+\section*{Code and Data Availability}
+All simulation results and fMRI timescale maps, inclusive of the code by which they were derived, can be accessed on \href{https://github.com/griegner/fmri-timescales}{github.com/griegner/fmri-timescales}. The code is under the open source MIT license, allowing access and reuse with attribution. The Human Connectome Project young adult dataset (ages 22-35; 2018 release) used in this study is publicly accessible under a \href{https://www.humanconnectome.org/storage/app/media/data_use_terms/DataUseTerms-HCP-Open-Access-26Apr2013.pdf}{data usage agreement}, which describes specific terms for data use and sharing.
+
+\section*{Author Contributions}
+\textbf{Gabriel Riegner}: Conceptualization, Methodology, Software, Validation, Formal Analysis, Writing - Original Draft
+\textbf{Samuel Davenport}: Conceptualization, Methodology, Formal Analysis, Writing - Review \& Editing, Supervision
+\textbf{Bradley Voytek}: Conceptualization, Writing - Review \& Editing, Supervision
+\textbf{Armin Schwartzman}: Conceptualization, Methodology, Formal Analysis, Writing - Review \& Editing, Supervision, Project Administration, Funding Acquisition.
+
+\section*{Disclosure Statement}
+The authors declare no conflicts of interest.
+
+% references
+\bigskip
+\bibliography{docs/zotero}
+
+
+\end{document}
