@@ -2,11 +2,21 @@ from pathlib import Path
 
 import nibabel as nib
 import numpy as np
+from sklearn.base import clone
 
 
-def scale(X, axis=0):
-    "return zero mean, unit variance X"
-    return (X - X.mean(axis=axis)) / X.std(axis=axis)
+def scale(X, axis=0, eps=1e-8):
+    "return zero mean, unit variance X; avoid zero-std columns"
+    mean = X.mean(axis=axis, keepdims=True)
+    std = X.std(axis=axis, keepdims=True)
+    flat = std < eps
+    if flat.any():
+        X = X.copy()
+        noise = eps * np.random.standard_normal(X[..., flat.squeeze()].shape)
+        X[..., flat.squeeze()] += noise  # add jitter
+        std = X.std(axis=axis, keepdims=True)
+    std = np.where(std < eps, 1.0, std)
+    return (X - mean) / std
 
 
 def get_X(dtseries_paths):
@@ -35,9 +45,13 @@ def se_decomposition(stderrs, taus):
 
 
 def get_maps(estimator):
-    """get maps for LLS or NLS estimator"""
-    taus = np.load(f"data/nsubjects-180_nregions-91282_estimator-{estimator}_tau.npy").astype(np.float32)
-    stderrs = np.load(f"data/nsubjects-180_nregions-91282_estimator-{estimator}_se.npy").astype(np.float32)
+    """get maps for TD or AD estimator"""
+    taus = np.load(f"data/nsubjects-180_nregions-91282_preproc-rapidtide_estimator-{estimator}_tau.npy").astype(
+        np.float32
+    )
+    stderrs = np.load(f"data/nsubjects-180_nregions-91282_preproc-rapidtide_estimator-{estimator}_se.npy").astype(
+        np.float32
+    )
 
     maps = {  # subject #100610
         "tau": taus[0, :],
@@ -60,21 +74,23 @@ def get_vmax(arr1, arr2):
     return np.round((perc1 + perc2) / 2, 1)
 
 
-def fit_timescale_models(input_path, output_path, lls, nls):
-    """fit LLS and NLS to individual subject maps"""
+def fit_timescale_models(input_path, output_path, td, ad):
+    """fit TD and AD to individual subject maps"""
     assert isinstance(input_path, Path) and isinstance(output_path, Path), "must be pathlib objects"
     output_path.mkdir(parents=True, exist_ok=True)
 
     for sub_path in input_path.glob("sub-*"):
         print("...", sub_path)
         sub = sub_path.stem[4:]
-        dtseries_paths = sorted(sub_path.glob("*.dtseries.nii"))
+        dtseries_paths = sorted(sub_path.glob("*desc-lfofilterCleaned_bold.dtseries.nii"))
         X = np.vstack(list(get_X(dtseries_paths)))
 
-        lls_ = lls.fit(X, n_timepoints=len(X)).estimates_
-        np.save(output_path / f"sub-{sub}_task-rest_estimator-lls_tau.npy", lls_["tau"])
-        np.save(output_path / f"sub-{sub}_task-rest_estimator-lls_se.npy", lls_["se(tau)"])
+        td_model = clone(td)
+        td_ = td_model.fit(X, n_timepoints=len(X)).estimates_
+        np.save(output_path / f"sub-{sub}_task-rest_estimator-td_tau.npy", td_["tau"])
+        np.save(output_path / f"sub-{sub}_task-rest_estimator-td_se.npy", td_["se(tau)"])
 
-        nls_ = nls.fit(X, n_timepoints=len(X)).estimates_
-        np.save(output_path / f"sub-{sub}_task-rest_estimator-nls_tau.npy", nls_["tau"])
-        np.save(output_path / f"sub-{sub}_task-rest_estimator-nls_se.npy", nls_["se(tau)"])
+        ad_model = clone(ad)
+        ad_ = ad_model.fit(X, n_timepoints=len(X)).estimates_
+        np.save(output_path / f"sub-{sub}_task-rest_estimator-ad_tau.npy", ad_["tau"])
+        np.save(output_path / f"sub-{sub}_task-rest_estimator-ad_se.npy", ad_["se(tau)"])
