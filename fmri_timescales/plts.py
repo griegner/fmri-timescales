@@ -30,7 +30,7 @@ def plot_stationarity_triangle(ax, fill_alpha=0.25, annotate=True):
 
     # add annotations
     if annotate:
-        text_kwargs = dict(horizontalalignment="center", verticalalignment="center")
+        text_kwargs = {"horizontalalignment": "center", "verticalalignment": "center"}
         ax.text(-1.5, 0.5, r"$\phi_2 > 1 + \phi_1$", **text_kwargs)
         ax.text(1.5, 0.5, r"$\phi_2 > 1 - \phi_1$", **text_kwargs)
         ax.text(0, -0.5, r"$\phi_2 < - \phi_1^2 / 4$", **text_kwargs)

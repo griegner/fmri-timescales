@@ -23,9 +23,9 @@ class ACF(BaseEstimator):
 
     def __init__(
         self,
-        n_lags: Optional[int] = None,
+        n_lags: int | None = None,
         copy_X: bool = False,
-        n_jobs: Optional[int] = None,
+        n_jobs: int | None = None,
     ) -> None:
         self.n_lags = n_lags
         self.copy_X = copy_X
@@ -102,7 +102,7 @@ def acf_to_toeplitz(acf: np.ndarray, n_lags: int) -> np.ndarray:
         raise ValueError("acf should be in (n_lags,) or (n_lags, n_regions) form")
 
 
-def ar_to_acf(ar_coeffs: Union[list, np.ndarray], n_lags: int = 10, sfreq: int = 1) -> np.ndarray:
+def ar_to_acf(ar_coeffs: list | np.ndarray, n_lags: int = 10, sfreq: int = 1) -> np.ndarray:
     """Calculates the theoretical autocorrelation function of an AutoRegressive (AR) process.
 
     Parameters

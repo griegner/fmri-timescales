@@ -74,8 +74,8 @@ def calc_xcm(X: np.ndarray, n_timepoints: int, corrected: bool = True) -> np.nda
     n_timepoints : int
         Number of timepoints/samples.
     corrected : bool, optional
-        If each timeseries is generated with a different auto-correlation function, spurious cross-correlations can arise.
-        This can be corrected by `Eq. S9 (Afyouni et al, 2019)`. By default True.
+        If each timeseries is generated with a different auto-correlation function,
+        spurious cross-correlations can arise. This can be corrected by `Eq. S9 (Afyouni et al, 2019)`. By default True.
 
     Returns
     -------
@@ -141,7 +141,7 @@ def gen_ar2_coeffs(oscillatory: bool = False, random_seed: int = 4) -> np.ndarra
 
 
 def sim_ar(
-    ar_coeffs: Union[list, np.ndarray],
+    ar_coeffs: list | np.ndarray,
     n_timepoints: int,
     n_repeats: int = 1,
     scale: float = 1.0,
