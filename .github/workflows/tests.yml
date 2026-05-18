@@ -3,7 +3,7 @@ name: Unit Tests
 on:
   push:
     branches:
-    - gr/imaging-neuroscience
+    - main
   pull_request:
     branches:
       - main

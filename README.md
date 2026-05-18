@@ -7,6 +7,8 @@
     <img src="./figures/img-neuro.png" width="150" alt="Neuroscience Image"/>
 </a>
 
+[![codecov](https://codecov.io/gh/griegner/fmri-timescales/graph/badge.svg?token=BWANWSPA1V)](https://codecov.io/gh/griegner/fmri-timescales)
+
 #### Overview
 
 This repository provides two methods for estimating fMRI timescale maps:
