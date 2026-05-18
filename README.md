@@ -3,71 +3,45 @@
 
 <img src="./figures/hcp-tstats.png" width="400"/>
 
-[![slides](https://img.shields.io/badge/slides-PDF-red?style=flat&logo=google-slides&logoColor=white)](https://griegner.github.io/fmri-timescales/wnar.pdf)
-[![manuscript](https://img.shields.io/badge/manuscript-PDF-red?style=flat&logo=google-docs&logoColor=white)](https://griegner.github.io/fmri-timescales/main.pdf)
 
-**Project Organization**
-```
-.
-├── fmri_timescales/
-    ├── acf_utils.py                <- autocorrelation estimators
-    ├── plts.py                     <- plotting functions
-    ├── sim.py                      <- simulation functions
-    └── timescale_utils.py          <- timescale estimators
-├── tests/
-    └── ...                         <- unit tests for fmri_timescales/
-├── notebooks
-    ├── data/                       <- N=180 timescale (+ std error) maps from the HCP
-    ├── fig01to03.ipynb             <- simulation results
-    ├── fig01to03.py                <- supporting functions
-    ├── fig04to05.ipynb             <- timescale map results
-    ├── fig04to05.py                <- supporting function
-    └── ...                         <- supplementary notebooks (not in manuscript)
-├── figures/                        <- figures derived from notebooks/
-├── docs/
-    ├── ...                         <- latex files
-    ├── main.pdf                    <- manuscript
-    ├── slides.pdf                  <- presentation slides
-    └── zotero.bib                  <- references
+<a href="https://doi.org/10.1162/IMAG.a.1248">
+    <img src="./figures/img-neuro.png" width="120" style="cursor:pointer;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.12);transition:transform .12s ease,box-shadow .12s ease;"/>
+</a>
 
-├── LICENSE                         <- MIT license
-├── README.md                       <- this README file
-└── pyproject.toml                  <- python configuration and dependencies
+---
+
+#### Overview
+
+This repository provides two methods for estimating fMRI timescale maps:
+- A time-domain (TD) fit of an autoregressive model.
+- An autocorrelation-domain (AD) fit of an exponential decay model.
+
+Rather than assuming the fMRI time series has exponential autocorrelation decay, these methods estimate timescales by treating the models as approximations. This approach requires only stationarity and mixing assumptions, while incorporating robust standard errors to account for likely model misspecification.
+
+*Method Implementation*: To use the `fmri-timescales` package, follow the installation instructions and usage examples provided below.
+
+*Paper Reproduction*: Reproduces the figures (`figures/*.png`) from the *Imaging Neuroscience* paper by running the corresponding notebooks (`notebooks/*.ipynb`).
+
+*Citation*:
+```bibtex
+@article{riegner_estimating_2026,
+	title = {Estimating fMRI Timescale Maps},
+	doi = {10.1162/IMAG.a.1248},
+	journal = {Imaging Neuroscience},
+	author = {Riegner, Gabriel and Davenport, Samuel and Voytek, Bradley and Schwartzman, Armin},
+	year = {2026},
+}
 ```
 
-**Data Availability**
-The `notebooks/data/*{tau,se}.npy` files contain the TD and AD timescale estimates at each grayordinate (180 subjects, 91282 regions), from which the `figures/` can be reproduced. Access to the ~380GB of resting fMRI data from the Human Connectome Project 2018 release can by downloaded at [ConnetomeDB](https://db.humanconnectome.org/app/template/Login.vm):
+#### Package Installation
 
-<img src="./figures/hcp-dataset.png" width="800"/>
+Install `fmri-timescales` and its dependencies using pip:
 
-**Code Installation**
-
-Clone this repository:
-```
-git clone https://github.com/griegner/fmri-timescales.git
-cd fmri-timescales
+```bash
+pip install git+https://github.com/griegner/fmri-timescales.git
 ```
 
-Create virtual environment using `pip` or `conda`:
-```
-# pip
-python3 -m venv .fmri-timescales
-source .fmri-timescales/bin/activate
-```
-
-```
-# conda
-conda create --name fmri-timescales python
-conda activate fmri-timescales
-```
-
-
-Install `fmri_timescales` and dependencies:
-```
-pip install --editable ".[notebooks]"
-```
-
-**Usage Examples**
+#### Usage Examples
 
 Time Domain (TD) Linear Model, Fit by Linear Least Squares:
 ```python
@@ -96,3 +70,37 @@ Autocorrelation Domain (AD) Nonlinear Model, Fit by Nonlinear Least Squares:
         'se(tau)': array([0.58565806])
     }
 ```
+
+#### Repository Organization
+```text
+.
+├── fmri_timescales/
+    ├── acf_utils.py                <- autocorrelation estimators
+    ├── plts.py                     <- plotting functions
+    ├── sim.py                      <- simulation functions
+    └── timescale_utils.py          <- timescale estimators
+├── tests/
+    └── ...                         <- unit tests for fmri_timescales/
+├── notebooks
+    ├── data/                       <- N=180 timescale (+ std error) maps from the HCP
+    ├── fig01to03.ipynb             <- simulation results
+    ├── fig01to03.py                <- supporting functions
+    ├── fig04to05.ipynb             <- timescale map results
+    ├── fig04to05.py                <- supporting function
+    └── ...                         <- supplementary notebooks (not in manuscript)
+├── figures/                        <- figures derived from notebooks/
+├── docs/
+    ├── *.tex                       <- latex files
+    ├── wnar.pdf                    <- presentation slides
+    └── zotero.bib                  <- references
+
+├── LICENSE                         <- MIT license
+├── README.md                       <- this README file
+└── pyproject.toml                  <- python configuration and dependencies
+```
+
+#### Data Availability
+
+The `notebooks/data/*{tau,se}.npy` files contain the TD and AD timescale estimates at each grayordinate (180 subjects, 91282 regions), from which the `figures/*.png` files can be reproduced. Access to the ~380GB of resting fMRI data from the Human Connectome Project 2018 release can by downloaded from [ConnectomeDB](https://db.humanconnectome.org/app/template/Login.vm):
+
+<img src="./figures/hcp-dataset.png" width="800"/>
