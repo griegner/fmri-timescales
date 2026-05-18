@@ -3,12 +3,9 @@
 
 <img src="./figures/hcp-tstats.png" width="400"/>
 
-
 <a href="https://doi.org/10.1162/IMAG.a.1248">
-    <img src="./figures/img-neuro.png" width="120" style="cursor:pointer;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.12);transition:transform .12s ease,box-shadow .12s ease;"/>
+    <img src="./figures/img-neuro.png" width="150" alt="Neuroscience Image"/>
 </a>
-
----
 
 #### Overview
 
