@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -e ".[dev]"
+          python -m pip install ".[dev]"
 
       - name: Run tests
         run: pytest -vsl --doctest-modules --cov=fmri_timescales --cov-report=xml tests fmri_timescales
