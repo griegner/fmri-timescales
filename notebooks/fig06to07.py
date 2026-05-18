@@ -44,15 +44,17 @@ def run_simulation(phis, n_timepoints, estimator, n_repeats=1000, random_seed=0)
 
 def plot_simulation(results, tau):
     """compare true and estimated timescales + standard errors"""
-    hist_range = lambda estimates_: (
-        np.min(estimates_),
-        np.mean(estimates_) + 3 * np.std(estimates_),
-    )
+
+    def hist_range(estimates_):
+        return (
+            np.min(estimates_),
+            np.mean(estimates_) + 3 * np.std(estimates_),
+        )
 
     colors = ["#313695", "#72ABD0", "#FEDE8E", "#F57245", "#A70226"]
-    hist_kwargs = dict(bins=25, histtype="step", lw=3)
-    vline_kwargs = dict(lw=5)
-    scatter_kwargs = dict(s=100, lw=2)
+    hist_kwargs = {"bins": 25, "histtype": "step", "lw": 3}
+    vline_kwargs = {"lw": 5}
+    scatter_kwargs = {"s": 100, "lw": 2}
 
     layout = """
     a

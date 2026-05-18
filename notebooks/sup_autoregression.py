@@ -56,7 +56,7 @@ def cifti_to_surface(data, axis, surf_name):
         if name == surf_name:
             data = data.T[data_indices]
             vtx_indices = model.vertex  # 1-N, except medial wall vertices
-            surf_data = np.zeros((vtx_indices.max() + 1,) + data.shape[1:], dtype=data.dtype)
+            surf_data = np.zeros((vtx_indices.max() + 1, *data.shape[1:]), dtype=data.dtype)
             surf_data[vtx_indices] = data
             return surf_data
     raise ValueError(f"No structure named {surf_name}")

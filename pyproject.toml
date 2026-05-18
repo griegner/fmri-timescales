@@ -27,4 +27,4 @@ select = [
     "B",             # flake8 bugbear
     "N",             # naming
 ]
-ignore = ["B905", "N803", "N806", "F401"]
+ignore = ["B905", "N803", "N806", "F401", "N802"]
