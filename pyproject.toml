@@ -3,15 +3,31 @@ name = "fmri-timescales"
 version = "0.0.1"
 description = "Estimating fMRI Timescale Maps"
 authors = [{name = "Gabriel Riegner", email = "gariegner@ucsd.edu"}]
-dependencies = ["matplotlib==3.9.4", "nilearn==0.11.1", "statsmodels==0.14.1"]
+dependencies = ["matplotlib", "nilearn==0.13.1", "statsmodels==0.14.6", "notebook==7.5.6", "hcp_utils==0.1.0"]
 
 [project.optional-dependencies]
-notebooks = ["notebook", "hcp_utils"]
-dev = ["fmri-timescales[notebooks]", "pytest", "pre-commit"]
+dev = ["pytest", "pytest-cov", "pre-commit", "ruff"]
 
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+build-backend = "hatchling.build"
+requires = ["hatchling"]
 
-[tool.setuptools]
-packages = ["fmri_timescales"]
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F",   # pycodestyle + pyflakes (flake8's defaults)
+    "I",             # isort
+    "UP",            # pyupgrade
+    "NPY",           # numpy
+    "RUF",           # ruff
+    "SIM",           # flake8 simplify
+    "C4",            # flake8 comprehensions
+    "B",             # flake8 bugbear
+    "N",             # naming
+]
+ignore = ["B905", "N803", "N806", "F401", "N802"]
+
+[tool.ruff.lint.per-file-ignores]
+"fmri_timescales/timescale_utils.py" = ["E501"]

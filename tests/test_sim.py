@@ -21,7 +21,7 @@ acms = [
 @pytest.mark.parametrize("acm", acms)
 def test_sim_fmri(xcm, acm):
     """Test if the generated data returns the expected {auto,cross}-correlation parameters"""
-    xcm_corrected = True if acm.ndim == 3 else False
+    xcm_corrected = acm.ndim == 3
     acf = np.tile(acm[0, ...], (3, 1)).T if acm.ndim == 2 else acm[0, ...]
     X = sim.sim_fmri(xcm, acm, n_regions, n_timepoints, random_seed=0)
 

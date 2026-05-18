@@ -45,7 +45,7 @@ def test_TD_vs_statsmodels():
     # newey-west std errors
     td.set_params(var_estimator="newey-west", var_n_lags=100)
     td.fit(X, n_timepoints)
-    sm_td = SMOLS(X[:-1], X[1:]).fit(cov_type="HAC", cov_kwds=dict(maxlags=100))
+    sm_td = SMOLS(X[:-1], X[1:]).fit(cov_type="HAC", cov_kwds={"maxlags": 100})
     assert np.isclose(td.estimates_["phi"], sm_td.params, atol=1e-4)
     assert np.isclose(td.estimates_["se(phi)"], sm_td.bse, atol=1e-4)
 

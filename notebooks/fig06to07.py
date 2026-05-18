@@ -19,10 +19,9 @@ def run_simulation(phis, n_timepoints, estimator, n_repeats=1000, random_seed=0)
         results = {}
         for idx, std in enumerate(stds):
             X_mn = X + rng.normal(loc=0, scale=std, size=(n_timepoints, n_repeats))
-            var_n_lags = fig01to03.gridsearch_n_lags(
-                estimator, X_mn[:, :200], n_rows=n_timepoints, var_n_lags=np.arange(1, 50, 5)
+            var_n_lags = fig01to03.gridsearch_var_n_lags(
+                estimator, X_mn[:, :200], n_rows=n_timepoints, search_space=np.arange(1, 50, 5)
             )
-            print(var_n_lags)
             estimator.set_params(var_n_lags=var_n_lags)
             results[idx] = estimator.fit(X_mn, n_timepoints).estimates_
 
@@ -32,10 +31,9 @@ def run_simulation(phis, n_timepoints, estimator, n_repeats=1000, random_seed=0)
             results[idx] = {}
             X = sim.sim_ar(phi, n_timepoints=n_timepoints, n_repeats=n_repeats)
             X = (X - X.mean(axis=0)) / X.std(axis=0)
-            var_n_lags = fig01to03.gridsearch_n_lags(
-                estimator, X[:, :200], n_rows=n_timepoints, var_n_lags=np.arange(1, 200, 5)
+            var_n_lags = fig01to03.gridsearch_var_n_lags(
+                estimator, X[:, :200], n_rows=n_timepoints, search_space=np.arange(1, 200, 5)
             )
-            print(var_n_lags)
             estimator.set_params(var_n_lags=var_n_lags)
             results[idx] = estimator.fit(X, n_timepoints).estimates_
 
@@ -44,15 +42,17 @@ def run_simulation(phis, n_timepoints, estimator, n_repeats=1000, random_seed=0)
 
 def plot_simulation(results, tau):
     """compare true and estimated timescales + standard errors"""
-    hist_range = lambda estimates_: (
-        np.min(estimates_),
-        np.mean(estimates_) + 3 * np.std(estimates_),
-    )
+
+    def hist_range(estimates_):
+        return (
+            np.min(estimates_),
+            np.mean(estimates_) + 3 * np.std(estimates_),
+        )
 
     colors = ["#313695", "#72ABD0", "#FEDE8E", "#F57245", "#A70226"]
-    hist_kwargs = dict(bins=25, histtype="step", lw=3)
-    vline_kwargs = dict(lw=5)
-    scatter_kwargs = dict(s=100, lw=2)
+    hist_kwargs = {"bins": 25, "histtype": "step", "lw": 3}
+    vline_kwargs = {"lw": 5}
+    scatter_kwargs = {"s": 100, "lw": 2}
 
     layout = """
     a
@@ -76,7 +76,6 @@ def plot_simulation(results, tau):
         ax.yaxis.get_offset_text().set_fontsize(15)
 
     for idx, result in results.items():
-
         # tau
         true, estimates_ = tau, result["tau"]
         axs["a"].set_ylabel("TD")

@@ -8,7 +8,7 @@ from sklearn.base import BaseEstimator
 from fmri_timescales import acf_utils
 
 
-def newey_west_omega(u: np.ndarray, n_lags: Optional[int] = None) -> float:
+def newey_west_omega(u: np.ndarray, n_lags: int | None = None) -> float:
     n_u = len(u)
     if n_lags is None:
         n_lags = int(np.floor(4 * (n_u / 100.0) ** (2 / 9)))
@@ -62,9 +62,9 @@ class TD(BaseEstimator):
     def __init__(
         self,
         var_estimator: str = "newey-west",
-        var_n_lags: Optional[int] = None,
+        var_n_lags: int | None = None,
         copy_X: bool = False,
-        n_jobs: Optional[int] = None,
+        n_jobs: int | None = None,
     ) -> None:
         self.var_estimator = var_estimator
         self.var_n_lags = var_n_lags
@@ -165,10 +165,10 @@ class AD(BaseEstimator):
     def __init__(
         self,
         var_estimator: str = "newey-west",
-        var_n_lags: Optional[int] = None,
-        acf_n_lags: Optional[int] = None,
+        var_n_lags: int | None = None,
+        acf_n_lags: int | None = None,
         copy_X: bool = False,
-        n_jobs: Optional[int] = None,
+        n_jobs: int | None = None,
     ) -> None:
         self.var_estimator = var_estimator
         self.var_n_lags = var_n_lags
@@ -187,8 +187,12 @@ class AD(BaseEstimator):
 
         # regression function (m), and its linearized regressor (dm_dphi)
         ks = np.arange(1, len(x_acf) + 1)
-        m = lambda ks, phi: phi**ks
-        jac = lambda ks, phi: (ks * phi ** (ks - 1)).reshape(-1, 1)
+
+        def m(ks, phi):
+            return phi**ks
+
+        def jac(ks, phi):
+            return (ks * phi ** (ks - 1)).reshape(-1, 1)
 
         # phi estimator
         eps = 1e-10

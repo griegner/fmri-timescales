@@ -6,7 +6,9 @@ from sklearn.base import clone
 
 from fmri_timescales import acf_utils, sim
 
-rrmse = lambda true, estimates_: np.sqrt(np.mean((estimates_ - true) ** 2)) / np.abs(true)
+
+def rrmse(true, estimates_):
+    return np.sqrt(np.mean((estimates_ - true) ** 2)) / np.abs(true)
 
 
 def get_ad_params(coeffs, coeff_type, n_timepoints):
@@ -18,13 +20,18 @@ def get_ad_params(coeffs, coeff_type, n_timepoints):
         raise ValueError("coeff_type in 'ar_coeffs' or 'acf'")
 
     ks = np.arange(len(coeffs))
-    m = lambda ks, phi: phi**ks
+
+    def m(ks, phi):
+        return phi**ks
+
     phi, _ = curve_fit(f=m, xdata=ks, ydata=coeffs, p0=1e-2, bounds=(-1, +1), ftol=1e-6)
     return phi.squeeze()
 
 
-def gridsearch_var_n_lags(estimator, X, n_rows, search_space=np.arange(0, 10)):
+def gridsearch_var_n_lags(estimator, X, n_rows, search_space=None):
     """grid search var_n_lags to minimize rRMSE(std(tau), se(tau))"""
+    if search_space is None:
+        search_space = np.arange(0, 10)
     best_lags, best_score = None, np.inf
     for n_lags in search_space:
         est = estimator.set_params(var_n_lags=n_lags)
@@ -64,15 +71,16 @@ def run_simulation(phis, n_timepoints, estimators, acm=None, n_repeats=1000, ran
 def plot_simulation(results, td_taus, ad_taus):
     """compare true and estimated timescales + standard errors"""
 
-    hist_range = lambda estimates_: (
-        np.min(estimates_),
-        np.mean(estimates_) + 3 * np.std(estimates_),
-    )
+    def hist_range(estimates_):
+        return (
+            np.min(estimates_),
+            np.mean(estimates_) + 3 * np.std(estimates_),
+        )
 
     colors = ["#313695", "#72ABD0", "#FEDE8E", "#F57245", "#A70226"]
-    hist_kwargs = dict(bins=25, histtype="step", lw=3)
-    vline_kwargs = dict(lw=5)
-    scatter_kwargs = dict(s=100, lw=2)
+    hist_kwargs = {"bins": 25, "histtype": "step", "lw": 3}
+    vline_kwargs = {"lw": 5}
+    scatter_kwargs = {"s": 100, "lw": 2}
 
     layout = """
     .b

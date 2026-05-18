@@ -12,7 +12,8 @@ def scale(X, axis=0, eps=1e-8):
     flat = std < eps
     if flat.any():
         X = X.copy()
-        noise = eps * np.random.standard_normal(X[..., flat.squeeze()].shape)
+        rng = np.random.default_rng(seed=0)
+        noise = eps * rng.standard_normal(X[..., flat.squeeze()].shape)
         X[..., flat.squeeze()] += noise  # add jitter
         std = X.std(axis=axis, keepdims=True)
     std = np.where(std < eps, 1.0, std)
