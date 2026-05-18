@@ -28,3 +28,6 @@ select = [
     "N",             # naming
 ]
 ignore = ["B905", "N803", "N806", "F401", "N802"]
+
+[tool.ruff.lint.per-file-ignores]
+"fmri_timescales/timescale_utils.py" = ["E501"]

@@ -56,12 +56,7 @@ class TD(BaseEstimator):
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
     >>> td = timescale_utils.TD(var_estimator="newey-west", var_n_lags=10)
     >>> td.fit(X=X, n_timepoints=1000).estimates_
-    {
-        'phi': array([0.79789847]),
-        'se(phi)': array([0.02045074]),
-        'tau': array([4.42920958]),
-        'se(tau)': array([0.50282146])
-    }
+    {'phi': array([0.79789847]), 'se(phi)': array([0.02045074]), 'tau': array([4.42920958]), 'se(tau)': array([0.50282146])}
     """
 
     def __init__(
@@ -164,12 +159,7 @@ class AD(BaseEstimator):
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
     >>> ad = timescale_utils.AD(var_estimator="newey-west", var_n_lags=10, acf_n_lags=50)
     >>> ad.fit(X=X, n_timepoints=1000).estimates_
-    {
-        'phi': array([0.78021651]),
-        'se(phi)': array([0.02814532]),
-        'tau': array([4.02927146]),
-        'se(tau)': array([0.58565806])
-    }
+    {'phi': array([0.78021651]), 'se(phi)': array([0.02814532]), 'tau': array([4.02927146]), 'se(tau)': array([0.58565806])}
     """
 
     def __init__(
