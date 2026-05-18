@@ -60,7 +60,7 @@ Autocorrelation Domain (AD) Nonlinear Model, Fit by Nonlinear Least Squares:
 ```python
     >>> from fmri_timescales import sim, timescale_utils
     >>> X = sim.sim_ar(ar_coeffs=[0.8], n_timepoints=1000) # x_t = 0.8 x_{t-1} + e_t
-    >>> ad = timescale_utils.AD(var_domain="time", var_estimator="newey-west", var_n_lags=10)
+    >>> ad = timescale_utils.AD(var_estimator="newey-west", var_n_lags=10, acf_n_lags=50)
     >>> ad.fit(X=X, n_timepoints=1000).estimates_
     {
         'phi': array([0.78021651]),
